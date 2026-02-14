@@ -45,6 +45,7 @@ model User {
   memberships   Membership[]
   profile       Profile?
   applications  Application[]
+  enrollments   Enrollment[]
   documents     Document[]
   logbookEntries LogbookEntry[]
   tickets       Ticket[]
