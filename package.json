@@ -13,7 +13,8 @@
     "typecheck": "turbo run typecheck",
     "db:push": "npm run db:push --workspace @internflow/db",
     "db:seed": "npm run db:seed --workspace @internflow/db",
-    "format": "prettier --check ."
+    "format": "prettier --check .",
+    "db:generate": "npm run db:generate --workspace @internflow/db"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
