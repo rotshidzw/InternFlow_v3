@@ -29,8 +29,9 @@ Production-style student project for internship/learnership administration.
    - `docker compose up -d`
 4. Install deps:
    - `npm install`
-5. Push DB schema and seed:
+5. Push DB schema, generate Prisma client, and seed:
    - `npm run db:push`
+   - `npm run db:generate`
    - `npm run db:seed`
 6. Start app + worker:
    - `npm run dev`
@@ -43,6 +44,7 @@ MinIO console: http://localhost:9001
 - `npm run dev`
 - `npm run build`
 - `npm run db:push`
+- `npm run db:generate`
 - `npm run db:seed`
 
 ## Demo accounts
@@ -56,3 +58,10 @@ MinIO console: http://localhost:9001
 auth OTP -> org setup -> student checklist + document upload metadata -> logbook approval -> coordinator dashboard -> whatsapp simulator -> ticket summary AI endpoint.
 
 See `docs/HUAWEI_CLOUD_SETUP.md` for optional Huawei integration.
+
+## Prisma troubleshooting (Windows / unstable network)
+If `npm run db:push` fails after "Your database is now in sync" during Prisma generate, use:
+1. `npm run db:push` (now runs with `--skip-generate`)
+2. `npm run db:generate` (run separately/retry if network resets)
+
+This separates schema sync from engine/client download so DB setup can still complete.
