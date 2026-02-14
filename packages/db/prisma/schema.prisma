@@ -15,6 +15,26 @@ enum Role {
   SYSTEM_ADMIN
 }
 
+enum OrganizationType {
+  COMPANY
+  TRAINING_PROVIDER
+  NGO
+  UNIVERSITY
+  GOVERNMENT_PROGRAM
+}
+
+enum OrganizationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocumentReviewStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum DocStatus {
   PENDING
   PASS
@@ -29,40 +49,84 @@ enum TicketStatus {
 
 enum ApplicationStatus {
   DRAFT
+  APPLIED
   SUBMITTED
   REVIEW
+  SHORTLISTED
   ACCEPTED
   REJECTED
 }
 
+enum OpportunityType {
+  INTERNSHIP
+  LEARNERSHIP
+  MENTORSHIP
+  SKILLS_PROGRAM
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
 model User {
-  id            String      @id @default(cuid())
-  email         String      @unique
-  name          String?
-  role          Role
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  memberships   Membership[]
-  profile       Profile?
-  applications  Application[]
-  enrollments   Enrollment[]
-  documents     Document[]
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String?
+  role           Role
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  memberships    Membership[]
+  profile        Profile?
+  applications   Application[]
+  enrollments    Enrollment[]
+  documents      Document[]
   logbookEntries LogbookEntry[]
-  tickets       Ticket[]
-  chatMessages  ChatMessage[]
-  auditLogs     AuditLog[]
+  tickets        Ticket[]
+  chatMessages   ChatMessage[]
+  auditLogs      AuditLog[]
+  createdOrgs    Organization[] @relation("OrganizationCreator")
 }
 
 model Organization {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  createdAt   DateTime     @default(now())
-  memberships Membership[]
-  invites     Invite[]
-  programs    Program[]
-  cohorts     Cohort[]
-  settings    Settings[]
+  id               String                @id @default(cuid())
+  name             String
+  slug             String                @unique
+  type             OrganizationType      @default(COMPANY)
+  status           OrganizationStatus    @default(PENDING_REVIEW)
+  country          String?
+  province         String?
+  contactPerson    String?
+  rejectionReason  String?
+  createdBy        String?
+  createdAt        DateTime              @default(now())
+  memberships      Membership[]
+  invites          Invite[]
+  programs         Program[]
+  cohorts          Cohort[]
+  settings         Settings[]
+  opportunities    Opportunity[]
+  orgDocuments     OrganizationDocument[]
+  creator          User?                 @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+}
+
+model OrganizationDocument {
+  id          String                @id @default(cuid())
+  orgId       String
+  category    String
+  fileKey     String
+  status      DocumentReviewStatus  @default(PENDING_REVIEW)
+  notes       String?
+  createdAt   DateTime              @default(now())
+  organization Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }
 
 model Membership {
@@ -99,33 +163,42 @@ model Profile {
 }
 
 model Program {
-  id             String          @id @default(cuid())
+  id             String         @id @default(cuid())
   organizationId String
   name           String
   description    String
+  rulesJson      Json?
   startDate      DateTime
   endDate        DateTime
   opportunities  Opportunity[]
   enrollments    Enrollment[]
   templates      ChecklistTemplate[]
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cohorts        Cohort[]
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Opportunity {
-  id          String        @id @default(cuid())
-  programId   String
-  title       String
-  description String
-  capacity    Int
-  applications Application[]
-  program     Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  id               String            @id @default(cuid())
+  organizationId   String
+  programId        String?
+  type             OpportunityType   @default(INTERNSHIP)
+  title            String
+  description      String
+  requirementsJson Json?
+  capacity         Int               @default(0)
+  status           OpportunityStatus @default(DRAFT)
+  applications     Application[]
+  program          Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Application {
-  id            String            @id @default(cuid())
+  id            String             @id @default(cuid())
   userId         String
   opportunityId  String
   status         ApplicationStatus @default(DRAFT)
+  notes          String?
+  submittedAt    DateTime?
   createdAt      DateTime          @default(now())
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
@@ -135,22 +208,27 @@ model Application {
 model Cohort {
   id             String       @id @default(cuid())
   organizationId String
+  programId      String
   name           String
   startDate      DateTime
   endDate        DateTime
   enrollments    Enrollment[]
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program        Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
 }
 
 model Enrollment {
-  id          String   @id @default(cuid())
-  userId       String
-  programId    String
-  cohortId     String?
-  stipendPaid  Boolean  @default(false)
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  program      Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
-  cohort       Cohort?  @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  programId      String
+  cohortId       String?
+  status         EnrollmentStatus @default(PENDING)
+  stipendPaid    Boolean          @default(false)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program        Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  cohort         Cohort?          @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model ChecklistTemplate {

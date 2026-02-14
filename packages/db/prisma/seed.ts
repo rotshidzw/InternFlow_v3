@@ -1,146 +1,155 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role, OrganizationStatus, OrganizationType, OpportunityStatus, OpportunityType, ApplicationStatus, EnrollmentStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+async function upsertUser(email: string, role: Role, name: string) {
+  return prisma.user.upsert({ where: { email }, update: { role, name }, create: { email, role, name } });
+}
+
+async function addMembership(userId: string, organizationId: string, role: Role) {
+  return prisma.membership.upsert({
+    where: { userId_organizationId: { userId, organizationId } },
+    update: { role },
+    create: { userId, organizationId, role }
+  });
+}
+
 async function main() {
-  const org = await prisma.organization.upsert({
-    where: { slug: "demo-org" },
-    update: {},
-    create: { name: "Demo Training Org", slug: "demo-org" }
+  const systemAdmin = await upsertUser("admin@internflow.com", Role.SYSTEM_ADMIN, "InternFlow Admin");
+
+  const raftech = await prisma.organization.upsert({
+    where: { slug: "raftech" },
+    update: { status: OrganizationStatus.APPROVED },
+    create: {
+      name: "Raftech",
+      slug: "raftech",
+      type: OrganizationType.COMPANY,
+      status: OrganizationStatus.APPROVED,
+      country: "South Africa",
+      province: "Gauteng",
+      contactPerson: "Raftech Operations",
+      createdBy: systemAdmin.id
+    }
   });
 
-  const users = [
-    { email: "student@demo.com", role: Role.STUDENT, name: "Sam Student" },
-    { email: "coordinator@demo.com", role: Role.COORDINATOR, name: "Casey Coordinator" },
-    { email: "supervisor@demo.com", role: Role.SUPERVISOR, name: "Sydney Supervisor" },
-    { email: "provider@demo.com", role: Role.PROVIDER_ADMIN, name: "Priya Provider" },
-    { email: "admin@demo.com", role: Role.SYSTEM_ADMIN, name: "Alex Admin" }
-  ];
+  const trainingProvider = await prisma.organization.upsert({
+    where: { slug: "demo-training-provider" },
+    update: { status: OrganizationStatus.APPROVED },
+    create: {
+      name: "Demo Training Provider",
+      slug: "demo-training-provider",
+      type: OrganizationType.TRAINING_PROVIDER,
+      status: OrganizationStatus.APPROVED,
+      country: "South Africa",
+      province: "Western Cape",
+      contactPerson: "Provider Admin",
+      createdBy: systemAdmin.id
+    }
+  });
 
-  for (const entry of users) {
-    const user = await prisma.user.upsert({
-      where: { email: entry.email },
-      update: { role: entry.role, name: entry.name },
-      create: entry
-    });
+  const providerAdmin = await upsertUser("provider@demo.com", Role.PROVIDER_ADMIN, "Priya Provider");
+  const coordinator = await upsertUser("coordinator@demo.com", Role.COORDINATOR, "Casey Coordinator");
+  const supervisor = await upsertUser("supervisor@demo.com", Role.SUPERVISOR, "Sydney Supervisor");
+  const student = await upsertUser("student@demo.com", Role.STUDENT, "Sam Student");
+  const studentTwo = await upsertUser("student2@demo.com", Role.STUDENT, "Nandi Student");
 
-    await prisma.membership.upsert({
-      where: {
-        userId_organizationId: {
-          userId: user.id,
-          organizationId: org.id
-        }
-      },
-      update: { role: entry.role },
-      create: {
-        userId: user.id,
-        organizationId: org.id,
-        role: entry.role
-      }
-    });
+  await Promise.all([
+    addMembership(systemAdmin.id, raftech.id, Role.SYSTEM_ADMIN),
+    addMembership(providerAdmin.id, raftech.id, Role.PROVIDER_ADMIN),
+    addMembership(coordinator.id, raftech.id, Role.COORDINATOR),
+    addMembership(supervisor.id, raftech.id, Role.SUPERVISOR),
+    addMembership(student.id, raftech.id, Role.STUDENT),
+    addMembership(studentTwo.id, trainingProvider.id, Role.STUDENT),
+    addMembership(providerAdmin.id, trainingProvider.id, Role.PROVIDER_ADMIN)
+  ]);
 
-    await prisma.profile.upsert({
-      where: { userId: user.id },
-      update: {},
-      create: {
-        userId: user.id,
-        phone: "+27 00 000 0000",
-        education: "Diploma in Informatics",
-        emergencyContact: "Emergency Contact"
-      }
-    });
-  }
-
-  const program = await prisma.program.create({
-    data: {
-      organizationId: org.id,
-      name: "Digital Skills Learnership",
-      description: "12 month workplace-integrated learning track",
+  const program = await prisma.program.upsert({
+    where: { id: "raftech-program-seed" },
+    update: {},
+    create: {
+      id: "raftech-program-seed",
+      organizationId: raftech.id,
+      name: "Raftech Digital Skills",
+      description: "Workplace integrated digital program",
+      rulesJson: { requiresPayslip: true, monthlyLogbook: true },
       startDate: new Date(),
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
     }
   });
 
-  const opportunity = await prisma.opportunity.create({
-    data: {
+  const cohort = await prisma.cohort.upsert({
+    where: { id: "raftech-cohort-2026" },
+    update: {},
+    create: {
+      id: "raftech-cohort-2026",
+      organizationId: raftech.id,
       programId: program.id,
-      title: "Junior Full-stack Intern",
-      description: "Work with a product team delivering citizen services.",
-      capacity: 100
+      name: "Cohort 2026",
+      startDate: new Date(),
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 12))
     }
   });
 
-  const template = await prisma.checklistTemplate.create({
-    data: {
+  const opportunity = await prisma.opportunity.upsert({
+    where: { id: "raftech-opportunity-1" },
+    update: {},
+    create: {
+      id: "raftech-opportunity-1",
+      organizationId: raftech.id,
       programId: program.id,
-      name: "Default onboarding requirements",
-      items: {
-        createMany: {
-          data: [
-            { label: "Government ID", expiryDays: 3650 },
-            { label: "Proof of Address", expiryDays: 90 },
-            { label: "CV" },
-            { label: "Affidavit", expiryDays: 90 }
-          ]
-        }
-      }
-    },
-    include: { items: true }
+      type: OpportunityType.INTERNSHIP,
+      title: "Junior Product Operations Intern",
+      description: "Support program operations and learner onboarding.",
+      requirementsJson: { docs: ["ID", "CV", "PROOF_OF_ADDRESS"] },
+      capacity: 100,
+      status: OpportunityStatus.PUBLISHED
+    }
   });
 
-  const student = await prisma.user.findUniqueOrThrow({ where: { email: "student@demo.com" } });
-
-  const application = await prisma.application.create({
-    data: {
+  await prisma.application.upsert({
+    where: { id: "raftech-application-1" },
+    update: {},
+    create: {
+      id: "raftech-application-1",
       userId: student.id,
       opportunityId: opportunity.id,
-      status: "SUBMITTED",
-      checklist: {
-        create: {
-          items: {
-            createMany: {
-              data: template.items.map((item) => ({ label: item.label, status: "PENDING" }))
-            }
-          }
-        }
-      }
+      status: ApplicationStatus.ACCEPTED,
+      submittedAt: new Date(),
+      notes: "Accepted into Cohort 2026"
     }
   });
 
-  await prisma.chatThread.create({
-    data: {
-      userId: student.id,
-      title: "WhatsApp Simulator: Sam Student",
-      messages: {
-        createMany: {
-          data: [
-            { role: "SYSTEM", body: "Hi Sam 👋 choose an option (1-5)." },
-            { role: "USER", body: "1) Check my status", senderId: student.id },
-            { role: "SYSTEM", body: "You have 4 pending onboarding checklist items." }
-          ]
-        }
-      }
+  await prisma.application.upsert({
+    where: { id: "raftech-application-2" },
+    update: {},
+    create: {
+      id: "raftech-application-2",
+      userId: studentTwo.id,
+      opportunityId: opportunity.id,
+      status: ApplicationStatus.REJECTED,
+      submittedAt: new Date(),
+      notes: "Not shortlisted for current intake"
     }
   });
 
-  await prisma.ticket.create({
-    data: {
+  await prisma.enrollment.upsert({
+    where: { id: "raftech-enrollment-1" },
+    update: {},
+    create: {
+      id: "raftech-enrollment-1",
+      organizationId: raftech.id,
       userId: student.id,
-      title: "Need support for affidavit upload",
-      summary: "Learner asked support via WhatsApp simulator.",
-      events: {
-        create: [
-          { event: "Ticket created from chat flow" },
-          { event: `Linked application ${application.id}` }
-        ]
-      }
+      programId: program.id,
+      cohortId: cohort.id,
+      status: EnrollmentStatus.ACTIVE,
+      stipendPaid: true
     }
   });
 
   await prisma.auditLog.createMany({
     data: [
       { userId: student.id, action: "LOGIN_OTP_REQUESTED" },
-      { userId: student.id, action: "INVITE_ACCEPTED" }
+      { userId: student.id, action: "LOGIN_OTP_VERIFIED" }
     ]
   });
 }

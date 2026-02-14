@@ -8,14 +8,6 @@ const verifySchema = z.object({
   code: z.string().min(6).max(6)
 });
 
-const roleRoute: Record<string, string> = {
-  STUDENT: "/app/student",
-  PROVIDER_ADMIN: "/app/provider",
-  COORDINATOR: "/app/coordinator",
-  SUPERVISOR: "/app/supervisor",
-  SYSTEM_ADMIN: "/demo"
-};
-
 export async function POST(req: Request) {
   const body = await req.json();
   const parsed = verifySchema.safeParse(body);
@@ -42,12 +34,17 @@ export async function POST(req: Request) {
     }
   });
 
-  const redirectTo = user ? roleRoute[user.role] ?? "/demo" : "/auth/setup";
+  const memberships = user ? await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } }) : [];
+  const redirectTo = !user ? "/onboarding" : memberships.length > 0 ? "/workspaces" : "/onboarding";
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     redirectTo,
     hasAccount: Boolean(user),
     requiresOrgSetup: !user
   });
+
+  response.cookies.set("if_user", email, { httpOnly: true, sameSite: "lax", path: "/" });
+
+  return response;
 }
