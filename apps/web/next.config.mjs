@@ -3,7 +3,8 @@ import path from "node:path";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    typedRoutes: true
+    typedRoutes: true,
+    outputFileTracingRoot: path.join(process.cwd(), "../..")
   },
   webpack: (config, { dev }) => {
     if (dev && process.platform === "win32") {
@@ -21,7 +22,6 @@ const nextConfig = {
 
     return config;
   },
-  outputFileTracingRoot: path.join(process.cwd(), "../..")
 };
 
 export default nextConfig;

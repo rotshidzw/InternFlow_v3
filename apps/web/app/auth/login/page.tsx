@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     await fetch("/api/auth/otp", { method: "POST", body: JSON.stringify(values) });
-    alert("OTP link sent (Mailhog simulator)");
+    alert("OTP sent. Check MailHog inbox at http://localhost:8025");
   };
 
   return (

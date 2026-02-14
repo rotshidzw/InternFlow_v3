@@ -77,3 +77,7 @@ If `npm run db:push` fails after "Your database is now in sync" during Prisma ge
 2. `npm run db:generate` (run separately/retry if network resets)
 
 This separates schema sync from engine/client download so DB setup can still complete.
+
+## Dev startup troubleshooting
+- If `npm run dev` reports missing `nodemailer` or missing lockfile warnings, run `npm install` in the repository root first.
+- `predev` now checks for required dependencies and will fail fast with a clear setup message if install is incomplete.
