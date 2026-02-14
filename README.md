@@ -7,7 +7,7 @@ Production-style student project for internship/learnership administration.
 - Prisma + PostgreSQL
 - Redis + BullMQ worker
 - MinIO (default) / Huawei OBS (optional)
-- Mailhog local OTP email testing
+- MailHog local OTP email testing
 
 ## Monorepo
 ```
@@ -36,9 +36,21 @@ Production-style student project for internship/learnership administration.
 6. Start app + worker:
    - `npm run dev`
 
-Web: http://localhost:3000  
-Mailhog: http://localhost:8025  
-MinIO console: http://localhost:9001
+## Local service URLs
+- Web: http://localhost:3000
+- MailHog UI: http://localhost:8025
+- MailHog SMTP: localhost:1025
+- MinIO API: http://localhost:9000
+- MinIO Console: http://localhost:9001
+- MinIO Login: `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`
+
+## OTP + SMTP notes
+- The OTP API sends mail through nodemailer using `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `MAIL_FROM`.
+- If `SMTP_HOST` is unset, InternFlow defaults to `localhost`.
+- If app runs on the host (`npm run dev`), use `SMTP_HOST=localhost`.
+- If app runs inside Docker, use `SMTP_HOST=mailhog`.
+- If SMTP delivery fails in development, the OTP is still logged in server output as:
+  - `[DEV OTP] email=<email> code=<code>`
 
 ## Scripts
 - `npm run dev`

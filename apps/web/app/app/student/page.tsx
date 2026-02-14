@@ -22,13 +22,24 @@ export default async function StudentPortal() {
         </section>
         <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
           <h2 className="font-semibold">Upload document</h2>
-          <form action="/api/documents/upload" method="post" className="mt-3 space-y-2 text-sm">
+          <form action="/api/documents/upload" method="post" encType="multipart/form-data" className="mt-3 space-y-2 text-sm">
             <input type="hidden" name="userId" value={user.id} />
-            <input name="type" placeholder="ID / CV" className="w-full rounded border px-2 py-1" />
-            <input name="fileName" placeholder="id.pdf" className="w-full rounded border px-2 py-1" />
-            <button className="rounded bg-emerald-600 px-3 py-1 text-white">Submit metadata</button>
+            <select name="type" className="w-full rounded border px-2 py-1" defaultValue="ID" required>
+              <option value="ID">ID</option>
+              <option value="CV">CV</option>
+              <option value="CERTIFICATE">Certificate</option>
+              <option value="AFFIDAVIT">Affidavit</option>
+              <option value="PROOF_OF_ADDRESS">Proof of address</option>
+              <option value="PAYSLIP">Payslip</option>
+            </select>
+            <input type="file" name="file" className="w-full rounded border px-2 py-1" required />
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="selfCertified" value="true" />
+              Self-certified
+            </label>
+            <button className="rounded bg-emerald-600 px-3 py-1 text-white">Upload to MinIO</button>
           </form>
-          <p className="mt-2 text-xs text-slate-500">File transport is API-ready; UI now submits metadata for demo flow.</p>
+          <p className="mt-2 text-xs text-slate-500">Uploads now write to MinIO and save metadata to the document vault.</p>
         </section>
       </div>
       <section className="rounded-xl border bg-white p-4 dark:bg-slate-900">
