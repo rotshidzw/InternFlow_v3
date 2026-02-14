@@ -1,0 +1,38 @@
+{
+  "name": "@internflow/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@internflow/db": "0.0.1",
+    "@internflow/shared": "0.0.1",
+    "@internflow/ui": "0.0.1",
+    "@prisma/client": "^5.19.1",
+    "autoprefixer": "^10.4.20",
+    "bullmq": "^5.12.15",
+    "framer-motion": "^11.5.6",
+    "lucide-react": "^0.441.0",
+    "next": "14.2.14",
+    "next-auth": "^4.24.7",
+    "next-themes": "^0.3.0",
+    "postcss": "^8.4.47",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.53.0",
+    "tailwindcss": "^3.4.13",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.8",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.2"
+  }
+}
