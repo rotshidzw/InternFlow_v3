@@ -1,5 +1,5 @@
 import { prisma } from "@internflow/db/src";
-import { TrendChart } from "@/components/hq/trend-chart";
+import { HQDashboardCharts } from "@/components/hq/hq-dashboard-charts";
 
 export default async function HQDashboardPage() {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -25,10 +25,7 @@ export default async function HQDashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <TrendChart title="Daily Active Users" color="#2563eb" data={series.map((d) => ({ label: d.label, value: d.activeUsers }))} />
-        <TrendChart title="Daily Docs Uploaded" color="#059669" data={series.map((d) => ({ label: d.label, value: d.docsUploaded }))} />
-      </div>
+      <HQDashboardCharts data={series} />
 
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
         <h2 className="font-semibold">Recent Activity</h2>

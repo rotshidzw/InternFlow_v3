@@ -59,7 +59,7 @@ Only users with one of these roles can access `/hq`.
 Use `/auth` and check OTP in MailHog at `http://localhost:8025`.
 
 ## HQ feature set
-- Dashboard cards + metrics trend + activity feed
+- Dashboard cards + readable charts (axes/legend/tooltip) + activity feed
 - Tenant directory with filters and detail pages
 - Approvals queue (approve/reject with audit + MailHog notification)
 - Meetings scheduler + reminder email to tenant contact users (provider/coordinator/supervisor)
