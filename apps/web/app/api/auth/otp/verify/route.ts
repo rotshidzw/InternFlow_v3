@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { verifyOtp } from "@/lib/otp-store";
 import { z } from "zod";
 
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
   const platformMembership = user ? await prisma.platformMembership.findFirst({ where: { userId: user.id } }) : null;
   const memberships = user ? await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } }) : [];
   const singleMembership = memberships.length === 1 ? memberships[0] : null;
+  const rememberedWorkspace = cookies().get("if_workspace")?.value;
+  const rememberedMembership = memberships.find((m) => m.organization.slug === rememberedWorkspace);
   const redirectTo = !user
     ? "/onboarding"
     : platformMembership
@@ -44,8 +47,10 @@ export async function POST(req: Request) {
       : memberships.length === 0
         ? "/onboarding"
         : singleMembership
-          ? `/org/${singleMembership.organization.slug}/home`
-          : "/workspaces";
+          ? `/org/${singleMembership.organization.slug}/app`
+          : rememberedMembership
+            ? `/org/${rememberedMembership.organization.slug}/app`
+            : "/workspaces";
 
   const response = NextResponse.json({
     ok: true,

@@ -9,6 +9,25 @@ export async function POST(req: Request, { params }: { params: { applicationId: 
   const parsed = schema.safeParse(payload);
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
 
-  await prisma.application.update({ where: { id: params.applicationId }, data: { status: parsed.data.status } });
+  const application = await prisma.application.update({
+    where: { id: params.applicationId },
+    data: { status: parsed.data.status },
+    include: { opportunity: true }
+  });
+
+  if (parsed.data.status === "ACCEPTED") {
+    const existing = await prisma.enrollment.findFirst({ where: { userId: application.userId, organizationId: application.opportunity.organizationId } });
+    if (!existing && application.opportunity.programId) {
+      await prisma.enrollment.create({
+        data: {
+          organizationId: application.opportunity.organizationId,
+          userId: application.userId,
+          programId: application.opportunity.programId,
+          status: "PENDING"
+        }
+      });
+    }
+  }
+
   return NextResponse.redirect(new URL(req.headers.get("referer") ?? "/workspaces", req.url));
 }

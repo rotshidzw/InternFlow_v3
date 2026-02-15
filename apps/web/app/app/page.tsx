@@ -4,5 +4,5 @@ import { getSelectedWorkspaceSlug } from "@/lib/session";
 export default function AppEntry() {
   const workspace = getSelectedWorkspaceSlug();
   if (!workspace) redirect("/workspaces");
-  redirect(`/org/${workspace}/home`);
+  redirect(`/org/${workspace}/app`);
 }

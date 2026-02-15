@@ -5,7 +5,8 @@ const PROTECTED_PREFIXES = ["/workspaces", "/onboarding", "/platform-admin", "/p
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isPublicOrgRoute = /^\/org\/[^/]+(\/login)?$/.test(pathname);
+  const isProtected = !isPublicOrgRoute && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const user = request.cookies.get("if_user")?.value;
   const workspace = request.cookies.get("if_workspace")?.value;
 

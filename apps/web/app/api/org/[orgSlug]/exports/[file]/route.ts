@@ -14,6 +14,12 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string;
     return new Response(body, { headers: { "Content-Type": "text/csv" } });
   }
 
+
+  if (params.file === "compliance.csv") {
+    const docs = await prisma.document.findMany({ where: { organizationId: org.id }, include: { user: true } });
+    const body = csv([["email", "type", "status", "createdAt"], ...docs.map((d) => [d.user.email, d.type, d.status, d.createdAt.toISOString()])]);
+    return new Response(body, { headers: { "Content-Type": "text/csv" } });
+  }
   const learners = await prisma.membership.findMany({ where: { organizationId: org.id, role: "STUDENT" }, include: { user: true } });
   const body = csv([["email", "name"], ...learners.map((l) => [l.user.email, l.user.name ?? ""]) ]);
   return new Response(body, { headers: { "Content-Type": "text/csv" } });

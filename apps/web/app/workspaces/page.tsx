@@ -16,11 +16,18 @@ export default async function WorkspacesPage() {
 
   if (!user) return <div className="p-8 text-white">Account not found.</div>;
 
+  const remembered = cookies().get("if_workspace")?.value;
+  const rememberedMembership = remembered ? user.memberships.find((m) => m.organization.slug === remembered) : null;
+
+  if (rememberedMembership) {
+    redirect(`/org/${rememberedMembership.organization.slug}/app`);
+  }
+
   if (user.memberships.length === 1) {
     const single = user.memberships[0];
     cookies().set("if_workspace", single.organization.slug, { path: "/", sameSite: "lax" });
     const rolePath = single.role.toLowerCase().replace("_", "-");
-    redirect(`/org/${single.organization.slug}/${rolePath}`);
+    redirect(`/org/${single.organization.slug}/app`);
   }
 
   return (

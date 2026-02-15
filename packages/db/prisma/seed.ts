@@ -277,6 +277,125 @@ async function main() {
     await prisma.ticketEvent.create({ data: { ticketId: ticket.id, type: "CREATED", event: "Ticket seeded", payload: { source: "seed" } } });
   }
 
+
+  // Tenant body demo pack: staff + programs + opportunities + applicants + enrollments per tenant
+  for (let tIndex = 0; tIndex < tenants.length; tIndex++) {
+    const tenant = tenants[tIndex];
+    const domain = `tenant${tIndex + 1}.co.za`;
+
+    const tenantAdmin = await upsertUser(`tenant-admin@${domain}`, Role.PROVIDER_ADMIN, `${tenant.name} Admin`);
+    const tenantCoordinator = await upsertUser(`coordinator@${domain}`, Role.COORDINATOR, `${tenant.name} Coordinator`);
+    const tenantSupervisor = await upsertUser(`supervisor@${domain}`, Role.SUPERVISOR, `${tenant.name} Supervisor`);
+    const tenantStudentA = await upsertUser(`student-a@${domain}`, Role.STUDENT, `${tenant.name} Student A`);
+    const tenantStudentB = await upsertUser(`student-b@${domain}`, Role.STUDENT, `${tenant.name} Student B`);
+
+    await Promise.all([
+      addTenantMembership(tenantAdmin.id, tenant.id, Role.PROVIDER_ADMIN),
+      addTenantMembership(tenantCoordinator.id, tenant.id, Role.COORDINATOR),
+      addTenantMembership(tenantSupervisor.id, tenant.id, Role.SUPERVISOR),
+      addTenantMembership(tenantStudentA.id, tenant.id, Role.STUDENT),
+      addTenantMembership(tenantStudentB.id, tenant.id, Role.STUDENT)
+    ]);
+
+    const secondProgram = await prisma.program.create({
+      data: {
+        organizationId: tenant.id,
+        name: `${tenant.name} CETA Apprenticeship`,
+        description: `CETA aligned path for ${tenant.name}`,
+        rulesJson: { setaCetaName: tIndex % 2 === 0 ? "CETA" : "SETA", requiresSignature: true },
+        startDate: new Date(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+      }
+    });
+
+    const orgPrograms = await prisma.program.findMany({ where: { organizationId: tenant.id } });
+
+    for (let j = 0; j < 8; j++) {
+      const program = orgPrograms[j % orgPrograms.length] ?? secondProgram;
+      await prisma.opportunity.create({
+        data: {
+          organizationId: tenant.id,
+          programId: program.id,
+          type: j % 2 === 0 ? OpportunityType.INTERNSHIP : OpportunityType.SKILLS_PROGRAM,
+          title: `${tenant.name} Body Opportunity ${j + 1}`,
+          slug: `${tenant.slug}-body-opportunity-${j + 1}-${Date.now()}-${j}`,
+          description: `Body portal opportunity ${j + 1}`,
+          requirementsJson: { docs: ["ID", "CV", "CERTIFICATE"], eligibility: ["South African resident"] },
+          capacity: 30,
+          status: OpportunityStatus.PUBLISHED
+        }
+      });
+    }
+
+    const orgOpps = await prisma.opportunity.findMany({ where: { organizationId: tenant.id } });
+    const applicantUsers: { id: string }[] = [];
+    for (let a = 0; a < 30; a++) {
+      const applicant = await upsertUser(`applicant${a + 1}@${domain}`, Role.STUDENT, `${tenant.name} Applicant ${a + 1}`);
+      applicantUsers.push(applicant);
+      await addTenantMembership(applicant.id, tenant.id, Role.STUDENT);
+
+      const opp = orgOpps[a % orgOpps.length];
+      const statusCycle = [ApplicationStatus.APPLIED, ApplicationStatus.SHORTLISTED, ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED];
+      const appStatus = statusCycle[a % statusCycle.length];
+      const application = await prisma.application.create({
+        data: {
+          userId: applicant.id,
+          opportunityId: opp.id,
+          status: appStatus,
+          submittedAt: new Date(),
+          notes: appStatus === ApplicationStatus.REJECTED ? "Eligibility mismatch" : "In pipeline"
+        }
+      });
+
+      await prisma.checklistInstance.create({
+        data: {
+          applicationId: application.id,
+          progress: appStatus === ApplicationStatus.ACCEPTED ? 40 : 0,
+          items: { createMany: { data: [
+            { label: "Certified ID", status: "PENDING", actionType: "upload" },
+            { label: "Signed code of conduct", status: "PENDING", actionType: "sign" }
+          ] } }
+        }
+      });
+    }
+
+    for (const learner of applicantUsers.slice(0, 20)) {
+      const program = orgPrograms[Math.floor(Math.random() * orgPrograms.length)] ?? secondProgram;
+      await prisma.enrollment.create({
+        data: {
+          organizationId: tenant.id,
+          userId: learner.id,
+          programId: program.id,
+          status: EnrollmentStatus.ACTIVE,
+          stipendPaid: Math.random() > 0.5,
+          stipendMonth: "2026-02"
+        }
+      });
+
+      await prisma.document.create({
+        data: {
+          userId: learner.id,
+          organizationId: tenant.id,
+          type: "CERTIFICATE",
+          status: "SCAN_OK",
+          selfCertifiedAt: new Date(),
+          expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+          versions: { create: { storageKey: `seed/docs/${tenant.slug}/${learner.id}.pdf`, mimeType: "application/pdf", sizeBytes: 21000 } }
+        }
+      });
+
+      const entry = await prisma.logbookEntry.create({
+        data: {
+          userId: learner.id,
+          weekStart: new Date(),
+          summary: "Completed weekly workplace learning objectives",
+          evidenceKey: `seed/logbook/${tenant.slug}/${learner.id}.pdf`
+        }
+      });
+      await prisma.logbookApproval.create({ data: { entryId: entry.id, reviewerId: tenantSupervisor.id, status: "APPROVED", comment: "Good progress" } });
+    }
+  }
+
   for (let i = 0; i < 10; i++) {
     const tenant = tenants[i % tenants.length];
     await prisma.meeting.create({
