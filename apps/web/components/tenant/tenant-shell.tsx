@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type PropsWithChildren } from "react";
+import { useEffect, useState, type PropsWithChildren } from "react";
 import { motion } from "framer-motion";
 
 const items = [
@@ -22,9 +22,26 @@ const items = [
 
 export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {
   const [collapsed, setCollapsed] = useState(false);
+  const [theme, setTheme] = useState<"soft" | "vivid">("soft");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("if_tenant_theme");
+    if (saved === "vivid") setTheme("vivid");
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === "soft" ? "vivid" : "soft";
+    setTheme(next);
+    window.localStorage.setItem("if_tenant_theme", next);
+  }
+
+  const shellBg =
+    theme === "soft"
+      ? "bg-[radial-gradient(circle_at_top,#dbeafe_0%,#e2e8f0_40%,#f8fafc_100%)]"
+      : "bg-[radial-gradient(circle_at_top,#cffafe_0%,#dbeafe_35%,#ede9fe_75%,#f8fafc_100%)]";
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#e2e8f0_40%,#f8fafc_100%)] text-slate-900">
+    <div className={`min-h-screen ${shellBg} text-slate-900 transition-colors`}>
       <div className={`grid min-h-screen ${collapsed ? "md:grid-cols-[88px_1fr]" : "md:grid-cols-[280px_1fr]"}`}>
         <aside className="border-r border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-xl">
           <div className="mb-4 flex items-center justify-between gap-2">
@@ -47,6 +64,7 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
               </div>
               <div className="flex items-center gap-2">
                 <input placeholder="Search learners, opportunities..." className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm" />
+                <button type="button" onClick={toggleTheme} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs">Theme: {theme === "soft" ? "Soft" : "Vivid"}</button>
                 <form action="/api/auth/logout" method="post"><button className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs">Logout</button></form>
               </div>
             </div>
