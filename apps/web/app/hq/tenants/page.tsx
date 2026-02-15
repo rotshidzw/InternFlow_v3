@@ -15,7 +15,7 @@ export default async function HqTenantsPage({ searchParams }: { searchParams?: {
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-semibold">Tenants Directory</h1>
-      <form className="grid gap-3 md:grid-cols-[220px_220px_auto]">
+      <form className="grid gap-3 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur md:grid-cols-[220px_220px_auto]">
         <select name="status" defaultValue={status ?? ""} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
           <option value="">All statuses</option>
           <option value="PENDING_REVIEW">Pending</option>
@@ -28,10 +28,10 @@ export default async function HqTenantsPage({ searchParams }: { searchParams?: {
           <option value="TRAINING_PROVIDER">Training Provider</option>
           <option value="NGO">NGO</option>
         </select>
-        <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">Apply filters</button>
+        <button className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white">Apply filters</button>
       </form>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-600"><tr><th className="px-4 py-2">Name</th><th className="px-4 py-2">Status</th><th className="px-4 py-2">Industry</th><th className="px-4 py-2">Created</th><th className="px-4 py-2">Health</th></tr></thead>
           <tbody>

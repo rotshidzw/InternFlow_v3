@@ -75,3 +75,30 @@ export async function sendPlatformEmail(to: string, subject: string, message: st
     return { delivered: false };
   }
 }
+
+
+export async function sendPlatformEmailMany(to: string[], subject: string, message: string): Promise<{ delivered: boolean }> {
+  const recipients = [...new Set(to.filter(Boolean))];
+  if (recipients.length === 0) return { delivered: false };
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.info(`[DEV MAIL] to=${recipients.join(",")} subject=${subject} message=${message}`);
+    return { delivered: false };
+  }
+
+  try {
+    await transporter.sendMail({
+      from: MAIL_FROM,
+      to: recipients.join(","),
+      subject,
+      text: message,
+      html: `<p>${message}</p>`
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error(`[mailer] Failed bulk platform email to ${recipients.join(",")}`, error);
+    console.info(`[DEV MAIL] to=${recipients.join(",")} subject=${subject} message=${message}`);
+    return { delivered: false };
+  }
+}

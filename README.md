@@ -62,10 +62,11 @@ Use `/auth` and check OTP in MailHog at `http://localhost:8025`.
 - Dashboard cards + metrics trend + activity feed
 - Tenant directory with filters and detail pages
 - Approvals queue (approve/reject with audit + MailHog notification)
-- Meetings scheduler + reminder email
-- Support queue with actions (request info, resolve, escalate)
+- Meetings scheduler + reminder email to tenant contact users (provider/coordinator/supervisor)
+- Support queue with actions (request info with custom message, resolve, escalate)
 - Observability page + metrics CSV export
 - HQ users and role assignment with audit logging
+- Writing Assistant (local Grammarly-style suggestions) for cleaner tenant communication
 
 ## Dev-only impersonation
 `POST /api/hq/impersonate/[orgId]` only works when:
