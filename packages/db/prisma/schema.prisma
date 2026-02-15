@@ -15,6 +15,45 @@ enum Role {
   SYSTEM_ADMIN
 }
 
+enum PlatformRole {
+  PLATFORM_ADMIN
+  PLATFORM_SALES
+  PLATFORM_SUPPORT
+  PLATFORM_OPS
+  PLATFORM_FINANCE
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  GENERAL
+  BILLING
+  TECHNICAL
+  ONBOARDING
+}
+
+enum AuditScope {
+  PLATFORM
+  ORG
+}
+
 enum OrganizationType {
   COMPANY
   TRAINING_PROVIDER
@@ -97,6 +136,10 @@ model User {
   chatMessages   ChatMessage[]
   auditLogs      AuditLog[]
   createdOrgs    Organization[] @relation("OrganizationCreator")
+  platformMemberships PlatformMembership[]
+  createdTickets Ticket[] @relation("TicketCreator")
+  auditActorLogs AuditLog[] @relation("AuditActor")
+  meetingsOwned Meeting[] @relation("MeetingOwner")
 }
 
 model Organization {
@@ -119,6 +162,11 @@ model Organization {
   opportunities    Opportunity[]
   enrollments      Enrollment[]
   orgDocuments     OrganizationDocument[]
+  verifications    OrganizationVerification[]
+  meetings         Meeting[]
+  tickets          Ticket[]
+  usageMetrics     UsageMetricsDaily[]
+  auditLogs        AuditLog[]
   creator          User?                 @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 }
 
@@ -131,6 +179,61 @@ model OrganizationDocument {
   notes       String?
   createdAt   DateTime              @default(now())
   organization Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+
+model PlatformMembership {
+  id        String       @id @default(cuid())
+  userId    String
+  role      PlatformRole
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model OrganizationVerification {
+  id          String            @id @default(cuid())
+  orgId        String
+  submittedBy  String?
+  docsJson     Json
+  status       VerificationStatus @default(PENDING)
+  reason       String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status])
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  title       String
+  orgId       String
+  startAt     DateTime
+  endAt       DateTime
+  meetingUrl  String?
+  notes       String?
+  agenda      String?
+  status      MeetingStatus @default(SCHEDULED)
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  owner       User?        @relation("MeetingOwner", fields: [createdBy], references: [id], onDelete: SetNull)
+}
+
+model UsageMetricsDaily {
+  id                 String   @id @default(cuid())
+  orgId              String
+  date               DateTime
+  activeUsers        Int      @default(0)
+  logbooksSubmitted  Int      @default(0)
+  docsUploaded       Int      @default(0)
+  applicationsCreated Int     @default(0)
+  createdAt          DateTime @default(now())
+  organization       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, date])
 }
 
 model Membership {
@@ -338,20 +441,28 @@ model Notification {
 }
 
 model Ticket {
-  id         String        @id @default(cuid())
-  userId     String
-  title      String
-  summary    String
-  status     TicketStatus  @default(OPEN)
-  createdAt  DateTime      @default(now())
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  events     TicketEvent[]
+  id              String        @id @default(cuid())
+  userId          String
+  orgId           String?
+  createdByUserId String?
+  title           String
+  summary         String
+  status          TicketStatus  @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  category        TicketCategory @default(GENERAL)
+  createdAt       DateTime      @default(now())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdBy       User?         @relation("TicketCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization    Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  events          TicketEvent[]
 }
 
 model TicketEvent {
   id        String   @id @default(cuid())
   ticketId  String
   actorId   String?
+  type      String
+  payload   Json?
   event     String
   createdAt DateTime @default(now())
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -377,12 +488,17 @@ model ChatMessage {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  metadata  Json?
-  createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id          String    @id @default(cuid())
+  userId      String?
+  actorUserId String?
+  scope       AuditScope @default(ORG)
+  orgId       String?
+  action      String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actor       User?     @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 }
 
 model Settings {

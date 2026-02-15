@@ -1,22 +1,42 @@
-import { PrismaClient, Role, OrganizationStatus, OrganizationType, OpportunityStatus, OpportunityType, ApplicationStatus, EnrollmentStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  OrganizationStatus,
+  OrganizationType,
+  OpportunityStatus,
+  OpportunityType,
+  ApplicationStatus,
+  EnrollmentStatus,
+  PlatformRole,
+  VerificationStatus,
+  TicketPriority,
+  TicketCategory,
+  TicketStatus,
+  MeetingStatus,
+  AuditScope
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const firstNames = ["Sam", "Nandi", "Lebo", "Anele", "Sizwe", "Mia", "Tumi", "Palesa", "Neo", "Zola", "Amahle", "Thando", "Karabo", "Rethabile", "Sipho", "Ayanda", "Kea", "Naledi", "Aphiwe", "Bonga"];
 
-function slugify(input: string) {
-  return input.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
-
 async function upsertUser(email: string, role: Role, name: string) {
   return prisma.user.upsert({ where: { email }, update: { role, name }, create: { email, role, name } });
 }
 
-async function addMembership(userId: string, organizationId: string, role: Role) {
+async function addTenantMembership(userId: string, organizationId: string, role: Role) {
   return prisma.membership.upsert({
     where: { userId_organizationId: { userId, organizationId } },
     update: { role },
     create: { userId, organizationId, role }
+  });
+}
+
+async function addPlatformMembership(userId: string, role: PlatformRole) {
+  return prisma.platformMembership.upsert({
+    where: { userId_role: { userId, role } },
+    update: {},
+    create: { userId, role }
   });
 }
 
@@ -36,64 +56,95 @@ async function main() {
   await prisma.opportunity.deleteMany();
   await prisma.cohort.deleteMany();
   await prisma.program.deleteMany();
+  await prisma.organizationVerification.deleteMany();
   await prisma.organizationDocument.deleteMany();
+  await prisma.meeting.deleteMany();
+  await prisma.usageMetricsDaily.deleteMany();
+  await prisma.platformMembership.deleteMany();
   await prisma.membership.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.organization.deleteMany();
-  const admin = await upsertUser("admin@internflow.com", Role.SYSTEM_ADMIN, "InternFlow HQ Admin");
+
+  const platformAdmin = await upsertUser("admin@internflow.com", Role.SYSTEM_ADMIN, "InternFlow HQ Admin");
+  const platformSales = await upsertUser("sales@internflow.com", Role.SYSTEM_ADMIN, "Sales Lead");
+  const platformSupport = await upsertUser("support@internflow.com", Role.SYSTEM_ADMIN, "Support Lead");
+
+  await Promise.all([
+    addPlatformMembership(platformAdmin.id, PlatformRole.PLATFORM_ADMIN),
+    addPlatformMembership(platformSales.id, PlatformRole.PLATFORM_SALES),
+    addPlatformMembership(platformSupport.id, PlatformRole.PLATFORM_SUPPORT)
+  ]);
+
+  const tenantDefs = [
+    { name: "Raftech", slug: "raftech", status: OrganizationStatus.APPROVED, type: OrganizationType.COMPANY },
+    { name: "Demo Training Provider", slug: "demo-training-provider", status: OrganizationStatus.APPROVED, type: OrganizationType.TRAINING_PROVIDER },
+    { name: "FutureSkills NGO", slug: "futureskills-ngo", status: OrganizationStatus.PENDING_REVIEW, type: OrganizationType.NGO },
+    { name: "SkillUp University", slug: "skillup-university", status: OrganizationStatus.REJECTED, type: OrganizationType.UNIVERSITY },
+    { name: "Gov Youth Program", slug: "gov-youth-program", status: OrganizationStatus.PENDING_REVIEW, type: OrganizationType.GOVERNMENT_PROGRAM }
+  ];
+
+  const tenants = [] as Awaited<ReturnType<typeof prisma.organization.create>>[];
+  for (const def of tenantDefs) {
+    tenants.push(await prisma.organization.create({
+      data: {
+        name: def.name,
+        slug: def.slug,
+        type: def.type,
+        status: def.status,
+        country: "South Africa",
+        province: "Gauteng",
+        contactPerson: `${def.name} Contact`,
+        rejectionReason: def.status === OrganizationStatus.REJECTED ? "Compliance docs incomplete" : null,
+        createdBy: platformAdmin.id
+      }
+    }));
+  }
+
+  for (const tenant of tenants) {
+    await prisma.organizationVerification.create({
+      data: {
+        orgId: tenant.id,
+        submittedBy: platformAdmin.id,
+        status: tenant.status === OrganizationStatus.APPROVED ? VerificationStatus.APPROVED : tenant.status === OrganizationStatus.REJECTED ? VerificationStatus.REJECTED : VerificationStatus.PENDING,
+        reason: tenant.status === OrganizationStatus.REJECTED ? "Missing tax clearance" : null,
+        docsJson: {
+          CIPC: "uploaded",
+          taxClearance: tenant.status === OrganizationStatus.REJECTED ? "missing" : "uploaded",
+          BBBEE: "uploaded",
+          proofOfAddress: "uploaded"
+        }
+      }
+    });
+  }
+
   const providerAdmin = await upsertUser("provider@demo.com", Role.PROVIDER_ADMIN, "Priya Provider");
   const coordinator = await upsertUser("coordinator@demo.com", Role.COORDINATOR, "Casey Coordinator");
   const supervisor = await upsertUser("supervisor@demo.com", Role.SUPERVISOR, "Sydney Supervisor");
   const demoStudent = await upsertUser("student@demo.com", Role.STUDENT, "Sam Student");
 
-  const orgDefs = [
-    { name: "Raftech", slug: "raftech", type: OrganizationType.COMPANY, province: "Gauteng" },
-    { name: "Demo Training Provider", slug: "demo-training-provider", type: OrganizationType.TRAINING_PROVIDER, province: "Western Cape" },
-    { name: "FutureSkills NGO", slug: "futureskills-ngo", type: OrganizationType.NGO, province: "KwaZulu-Natal" }
-  ];
-
-  const organizations = [] as Awaited<ReturnType<typeof prisma.organization.upsert>>[];
-  for (const def of orgDefs) {
-    const org = await prisma.organization.upsert({
-      where: { slug: def.slug },
-      update: { status: OrganizationStatus.APPROVED },
-      create: {
-        name: def.name,
-        slug: def.slug,
-        type: def.type,
-        status: OrganizationStatus.APPROVED,
-        country: "South Africa",
-        province: def.province,
-        contactPerson: `${def.name} Contact`,
-        createdBy: admin.id
-      }
-    });
-    organizations.push(org);
-  }
-
   await Promise.all([
-    addMembership(admin.id, organizations[0].id, Role.SYSTEM_ADMIN),
-    addMembership(providerAdmin.id, organizations[0].id, Role.PROVIDER_ADMIN),
-    addMembership(coordinator.id, organizations[0].id, Role.COORDINATOR),
-    addMembership(supervisor.id, organizations[0].id, Role.SUPERVISOR),
-    addMembership(demoStudent.id, organizations[0].id, Role.STUDENT)
+    addTenantMembership(providerAdmin.id, tenants[0].id, Role.PROVIDER_ADMIN),
+    addTenantMembership(coordinator.id, tenants[0].id, Role.COORDINATOR),
+    addTenantMembership(supervisor.id, tenants[0].id, Role.SUPERVISOR),
+    addTenantMembership(demoStudent.id, tenants[0].id, Role.STUDENT)
   ]);
 
-  const students = [] as Awaited<ReturnType<typeof prisma.user.upsert>>[];
+  const students = [] as Awaited<ReturnType<typeof prisma.user.create>>[];
   for (let i = 0; i < 20; i++) {
-    const email = `student${i + 1}@demo.com`;
-    const user = await upsertUser(email, Role.STUDENT, `${firstNames[i]} Learner`);
+    const user = await upsertUser(`student${i + 1}@demo.com`, Role.STUDENT, `${firstNames[i]} Learner`);
     students.push(user);
-    await addMembership(user.id, organizations[i % organizations.length].id, Role.STUDENT);
+    const tenant = tenants[i % tenants.length];
+    await addTenantMembership(user.id, tenant.id, Role.STUDENT);
   }
 
   const programs = [] as Awaited<ReturnType<typeof prisma.program.create>>[];
-  for (const org of organizations) {
+  for (const tenant of tenants) {
     const program = await prisma.program.create({
       data: {
-        organizationId: org.id,
-        name: `${org.name} Digital Program`,
-        description: `End-to-end internship program for ${org.name}`,
-        rulesJson: { payslipsRequired: true, weeklyLogbook: true },
+        organizationId: tenant.id,
+        name: `${tenant.name} Skills Program`,
+        description: `Program for ${tenant.name}`,
+        rulesJson: { monthlyPayslip: true, weeklyLogbook: true },
         startDate: new Date(),
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
       }
@@ -102,29 +153,29 @@ async function main() {
 
     await prisma.cohort.create({
       data: {
-        organizationId: org.id,
+        organizationId: tenant.id,
         programId: program.id,
-        name: `${org.name} Cohort 2026`,
+        name: `${tenant.name} Cohort 2026`,
         startDate: new Date(),
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 12))
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 10))
       }
     });
   }
 
   const opportunities = [] as Awaited<ReturnType<typeof prisma.opportunity.create>>[];
   for (let i = 0; i < 10; i++) {
-    const org = organizations[i % organizations.length];
-    const program = programs[i % programs.length];
+    const tenant = tenants[i % tenants.length];
+    const program = programs.find((p) => p.organizationId === tenant.id)!;
     opportunities.push(await prisma.opportunity.create({
       data: {
-        organizationId: org.id,
+        organizationId: tenant.id,
         programId: program.id,
         type: i % 2 === 0 ? OpportunityType.INTERNSHIP : OpportunityType.LEARNERSHIP,
-        title: `${org.name} Opportunity ${i + 1}`,
+        title: `${tenant.name} Opportunity ${i + 1}`,
         slug: `opportunity-${i + 1}`,
-        description: `Hands-on placement ${i + 1} at ${org.name}`,
+        description: `Placement ${i + 1} for ${tenant.name}`,
         requirementsJson: { docs: ["ID", "CV", "AFFIDAVIT"] },
-        capacity: 30,
+        capacity: 20,
         status: OpportunityStatus.PUBLISHED
       }
     }));
@@ -132,30 +183,30 @@ async function main() {
 
   for (let i = 0; i < 40; i++) {
     const student = students[i % students.length];
-    const opportunity = opportunities[i % opportunities.length];
+    const opp = opportunities[i % opportunities.length];
     const statusCycle = [ApplicationStatus.APPLIED, ApplicationStatus.SHORTLISTED, ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED];
     const status = statusCycle[i % statusCycle.length];
 
-    const app = await prisma.application.create({
+    const application = await prisma.application.create({
       data: {
         userId: student.id,
-        opportunityId: opportunity.id,
+        opportunityId: opp.id,
         status,
         submittedAt: new Date(),
-        notes: status === ApplicationStatus.REJECTED ? "Not selected for this cycle" : "Active"
+        notes: status === ApplicationStatus.REJECTED ? "Pipeline rejected" : "In pipeline"
       }
     });
 
     const checklist = await prisma.checklistInstance.create({
       data: {
-        applicationId: app.id,
+        applicationId: application.id,
         progress: 0,
         items: {
           createMany: {
             data: [
-              { label: "Upload ID", status: i % 2 === 0 ? "DONE" : "PENDING", actionType: "upload" },
-              { label: "Sign policy", status: i % 3 === 0 ? "DONE" : "PENDING", actionType: "sign" },
-              { label: "Submit bank form", status: i % 4 === 0 ? "DONE" : "PENDING", actionType: "fill" }
+              { label: "Upload ID", status: i % 2 ? "PENDING" : "DONE", actionType: "upload" },
+              { label: "Sign Code of Conduct", status: i % 3 ? "PENDING" : "DONE", actionType: "sign" },
+              { label: "Submit onboarding form", status: i % 4 ? "PENDING" : "DONE", actionType: "fill" }
             ]
           }
         }
@@ -163,13 +214,13 @@ async function main() {
       include: { items: true }
     });
 
-    const done = checklist.items.filter((item) => item.status === "DONE").length;
+    const done = checklist.items.filter((x) => x.status === "DONE").length;
     await prisma.checklistInstance.update({ where: { id: checklist.id }, data: { progress: Math.round((done / checklist.items.length) * 100) } });
   }
 
   for (const student of students.slice(0, 12)) {
     const membership = await prisma.membership.findFirstOrThrow({ where: { userId: student.id }, include: { organization: true } });
-    const program = programs.find((p) => p.organizationId === membership.organizationId) ?? programs[0];
+    const program = programs.find((p) => p.organizationId === membership.organizationId)!;
     const cohort = await prisma.cohort.findFirstOrThrow({ where: { organizationId: membership.organizationId } });
 
     await prisma.enrollment.create({
@@ -191,45 +242,105 @@ async function main() {
         type: "AFFIDAVIT",
         status: "SCAN_OK",
         expirationDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-        versions: { create: { storageKey: `seed/docs/${student.id}/affidavit.pdf`, mimeType: "application/pdf", sizeBytes: 20480 } }
+        versions: { create: { storageKey: `seed/docs/${student.id}/affidavit.pdf`, mimeType: "application/pdf", sizeBytes: 10240 } }
       }
     });
 
-    await prisma.document.create({
+    await prisma.logbookEntry.create({
       data: {
         userId: student.id,
-        organizationId: membership.organizationId,
-        type: "PAYSLIP",
-        status: "SUBMITTED",
-        versions: { create: { storageKey: `seed/docs/${student.id}/payslip.pdf`, mimeType: "application/pdf", sizeBytes: 15360 } }
+        weekStart: new Date(),
+        summary: "Worked on team tasks, API debugging, and compliance submissions",
+        evidenceKey: `seed/logbook/${student.id}.pdf`
       }
-    });
-
-    const entry = await prisma.logbookEntry.create({
-      data: { userId: student.id, weekStart: new Date(), summary: "Completed onboarding activities and workplace tasks", evidenceKey: `seed/evidence/${student.id}.pdf` }
-    });
-
-    await prisma.logbookApproval.create({
-      data: { entryId: entry.id, reviewerId: supervisor.id, status: Math.random() > 0.2 ? "APPROVED" : "REJECTED", comment: "Reviewed by supervisor" }
     });
 
     const thread = await prisma.chatThread.create({ data: { userId: student.id, title: `WhatsApp Sim ${student.email}` } });
-    await prisma.chatMessage.createMany({
+    await prisma.chatMessage.createMany({ data: [{ threadId: thread.id, role: "USER", body: "status" }, { threadId: thread.id, role: "SYSTEM", body: "Status shared." }] });
+
+    const ticket = await prisma.ticket.create({
+      data: {
+        userId: student.id,
+        orgId: membership.organizationId,
+        createdByUserId: student.id,
+        title: "Demo support ticket",
+        summary: "Created from seeded demo",
+        status: TicketStatus.OPEN,
+        priority: TicketPriority.MEDIUM,
+        category: TicketCategory.TECHNICAL
+      }
+    });
+    await prisma.ticketEvent.create({ data: { ticketId: ticket.id, type: "CREATED", event: "Ticket seeded", payload: { source: "seed" } } });
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const tenant = tenants[i % tenants.length];
+    await prisma.meeting.create({
+      data: {
+        title: `Onboarding sync ${i + 1}`,
+        orgId: tenant.id,
+        startAt: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
+        endAt: new Date(Date.now() + (i * 24 * 60 * 60 * 1000) + 45 * 60 * 1000),
+        meetingUrl: `https://meet.local/${tenant.slug}/${i + 1}`,
+        notes: "Discuss adoption and support items",
+        agenda: "Product onboarding, compliance, Q&A",
+        status: MeetingStatus.SCHEDULED,
+        createdBy: platformSales.id
+      }
+    });
+  }
+
+  for (const tenant of tenants) {
+    for (let day = 0; day < 14; day++) {
+      const date = new Date(Date.now() - day * 24 * 60 * 60 * 1000);
+      date.setHours(0, 0, 0, 0);
+      await prisma.usageMetricsDaily.create({
+        data: {
+          orgId: tenant.id,
+          date,
+          activeUsers: 15 + ((day + tenant.name.length) % 20),
+          logbooksSubmitted: 2 + (day % 5),
+          docsUploaded: 3 + (day % 6),
+          applicationsCreated: 1 + (day % 4)
+        }
+      });
+    }
+  }
+
+  const extraTickets: { orgId: string; createdByUserId: string }[] = [];
+  for (let i = 0; i < 15; i++) {
+    const org = tenants[i % tenants.length];
+    const creator = i % 2 === 0 ? platformSupport : platformSales;
+    extraTickets.push({ orgId: org.id, createdByUserId: creator.id });
+  }
+
+  for (let i = 0; i < extraTickets.length; i++) {
+    const t = await prisma.ticket.create({
+      data: {
+        userId: platformSupport.id,
+        orgId: extraTickets[i].orgId,
+        createdByUserId: extraTickets[i].createdByUserId,
+        title: `HQ Ticket ${i + 1}`,
+        summary: "Tenant requested assistance",
+        status: i % 3 === 0 ? TicketStatus.IN_PROGRESS : TicketStatus.OPEN,
+        priority: i % 4 === 0 ? TicketPriority.HIGH : TicketPriority.MEDIUM,
+        category: i % 2 === 0 ? TicketCategory.ONBOARDING : TicketCategory.TECHNICAL
+      }
+    });
+    await prisma.ticketEvent.createMany({
       data: [
-        { threadId: thread.id, role: "USER", body: "1" },
-        { threadId: thread.id, role: "SYSTEM", body: "Status: onboarding in progress." }
+        { ticketId: t.id, type: "CREATED", event: "Ticket created", payload: { by: "seed" } },
+        { ticketId: t.id, type: "NOTE", event: "Initial triage complete", payload: { owner: "support" } }
       ]
     });
-
-    const ticket = await prisma.ticket.create({ data: { userId: student.id, title: "Demo support ticket", summary: "Generated from WhatsApp simulator" } });
-    await prisma.ticketEvent.create({ data: { ticketId: ticket.id, event: "Created from WhatsApp flow" } });
   }
 
   await prisma.auditLog.createMany({
     data: [
-      { userId: demoStudent.id, action: "LOGIN_OTP_REQUESTED" },
-      { userId: demoStudent.id, action: "LOGIN_OTP_VERIFIED" },
-      { userId: admin.id, action: "ORG_APPROVED", metadata: { org: organizations[0].slug } }
+      { userId: demoStudent.id, actorUserId: demoStudent.id, scope: AuditScope.ORG, orgId: tenants[0].id, action: "LOGIN_OTP_REQUESTED" },
+      { userId: demoStudent.id, actorUserId: demoStudent.id, scope: AuditScope.ORG, orgId: tenants[0].id, action: "LOGIN_OTP_VERIFIED" },
+      { userId: platformAdmin.id, actorUserId: platformAdmin.id, scope: AuditScope.PLATFORM, orgId: tenants[0].id, action: "HQ_DASHBOARD_VIEWED" },
+      { userId: platformSales.id, actorUserId: platformSales.id, scope: AuditScope.PLATFORM, orgId: tenants[2].id, action: "HQ_MEETING_CREATED" }
     ]
   });
 }

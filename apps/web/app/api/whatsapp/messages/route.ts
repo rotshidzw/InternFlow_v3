@@ -35,11 +35,12 @@ export async function POST(req: Request) {
     await prisma.auditLog.create({ data: { userId: thread.userId, action: "WHATSAPP_INTENT", metadata: { intent, body } } });
 
     if (intent === "support") {
-      const ticket = await prisma.ticket.create({ data: { userId: thread.userId, title: "WhatsApp support request", summary: autoReply } });
+      const userMembership = await prisma.membership.findFirst({ where: { userId: thread.userId } });
+      const ticket = await prisma.ticket.create({ data: { userId: thread.userId, createdByUserId: thread.userId, orgId: userMembership?.organizationId ?? null, title: "WhatsApp support request", summary: autoReply } });
       await prisma.ticketEvent.createMany({
         data: [
-          { ticketId: ticket.id, event: "Created from WhatsApp simulator" },
-          { ticketId: ticket.id, event: `Conversation thread: ${threadId}` }
+          { ticketId: ticket.id, type: "CREATED", event: "Created from WhatsApp simulator", payload: { source: "whatsapp" } },
+          { ticketId: ticket.id, type: "TIMELINE", event: `Conversation thread: ${threadId}`, payload: { threadId } }
         ]
       });
     }

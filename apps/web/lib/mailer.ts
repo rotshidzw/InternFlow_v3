@@ -52,3 +52,26 @@ export async function sendOtpEmail(email: string, code: string): Promise<{ deliv
     return { delivered: false, fallbackLogged: true };
   }
 }
+
+export async function sendPlatformEmail(to: string, subject: string, message: string): Promise<{ delivered: boolean }> {
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.info(`[DEV MAIL] to=${to} subject=${subject} message=${message}`);
+    return { delivered: false };
+  }
+
+  try {
+    await transporter.sendMail({
+      from: MAIL_FROM,
+      to,
+      subject,
+      text: message,
+      html: `<p>${message}</p>`
+    });
+    return { delivered: true };
+  } catch (error) {
+    console.error(`[mailer] Failed platform email to ${to}`, error);
+    console.info(`[DEV MAIL] to=${to} subject=${subject} message=${message}`);
+    return { delivered: false };
+  }
+}

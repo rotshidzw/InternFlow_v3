@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function PlatformAlias() {
+export default function HQIndex() {
   redirect("/hq/dashboard");
 }

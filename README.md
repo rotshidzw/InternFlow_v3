@@ -1,14 +1,15 @@
-# InternFlow v3 (Multi-tenant SaaS + Demo-ready)
+# InternFlow v3
 
-InternFlow is the parent platform. Each organization is an isolated tenant workspace with its own users, opportunities, applications, onboarding, compliance, and operations.
+InternFlow is a multi-tenant platform with two experiences:
+- **InternFlow HQ** (`/hq/*`) for platform teams (sales/support/ops/admin)
+- **Tenant Workspaces** (`/org/[orgSlug]/*`) for each organization
 
 ## Stack
-- Next.js 14 App Router + TypeScript + Tailwind + Framer Motion
+- Next.js App Router + TypeScript + Tailwind + Framer Motion
 - Prisma + PostgreSQL
 - Redis + BullMQ worker
 - MinIO object storage
-- MailHog for OTP email in local dev
-- Recharts for dashboard charts
+- MailHog for local email
 
 ## Local setup
 1. `docker compose up -d`
@@ -19,67 +20,53 @@ InternFlow is the parent platform. Each organization is an isolated tenant works
 6. `npm run db:seed`
 7. `npm run dev`
 
-## Service URLs
+## URLs
 - App: http://localhost:3000
 - MailHog UI: http://localhost:8025
-- MailHog SMTP: localhost:1025
 - MinIO API: http://localhost:9000
 - MinIO Console: http://localhost:9001
 
-## Auth + demo login
-- OTP login at `/auth`.
-- Demo quick-login buttons are available for:
-  - Demo Student (`student@demo.com`)
-  - Demo Coordinator (`coordinator@demo.com`)
-  - Demo Provider Admin (`provider@demo.com`)
-  - Demo Platform Admin (`admin@internflow.com`)
-- OTP instructions shown in UI: check MailHog at `http://localhost:8025`.
+## HQ portal routes
+- `/hq` -> `/hq/dashboard`
+- `/hq/dashboard`
+- `/hq/tenants`
+- `/hq/tenants/[tenantId]`
+- `/hq/approvals`
+- `/hq/meetings`
+- `/hq/support`
+- `/hq/observability`
+- `/hq/users`
+- `/hq/settings`
 
-## Product flow
-1. Marketing landing `/`
-2. Auth `/auth`
-3. Onboarding `/onboarding` → `/onboarding/create-org` → `/onboarding/verify-org`
-4. InternFlow approval queue `/platform-admin`
-5. Workspace picker `/workspaces`
-6. Org role portal `/org/[orgSlug]/home` → role-specific route
+## HQ roles
+Platform access is enforced with `PlatformMembership` roles:
+- `PLATFORM_ADMIN`
+- `PLATFORM_SALES`
+- `PLATFORM_SUPPORT`
+- `PLATFORM_OPS`
+- `PLATFORM_FINANCE`
 
-## Modules implemented
-- Public opportunities listing and detail pages:
-  - `/opportunities`
-  - `/opportunities/[orgSlug]/[opportunitySlug]`
-- Recruitment pipeline:
-  - Student apply flow creates `Application`
-  - Provider can shortlist/accept/reject applicants
-- Student lifecycle dashboard:
-  - Application timeline
-  - Checklist progress + clickable actions
-  - Document vault statuses + expiry metadata
-  - Logbook growth summary (rule-based)
-- Coordinator dashboard:
-  - Cohort/enrollment visibility
-  - Missing document queue
-  - Stipend mark-paid actions
-  - CSV exports for stipend + learner registers
-- WhatsApp simulator:
-  - Intent actions (status/upload/payslip/certificate/support)
-  - Persists chat, tickets, timeline events
-- Platform admin:
-  - Tenant approvals/rejections
-  - Global stats + audit log feed
+Only users with one of these roles can access `/hq`.
 
-## OCR/scanning behavior (free)
-- Worker queue `document-scan` processes uploads.
-- If no OCR engine is configured, heuristic simulation runs:
-  - checks mime type + size
-  - marks document status `SCAN_OK` or `SCAN_FAILED`
-- Affidavit/certificate expiry uses configurable 90-day rule metadata.
+## Demo credentials (OTP via MailHog)
+- Platform Admin: `admin@internflow.com`
+- Platform Sales: `sales@internflow.com`
+- Platform Support: `support@internflow.com`
+- Demo Student: `student@demo.com`
+- Demo Coordinator: `coordinator@demo.com`
+- Demo Provider Admin: `provider@demo.com`
 
-## Seed data
-`npm run db:seed` creates:
-- Platform admin
-- 3 organizations
-- Provider/coordinator/supervisor/demo users
-- 20 students
-- 10 opportunities
-- 40 applications (mixed statuses)
-- mixed checklist progress, docs, payslips, logbooks, messages, tickets
+Use `/auth` and check OTP in MailHog at `http://localhost:8025`.
+
+## HQ feature set
+- Dashboard cards + metrics trend + activity feed
+- Tenant directory with filters and detail pages
+- Approvals queue (approve/reject with audit + MailHog notification)
+- Meetings scheduler + reminder email
+- Support queue with actions (request info, resolve, escalate)
+- Observability page + metrics CSV export
+- HQ users and role assignment with audit logging
+
+## Dev-only impersonation
+`POST /api/hq/impersonate/[orgId]` only works when:
+- `ENABLE_DEV_IMPERSONATION=true`
