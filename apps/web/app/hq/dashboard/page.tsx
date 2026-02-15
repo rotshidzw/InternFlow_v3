@@ -1,4 +1,5 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 import { HQDashboardCharts } from "@/components/hq/hq-dashboard-charts";
 
 type DocsRow = { day: Date; count: number };
@@ -17,6 +18,8 @@ function buildLastNDays(n: number) {
 }
 
 export default async function HQDashboardPage() {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS", "PLATFORM_FINANCE"]);
+
   const now = Date.now();
   const since7 = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const since14 = new Date(now - 14 * 24 * 60 * 60 * 1000);

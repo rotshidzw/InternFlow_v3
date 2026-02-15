@@ -1,4 +1,5 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 
 function docStatusTone(value: unknown) {
   const ok = String(value ?? "").toLowerCase() === "uploaded";
@@ -8,6 +9,8 @@ function docStatusTone(value: unknown) {
 }
 
 export default async function HQApprovalsPage() {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_OPS"]);
+
   const pending = await prisma.organizationVerification.findMany({
     where: { status: "PENDING" },
     include: { organization: true },

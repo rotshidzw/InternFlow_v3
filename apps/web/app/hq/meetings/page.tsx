@@ -1,4 +1,5 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 import { WritingAssist } from "@/components/hq/writing-assist";
 
 function fmtDate(d: Date) {
@@ -23,6 +24,8 @@ function statusTone(status: string) {
 }
 
 export default async function HQMeetingsPage() {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_OPS"]);
+
   const [tenants, meetings, defaults] = await Promise.all([
     prisma.organization.findMany({ orderBy: { name: "asc" } }),
     prisma.meeting.findMany({ include: { organization: true }, orderBy: { startAt: "asc" }, take: 50 }),

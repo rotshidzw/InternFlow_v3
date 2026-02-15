@@ -68,11 +68,15 @@ async function main() {
   const platformAdmin = await upsertUser("admin@internflow.com", Role.SYSTEM_ADMIN, "InternFlow HQ Admin");
   const platformSales = await upsertUser("sales@internflow.com", Role.SYSTEM_ADMIN, "Sales Lead");
   const platformSupport = await upsertUser("support@internflow.com", Role.SYSTEM_ADMIN, "Support Lead");
+  const platformOps = await upsertUser("ops@internflow.com", Role.SYSTEM_ADMIN, "Operations Lead");
+  const platformFinance = await upsertUser("finance@internflow.com", Role.SYSTEM_ADMIN, "Finance Lead");
 
   await Promise.all([
     addPlatformMembership(platformAdmin.id, PlatformRole.PLATFORM_ADMIN),
     addPlatformMembership(platformSales.id, PlatformRole.PLATFORM_SALES),
-    addPlatformMembership(platformSupport.id, PlatformRole.PLATFORM_SUPPORT)
+    addPlatformMembership(platformSupport.id, PlatformRole.PLATFORM_SUPPORT),
+    addPlatformMembership(platformOps.id, PlatformRole.PLATFORM_OPS),
+    addPlatformMembership(platformFinance.id, PlatformRole.PLATFORM_FINANCE)
   ]);
 
   const tenantDefs = [
@@ -340,7 +344,8 @@ async function main() {
       { userId: demoStudent.id, actorUserId: demoStudent.id, scope: AuditScope.ORG, orgId: tenants[0].id, action: "LOGIN_OTP_REQUESTED" },
       { userId: demoStudent.id, actorUserId: demoStudent.id, scope: AuditScope.ORG, orgId: tenants[0].id, action: "LOGIN_OTP_VERIFIED" },
       { userId: platformAdmin.id, actorUserId: platformAdmin.id, scope: AuditScope.PLATFORM, orgId: tenants[0].id, action: "HQ_DASHBOARD_VIEWED" },
-      { userId: platformSales.id, actorUserId: platformSales.id, scope: AuditScope.PLATFORM, orgId: tenants[2].id, action: "HQ_MEETING_CREATED" }
+      { userId: platformSales.id, actorUserId: platformSales.id, scope: AuditScope.PLATFORM, orgId: tenants[2].id, action: "HQ_MEETING_CREATED" },
+      { userId: platformOps.id, actorUserId: platformOps.id, scope: AuditScope.PLATFORM, orgId: tenants[1].id, action: "HQ_TICKET_ESCALATED_OPS" }
     ]
   });
 }

@@ -34,9 +34,18 @@ export async function POST(req: Request) {
     }
   });
 
+  const platformMembership = user ? await prisma.platformMembership.findFirst({ where: { userId: user.id } }) : null;
   const memberships = user ? await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } }) : [];
   const singleMembership = memberships.length === 1 ? memberships[0] : null;
-  const redirectTo = !user ? "/onboarding" : memberships.length === 0 ? "/onboarding" : singleMembership ? `/org/${singleMembership.organization.slug}/home` : "/workspaces";
+  const redirectTo = !user
+    ? "/onboarding"
+    : platformMembership
+      ? "/hq/dashboard"
+      : memberships.length === 0
+        ? "/onboarding"
+        : singleMembership
+          ? `/org/${singleMembership.organization.slug}/home`
+          : "/workspaces";
 
   const response = NextResponse.json({
     ok: true,

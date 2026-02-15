@@ -1,12 +1,13 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { requirePlatformApiUser } from "@/lib/hq/api-auth";
+import { requirePlatformApiUserWithRole } from "@/lib/hq/api-auth";
 import { sendPlatformEmailMany } from "@/lib/mailer";
 import { getTenantContactEmails } from "@/lib/hq/tenant-contacts";
 
 export async function POST(req: Request, { params }: { params: { ticketId: string } }) {
-  const actor = await requirePlatformApiUser();
+  const actor = await requirePlatformApiUserWithRole(["PLATFORM_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_OPS"]);
   if (!actor) return NextResponse.json({ ok: false }, { status: 403 });
+
   const form = await req.formData();
   const action = String(form.get("action") ?? "");
   const message = String(form.get("message") ?? "").trim();
@@ -18,6 +19,15 @@ export async function POST(req: Request, { params }: { params: { ticketId: strin
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "RESOLVED" } });
   } else if (action === "ESCALATE_OPS") {
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "IN_PROGRESS", priority: "URGENT" } });
+
+    const opsUsers = await prisma.platformMembership.findMany({
+      where: { role: "PLATFORM_OPS" },
+      include: { user: true }
+    });
+    const opsEmails = opsUsers.map((m) => m.user.email);
+    if (opsEmails.length) {
+      await sendPlatformEmailMany(opsEmails, "Ticket escalated to Ops", message || `Ticket ${ticket.title} requires Ops attention.`);
+    }
   }
 
   await prisma.ticketEvent.create({ data: { ticketId: ticket.id, type: action, event: `HQ action: ${action}`, payload: { action, message } } });

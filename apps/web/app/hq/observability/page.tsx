@@ -1,4 +1,5 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 
 function tone(level: "good" | "warn" | "risk") {
   if (level === "good") return "bg-emerald-100 text-emerald-700 border-emerald-200";
@@ -7,6 +8,8 @@ function tone(level: "good" | "warn" | "risk") {
 }
 
 export default async function HQObservabilityPage() {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_OPS", "PLATFORM_SUPPORT", "PLATFORM_FINANCE"]);
+
   const since7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 

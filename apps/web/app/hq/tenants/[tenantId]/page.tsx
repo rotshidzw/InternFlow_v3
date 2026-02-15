@@ -1,4 +1,5 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 
 function statusTone(status: string) {
   if (status === "APPROVED") return "bg-emerald-100 text-emerald-700 border-emerald-200";
@@ -11,6 +12,7 @@ function asUploaded(value: unknown) {
 }
 
 export default async function TenantDetailPage({ params }: { params: { tenantId: string } }) {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS"]);
   const tenant = await prisma.organization.findUnique({ where: { id: params.tenantId }, include: { creator: true } });
   if (!tenant) return <div>Tenant not found.</div>;
 

@@ -37,6 +37,7 @@ InternFlow is a multi-tenant platform with two experiences:
 - `/hq/observability`
 - `/hq/users`
 - `/hq/settings`
+- `/app/whatsapp-sim` (support communication simulation)
 
 ## HQ roles
 Platform access is enforced with `PlatformMembership` roles:
@@ -46,12 +47,17 @@ Platform access is enforced with `PlatformMembership` roles:
 - `PLATFORM_OPS`
 - `PLATFORM_FINANCE`
 
-Only users with one of these roles can access `/hq`.
+Only users with one of these roles can access `/hq`. Platform users are seeded with `@internflow.com` accounts and should be managed from `/hq/users`.
 
 ## Demo credentials (OTP via MailHog)
-- Platform Admin: `admin@internflow.com`
+### InternFlow platform users (HQ)
+- Platform Admin (full access): `admin@internflow.com`
 - Platform Sales: `sales@internflow.com`
 - Platform Support: `support@internflow.com`
+- Platform Ops: `ops@internflow.com`
+- Platform Finance: `finance@internflow.com`
+
+### Tenant demo users (workspace only)
 - Demo Student: `student@demo.com`
 - Demo Coordinator: `coordinator@demo.com`
 - Demo Provider Admin: `provider@demo.com`

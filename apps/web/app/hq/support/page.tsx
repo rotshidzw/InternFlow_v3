@@ -1,6 +1,8 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 
 export default async function HQSupportPage({ searchParams }: { searchParams?: { status?: string; priority?: string; category?: string; orgId?: string } }) {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_OPS"]);
   const tickets = await prisma.ticket.findMany({
     where: {
       ...(searchParams?.status ? { status: searchParams.status as any } : {}),

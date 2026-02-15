@@ -1,7 +1,9 @@
 import { prisma } from "@internflow/db/src";
+import { requirePlatformAccess } from "@/lib/hq/auth";
 import Link from "next/link";
 
 export default async function HqTenantsPage({ searchParams }: { searchParams?: { status?: string; industry?: string } }) {
+  await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS"]);
   const status = searchParams?.status;
   const industry = searchParams?.industry;
   const tenants = await prisma.organization.findMany({
