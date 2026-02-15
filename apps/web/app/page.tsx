@@ -22,8 +22,7 @@ export default function HomePage() {
             <p className="text-slate-200">Organisations first register with InternFlow, get their own isolated workspace, then manage student applications, approvals, and compliance from one polished platform.</p>
             <div className="flex flex-wrap gap-3">
               <Link href="/demo" className="rounded-xl bg-emerald-500 px-4 py-2 font-medium text-slate-950">Try Demo</Link>
-              <Link href="/auth" className="rounded-xl border border-white/30 px-4 py-2">Get Started</Link>
-              <Link href="/auth/setup" className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200">Register Organisation</Link>
+              <Link href="/onboarding/create-org" className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200">Register Organization</Link>
             </div>
           </div>
           <AnimatedCard>

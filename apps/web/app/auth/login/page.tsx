@@ -13,6 +13,13 @@ const otpSchema = z.object({ code: z.string().length(6, "OTP must be exactly 6 d
 type EmailFormValues = z.infer<typeof emailSchema>;
 type OtpFormValues = z.infer<typeof otpSchema>;
 
+const demoUsers = [
+  { label: "Demo Student", email: "student@demo.com" },
+  { label: "Demo Coordinator", email: "coordinator@demo.com" },
+  { label: "Demo Provider Admin", email: "provider@demo.com" },
+  { label: "Demo Platform Admin", email: "admin@internflow.com" }
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<"request" | "verify">("request");
@@ -37,6 +44,12 @@ export default function LoginPage() {
 
     setEmail(values.email.toLowerCase());
     setStep("verify");
+  };
+
+  const loginDemoUser = async (email: string) => {
+    const res = await fetch("/api/auth/demo-login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+    const payload = await res.json();
+    if (payload.ok) router.push(payload.redirectTo);
   };
 
   const verifySubmittedOtp = async (values: OtpFormValues) => {
@@ -80,6 +93,19 @@ export default function LoginPage() {
           </div>
         </form>
       )}
+
+      <div className="mt-6 rounded-2xl border border-white/20 bg-slate-950/30 p-4">
+        <h2 className="text-sm font-semibold text-emerald-300">Demo Login</h2>
+        <p className="mt-1 text-xs text-slate-300">Use demo accounts. OTP appears in MailHog at http://localhost:8025.</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {demoUsers.map((u) => (
+            <button key={u.email} type="button" onClick={() => loginDemoUser(u.email)} className="rounded-lg border border-white/20 px-3 py-2 text-left text-sm hover:bg-white/10">
+              <span className="font-medium">{u.label}</span>
+              <span className="block text-xs text-slate-300">{u.email}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
     </div>

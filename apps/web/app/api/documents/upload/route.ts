@@ -2,15 +2,27 @@ import { prisma } from "@internflow/db/src";
 import { documentUploadSchema } from "@internflow/shared/src/schemas";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextResponse } from "next/server";
+import { Queue } from "bullmq";
+import IORedis from "ioredis";
 
 const expiryByType: Record<string, number | null> = {
   ID: 3650,
   CV: null,
-  CERTIFICATE: null,
+  CERTIFICATE: 90,
   AFFIDAVIT: 90,
   PROOF_OF_ADDRESS: 90,
-  PAYSLIP: 30
+  PAYSLIP: 30,
+  APPLICATION_SUPPORTING_DOC: null
 };
+
+const redisConnection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
+const scanQueue = new Queue("document-scan", { connection: redisConnection });
+
+function computeExpiration(type: string) {
+  const days = expiryByType[type];
+  if (!days) return null;
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+}
 
 export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
@@ -43,7 +55,8 @@ export async function POST(req: Request) {
       data: {
         userId: parsed.data.userId,
         type: parsed.data.type,
-        status: "PENDING",
+        status: "SCAN_PENDING",
+        expirationDate: computeExpiration(parsed.data.type),
         selfCertifiedAt: parsed.data.selfCertified ? new Date() : null,
         versions: {
           create: {
@@ -56,7 +69,9 @@ export async function POST(req: Request) {
       include: { versions: true }
     });
 
-    return NextResponse.json({ ok: true, verification: "PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
+    await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+
+    return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
   }
 
   const payload = await req.json();
@@ -75,7 +90,8 @@ export async function POST(req: Request) {
     data: {
       userId: parsed.data.userId,
       type: parsed.data.type,
-      status: "PENDING",
+      status: "SCAN_PENDING",
+      expirationDate: computeExpiration(parsed.data.type),
       selfCertifiedAt: parsed.data.selfCertified ? new Date() : null,
       versions: {
         create: {
@@ -88,5 +104,7 @@ export async function POST(req: Request) {
     include: { versions: true }
   });
 
-  return NextResponse.json({ ok: true, verification: "PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
+  await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+
+  return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
 }

@@ -9,12 +9,22 @@ export default async function PlatformAdminPage() {
     return <div className="p-8 text-white">Access denied. SYSTEM_ADMIN only.</div>;
   }
 
-  const orgs = await prisma.organization.findMany({ orderBy: { createdAt: "desc" } });
+  const [orgs, audits, apps, users] = await Promise.all([
+    prisma.organization.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 20 }),
+    prisma.application.count(),
+    prisma.user.count()
+  ]);
 
   return (
     <div className="mx-auto mt-10 max-w-6xl rounded-3xl border border-white/20 bg-white/10 p-8 text-slate-100 backdrop-blur-xl">
       <h1 className="text-3xl font-semibold">InternFlow Platform Admin</h1>
-      <p className="mt-2 text-slate-200">Approve or reject tenant organisations after compliance review.</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-white/15 bg-white/5 p-4"><p className="text-xs uppercase">Tenants</p><p className="text-3xl font-bold">{orgs.length}</p></div>
+        <div className="rounded-xl border border-white/15 bg-white/5 p-4"><p className="text-xs uppercase">Users</p><p className="text-3xl font-bold">{users}</p></div>
+        <div className="rounded-xl border border-white/15 bg-white/5 p-4"><p className="text-xs uppercase">Applications</p><p className="text-3xl font-bold">{apps}</p></div>
+      </div>
+
       <div className="mt-6 space-y-3">
         {orgs.map((org) => (
           <div key={org.id} className="rounded-2xl border border-white/15 bg-white/5 p-4">
@@ -34,6 +44,11 @@ export default async function PlatformAdminPage() {
           </div>
         ))}
       </div>
+
+      <section className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
+        <h2 className="font-semibold">Recent audit logs</h2>
+        {audits.map((log) => <p key={log.id} className="mt-1 text-sm">{log.action} · {log.createdAt.toISOString()}</p>)}
+      </section>
     </div>
   );
 }

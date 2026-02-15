@@ -36,9 +36,12 @@ enum DocumentReviewStatus {
 }
 
 enum DocStatus {
-  PENDING
-  PASS
-  FAIL
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SCAN_PENDING
+  SCAN_OK
+  SCAN_FAILED
 }
 
 enum TicketStatus {
@@ -184,6 +187,7 @@ model Opportunity {
   programId        String?
   type             OpportunityType   @default(INTERNSHIP)
   title            String
+  slug             String
   description      String
   requirementsJson Json?
   capacity         Int               @default(0)
@@ -191,6 +195,8 @@ model Opportunity {
   applications     Application[]
   program          Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
 }
 
 model Application {
@@ -226,6 +232,7 @@ model Enrollment {
   cohortId       String?
   status         EnrollmentStatus @default(PENDING)
   stipendPaid    Boolean          @default(false)
+  stipendMonth   String?
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   program        Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
   cohort         Cohort?          @relation(fields: [cohortId], references: [id], onDelete: SetNull)
@@ -262,6 +269,8 @@ model ChecklistItemInstance {
   checklistId   String
   label         String
   status        String            @default("PENDING")
+  actionType    String?
+  completedAt   DateTime?
   dueDate       DateTime?
   checklist     ChecklistInstance @relation(fields: [checklistId], references: [id], onDelete: Cascade)
 }
@@ -271,9 +280,10 @@ model Document {
   userId           String
   organizationId   String?
   type             String
-  status           DocStatus         @default(PENDING)
+  status           DocStatus         @default(SUBMITTED)
   rejectionReason  String?
   selfCertifiedAt  DateTime?
+  expirationDate   DateTime?
   createdAt        DateTime          @default(now())
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   versions         DocumentVersion[]

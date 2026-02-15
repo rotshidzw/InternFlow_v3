@@ -35,7 +35,8 @@ export async function POST(req: Request) {
   });
 
   const memberships = user ? await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } }) : [];
-  const redirectTo = !user ? "/onboarding" : memberships.length > 0 ? "/workspaces" : "/onboarding";
+  const singleMembership = memberships.length === 1 ? memberships[0] : null;
+  const redirectTo = !user ? "/onboarding" : memberships.length === 0 ? "/onboarding" : singleMembership ? `/org/${singleMembership.organization.slug}/home` : "/workspaces";
 
   const response = NextResponse.json({
     ok: true,
@@ -45,6 +46,9 @@ export async function POST(req: Request) {
   });
 
   response.cookies.set("if_user", email, { httpOnly: true, sameSite: "lax", path: "/" });
+  if (singleMembership) {
+    response.cookies.set("if_workspace", singleMembership.organization.slug, { sameSite: "lax", path: "/" });
+  }
 
   return response;
 }

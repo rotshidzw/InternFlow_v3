@@ -1,6 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function WorkspacesPage() {
   const email = cookies().get("if_user")?.value;
@@ -14,6 +15,13 @@ export default async function WorkspacesPage() {
   });
 
   if (!user) return <div className="p-8 text-white">Account not found.</div>;
+
+  if (user.memberships.length === 1) {
+    const single = user.memberships[0];
+    cookies().set("if_workspace", single.organization.slug, { path: "/", sameSite: "lax" });
+    const rolePath = single.role.toLowerCase().replace("_", "-");
+    redirect(`/org/${single.organization.slug}/${rolePath}`);
+  }
 
   return (
     <div className="mx-auto mt-10 max-w-5xl rounded-3xl border border-white/20 bg-white/10 p-8 text-slate-100 backdrop-blur-xl">

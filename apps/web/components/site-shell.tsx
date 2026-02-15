@@ -16,7 +16,7 @@ export function SiteShell({ children }: PropsWithChildren) {
             <Link href="/pricing">Pricing</Link>
             <Link href="/#security">Security</Link>
             <Link href="/demo">Demo</Link>
-            <Link href="/auth" className="rounded-lg border border-white/20 px-3 py-1">Get Started</Link>
+            <Link href="/onboarding/create-org" className="rounded-lg border border-white/20 px-3 py-1">Register Organization</Link>
           </div>
         </nav>
       </header>
@@ -25,7 +25,7 @@ export function SiteShell({ children }: PropsWithChildren) {
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-300 md:flex-row md:items-center md:justify-between">
           <p>InternFlow · Multi-organisation internship and learnership operations.</p>
           <div className="flex gap-3">
-            <Link href="/auth">Get Started</Link>
+            <Link href="/onboarding/create-org">Register Organization</Link>
             <Link href="/demo">Try Demo</Link>
           </div>
         </div>
