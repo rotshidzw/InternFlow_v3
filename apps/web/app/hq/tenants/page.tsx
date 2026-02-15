@@ -16,13 +16,13 @@ export default async function HqTenantsPage({ searchParams }: { searchParams?: {
     <div className="space-y-4">
       <h1 className="text-3xl font-semibold">Tenants Directory</h1>
       <form className="grid gap-3 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur md:grid-cols-[220px_220px_auto]">
-        <select name="status" defaultValue={status ?? ""} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+        <select name="status" defaultValue={status ?? ""} className="rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
           <option value="">All statuses</option>
           <option value="PENDING_REVIEW">Pending</option>
           <option value="APPROVED">Approved</option>
           <option value="REJECTED">Rejected</option>
         </select>
-        <select name="industry" defaultValue={industry ?? ""} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+        <select name="industry" defaultValue={industry ?? ""} className="rounded-lg border border-slate-300 bg-white text-slate-900 px-3 py-2 text-sm">
           <option value="">All industries</option>
           <option value="COMPANY">Company</option>
           <option value="TRAINING_PROVIDER">Training Provider</option>

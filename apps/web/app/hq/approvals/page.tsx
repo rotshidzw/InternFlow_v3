@@ -14,7 +14,7 @@ export default async function HQApprovalsPage() {
           <pre className="mt-2 overflow-auto rounded bg-slate-50 p-2 text-xs">{JSON.stringify(verification.docsJson, null, 2)}</pre>
           <div className="mt-3 flex gap-2">
             <form action={`/api/hq/approvals/${verification.id}`} method="post"><input type="hidden" name="decision" value="APPROVED" /><button className="rounded-lg bg-emerald-600 px-3 py-2 text-sm text-white">Approve</button></form>
-            <form action={`/api/hq/approvals/${verification.id}`} method="post" className="flex gap-2"><input type="hidden" name="decision" value="REJECTED" /><input name="reason" placeholder="Reason" className="rounded-lg border border-slate-300 px-2 py-2 text-sm" /><button className="rounded-lg border border-rose-300 px-3 py-2 text-sm text-rose-600">Reject</button></form>
+            <form action={`/api/hq/approvals/${verification.id}`} method="post" className="flex gap-2"><input type="hidden" name="decision" value="REJECTED" /><input name="reason" placeholder="Reason" className="rounded-lg border border-slate-300 bg-white text-slate-900 px-2 py-2 text-sm" /><button className="rounded-lg border border-rose-300 px-3 py-2 text-sm text-rose-600">Reject</button></form>
           </div>
         </div>
       ))}
