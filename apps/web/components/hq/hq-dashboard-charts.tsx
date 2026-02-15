@@ -58,13 +58,15 @@ function Bars({ data }: { data: SeriesPoint[] }) {
   return (
     <div className="flex h-56 items-end gap-1">
       {data.map((d, i) => {
-        const h = Math.max(4, Math.round((d.value / max) * 100));
+        const h = d.value > 0 ? Math.max(8, Math.round((d.value / max) * 100)) : 0;
         return (
-          <div key={`${d.label}-${i}`} className="flex-1">
-            <div className="group relative h-full rounded-t-md bg-emerald-500/90" style={{ height: `${h}%` }} title={`${d.label}: ${d.value} docs`}>
-              <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-[10px] text-white group-hover:block">
-                {d.value}
-              </span>
+          <div key={`${d.label}-${i}`} className="flex h-full flex-1 items-end">
+            <div className="relative h-full w-full rounded bg-emerald-100/40">
+              <div className="group absolute inset-x-0 bottom-0 rounded-t-md bg-emerald-500/90" style={{ height: `${h}%` }} title={`${d.label}: ${d.value} docs`}>
+                <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-[10px] text-white group-hover:block">
+                  {d.value}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -74,6 +76,8 @@ function Bars({ data }: { data: SeriesPoint[] }) {
 }
 
 export function HQDashboardCharts({ activeSeries, docsSeries }: { activeSeries: SeriesPoint[]; docsSeries: SeriesPoint[] }) {
+  const docsTotal = docsSeries.reduce((sum, point) => sum + point.value, 0);
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
@@ -91,7 +95,7 @@ export function HQDashboardCharts({ activeSeries, docsSeries }: { activeSeries: 
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-700">Documents Uploaded (30 days)</h3>
-          <span className="text-xs text-emerald-700">■ Docs Uploaded</span>
+          <span className="text-xs text-emerald-700">■ Docs Uploaded · {docsTotal} total</span>
         </div>
         <div className="relative rounded-lg bg-white p-3">
           <Grid />
