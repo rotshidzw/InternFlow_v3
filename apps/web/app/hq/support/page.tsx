@@ -12,24 +12,27 @@ export default async function HQSupportPage({ searchParams }: { searchParams?: {
   const isOps = platformMembership.role === "PLATFORM_OPS";
 
   const selectedStatus = searchParams?.status ?? "ACTIVE";
+  const baseFilters = {
+    ...(searchParams?.priority ? { priority: searchParams.priority as any } : {}),
+    ...(searchParams?.category ? { category: searchParams.category as any } : {}),
+    ...(searchParams?.orgId ? { orgId: searchParams.orgId } : {})
+  };
 
-  const tickets = await prisma.ticket.findMany({
-    where: {
-      ...(selectedStatus === "ACTIVE" ? { status: { in: ["OPEN", "IN_PROGRESS"] } } : selectedStatus ? { status: selectedStatus as any } : {}),
-      ...(searchParams?.priority ? { priority: searchParams.priority as any } : {}),
-      ...(searchParams?.category ? { category: searchParams.category as any } : {}),
-      ...(searchParams?.orgId ? { orgId: searchParams.orgId } : {})
-    },
-    include: { organization: true, events: { orderBy: { createdAt: "desc" }, take: 6 } },
-    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
-    take: 40
-  });
-
-  const orgs = await prisma.organization.findMany({ orderBy: { name: "asc" } });
-
-  const totalActive = tickets.filter((t) => t.status !== "RESOLVED").length;
-  const escalatedCount = tickets.filter((t) => t.priority === "URGENT" && t.status === "IN_PROGRESS").length;
-  const resolvedCount = tickets.filter((t) => t.status === "RESOLVED").length;
+  const [tickets, orgs, activeCount, escalatedCount, resolvedCount] = await Promise.all([
+    prisma.ticket.findMany({
+      where: {
+        ...baseFilters,
+        ...(selectedStatus === "ACTIVE" ? { status: { in: ["OPEN", "IN_PROGRESS"] } } : selectedStatus ? { status: selectedStatus as any } : {})
+      },
+      include: { organization: true, events: { orderBy: { createdAt: "desc" }, take: 8 } },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      take: 40
+    }),
+    prisma.organization.findMany({ orderBy: { name: "asc" } }),
+    prisma.ticket.count({ where: { ...baseFilters, status: { in: ["OPEN", "IN_PROGRESS"] } } }),
+    prisma.ticket.count({ where: { ...baseFilters, status: "IN_PROGRESS", priority: "URGENT" } }),
+    prisma.ticket.count({ where: { ...baseFilters, status: "RESOLVED" } })
+  ]);
 
   return (
     <div className="space-y-4">
@@ -37,9 +40,9 @@ export default async function HQSupportPage({ searchParams }: { searchParams?: {
       <p className="text-sm text-slate-600">{isOps ? "Ops queue: work escalated incidents, close blockers, and leave clear activity notes." : "Support queue: triage incidents, capture context, then escalate urgent blockers to Ops."}</p>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-xs text-slate-500">Active incidents</p><p className="text-2xl font-semibold">{totalActive}</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-xs text-slate-500">Active incidents</p><p className="text-2xl font-semibold">{activeCount}</p></div>
         <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-xs text-slate-500">Escalated to Ops</p><p className="text-2xl font-semibold">{escalatedCount}</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-xs text-slate-500">Resolved in current view</p><p className="text-2xl font-semibold">{resolvedCount}</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-xs text-slate-500">Resolved (current filters)</p><p className="text-2xl font-semibold">{resolvedCount}</p></div>
       </div>
 
       <form className="grid gap-2 rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur md:grid-cols-5">

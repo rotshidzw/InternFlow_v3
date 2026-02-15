@@ -17,6 +17,22 @@ function buildLastNDays(n: number) {
   });
 }
 
+function activityTone(action: string) {
+  if (action.includes("RESOLVE") || action.includes("APPROVE")) return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (action.includes("ESCALATE") || action.includes("REJECT")) return "border-amber-200 bg-amber-50 text-amber-700";
+  if (action.includes("LOGIN") || action.includes("VIEWED")) return "border-blue-200 bg-blue-50 text-blue-700";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function activityLabel(action: string) {
+  return action
+    .replace(/^HQ_/, "")
+    .replace(/^LOGIN_/, "LOGIN ")
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default async function HQDashboardPage() {
   await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS", "PLATFORM_FINANCE"]);
 
@@ -34,7 +50,7 @@ export default async function HQDashboardPage() {
     prisma.usageMetricsDaily.aggregate({ _sum: { docsUploaded: true }, where: { date: { gte: since7 } } }),
     prisma.usageMetricsDaily.findMany({ where: { date: { gte: since14 } }, orderBy: { date: "asc" }, take: 14 }),
     prisma.usageMetricsDaily.findMany({ where: { date: { gte: since30 } }, orderBy: { date: "asc" } }),
-    prisma.auditLog.findMany({ where: { scope: "PLATFORM" }, orderBy: { createdAt: "desc" }, take: 12 }),
+    prisma.auditLog.findMany({ where: { scope: "PLATFORM" }, orderBy: { createdAt: "desc" }, take: 12, include: { actor: true } }),
     prisma.$queryRaw<DocsRow[]>`
       SELECT DATE("createdAt")::timestamp AS day, COUNT(*)::int AS count
       FROM "Document"
@@ -68,9 +84,20 @@ export default async function HQDashboardPage() {
       <HQDashboardCharts activeSeries={activeSeries} docsSeries={docsSeries} />
 
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-        <h2 className="font-semibold">Recent Activity</h2>
-        <div className="mt-3 space-y-2 text-sm text-slate-700">
-          {recent.map((a) => <p key={a.id}>• {a.action} · {a.createdAt.toISOString()}</p>)}
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-semibold">Recent Activity</h2>
+          <p className="text-xs text-slate-500">Last {recent.length} platform actions</p>
+        </div>
+        <div className="mt-3 space-y-2 text-sm">
+          {recent.map((a) => (
+            <div key={a.id} className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`rounded-full border px-2 py-1 text-xs font-medium ${activityTone(a.action)}`}>{activityLabel(a.action)}</span>
+                <span className="text-xs text-slate-500">{a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC</span>
+              </div>
+              <p className="mt-2 text-slate-700">{a.actor?.email ?? "System"}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
