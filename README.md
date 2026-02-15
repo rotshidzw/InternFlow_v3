@@ -37,7 +37,9 @@ InternFlow is a multi-tenant platform with two experiences:
 - `/hq/observability`
 - `/hq/users`
 - `/hq/settings`
-- `/app/whatsapp-sim` (support communication simulation)
+
+## Tenant communication routes
+- `/app/whatsapp-sim` (tenant/applicant messaging, document upload with OCR/scan queue)
 
 ## HQ roles
 Platform access is enforced with `PlatformMembership` roles:

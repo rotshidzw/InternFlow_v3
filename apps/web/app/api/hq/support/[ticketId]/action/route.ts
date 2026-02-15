@@ -18,15 +18,18 @@ export async function POST(req: Request, { params }: { params: { ticketId: strin
   if (action === "RESOLVE") {
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "RESOLVED" } });
   } else if (action === "ESCALATE_OPS") {
+    if (actor.membership.role === "PLATFORM_OPS") {
+      return NextResponse.redirect(new URL("/hq/support", req.url));
+    }
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "IN_PROGRESS", priority: "URGENT" } });
 
-    const opsUsers = await prisma.platformMembership.findMany({
-      where: { role: "PLATFORM_OPS" },
+    const recipients = await prisma.platformMembership.findMany({
+      where: { role: { in: ["PLATFORM_OPS", "PLATFORM_ADMIN"] } },
       include: { user: true }
     });
-    const opsEmails = opsUsers.map((m) => m.user.email);
-    if (opsEmails.length) {
-      await sendPlatformEmailMany(opsEmails, "Ticket escalated to Ops", message || `Ticket ${ticket.title} requires Ops attention.`);
+    const recipientEmails = Array.from(new Set(recipients.map((m) => m.user.email)));
+    if (recipientEmails.length) {
+      await sendPlatformEmailMany(recipientEmails, "Ticket escalated to Ops", message || `Ticket ${ticket.title} requires Ops attention.`);
     }
   }
 

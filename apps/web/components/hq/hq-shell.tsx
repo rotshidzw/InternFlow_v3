@@ -12,7 +12,6 @@ const nav: NavItem[] = [
   { href: "/hq/approvals", label: "Approvals", roles: ["PLATFORM_ADMIN", "PLATFORM_SALES"] },
   { href: "/hq/meetings", label: "Meetings", roles: ["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_OPS"] },
   { href: "/hq/support", label: "Support", roles: ["PLATFORM_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_OPS"] },
-  { href: "/app/whatsapp-sim", label: "WhatsApp Sim", roles: ["PLATFORM_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_OPS"] },
   { href: "/hq/observability", label: "Observability", roles: ["PLATFORM_ADMIN", "PLATFORM_OPS", "PLATFORM_SUPPORT"] },
   { href: "/hq/users", label: "HQ Users", roles: ["PLATFORM_ADMIN"] },
   { href: "/hq/settings", label: "Settings", roles: ["PLATFORM_ADMIN", "PLATFORM_OPS"] }
@@ -41,7 +40,6 @@ export function HQShell({ children, role, userEmail }: PropsWithChildren<{ role:
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm text-slate-600">HQ Role: <span className="font-semibold text-slate-900">{role}</span></p>
               <div className="flex items-center gap-3 text-sm">
-                <button onClick={() => window.history.back()} type="button" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Back</button>
                 <p className="text-slate-600">{userEmail}</p>
                 <form action="/api/auth/logout" method="post">
                   <button className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Log out</button>
