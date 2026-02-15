@@ -15,13 +15,20 @@ export async function POST(req: Request, { params }: { params: { ticketId: strin
   const ticket = await prisma.ticket.findUnique({ where: { id: params.ticketId } });
   if (!ticket) return NextResponse.redirect(new URL("/hq/support", req.url));
 
+  let eventLabel = `HQ action: ${action}`;
+
   if (action === "RESOLVE") {
-    await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "RESOLVED" } });
+    if (ticket.status !== "RESOLVED") {
+      await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "RESOLVED" } });
+    }
+    eventLabel = "Issue resolved by support/ops";
   } else if (action === "ESCALATE_OPS") {
     if (actor.membership.role === "PLATFORM_OPS") {
       return NextResponse.redirect(new URL("/hq/support", req.url));
     }
+
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "IN_PROGRESS", priority: "URGENT" } });
+    eventLabel = "Escalated to Ops for urgent handling";
 
     const recipients = await prisma.platformMembership.findMany({
       where: { role: { in: ["PLATFORM_OPS", "PLATFORM_ADMIN"] } },
@@ -31,10 +38,25 @@ export async function POST(req: Request, { params }: { params: { ticketId: strin
     if (recipientEmails.length) {
       await sendPlatformEmailMany(recipientEmails, "Ticket escalated to Ops", message || `Ticket ${ticket.title} requires Ops attention.`);
     }
+  } else if (action === "REQUEST_INFO") {
+    eventLabel = "More information requested from tenant";
   }
 
-  await prisma.ticketEvent.create({ data: { ticketId: ticket.id, type: action, event: `HQ action: ${action}`, payload: { action, message } } });
-  await prisma.auditLog.create({ data: { scope: "PLATFORM", actorUserId: actor.user.id, orgId: ticket.orgId ?? null, action: `HQ_TICKET_${action}`, metadata: { message } } });
+  await prisma.ticketEvent.create({
+    data: {
+      ticketId: ticket.id,
+      actorId: actor.user.id,
+      type: action,
+      event: eventLabel,
+      payload: {
+        action,
+        message,
+        actorRole: actor.membership.role
+      }
+    }
+  });
+
+  await prisma.auditLog.create({ data: { scope: "PLATFORM", actorUserId: actor.user.id, orgId: ticket.orgId ?? null, action: `HQ_TICKET_${action}`, metadata: { message, actorRole: actor.membership.role } } });
 
   if (action === "REQUEST_INFO" && ticket.orgId) {
     const recipients = await getTenantContactEmails(ticket.orgId);
