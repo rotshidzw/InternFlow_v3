@@ -114,6 +114,7 @@ model Organization {
   cohorts          Cohort[]
   settings         Settings[]
   opportunities    Opportunity[]
+  enrollments      Enrollment[]
   orgDocuments     OrganizationDocument[]
   creator          User?                 @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 }
