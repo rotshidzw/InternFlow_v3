@@ -24,16 +24,17 @@ export default async function EnrollmentsPage({
     take: 400
   });
 
-  const pdfDocumentsByUser = learnerDocuments.reduce<Record<string, Array<{ id: string; type: string; createdAt: Date }>>>((acc, doc) => {
+  const payslipPdfDocumentsByUser = learnerDocuments.reduce<Record<string, Array<{ id: string; createdAt: Date }>>>((acc, doc) => {
     const latestVersion = doc.versions[0];
     if (!latestVersion) return acc;
+    if (doc.type !== "PAYSLIP") return acc;
 
     const mimeType = latestVersion.mimeType.toLowerCase();
     const isPdf = mimeType.includes("pdf") || latestVersion.storageKey.toLowerCase().endsWith(".pdf");
     if (!isPdf) return acc;
 
     acc[doc.userId] ??= [];
-    acc[doc.userId].push({ id: doc.id, type: doc.type, createdAt: doc.createdAt });
+    acc[doc.userId].push({ id: doc.id, createdAt: doc.createdAt });
     return acc;
   }, {});
 
@@ -135,23 +136,27 @@ export default async function EnrollmentsPage({
             </p>
 
             <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-xs font-medium text-slate-700">Learner PDFs (manual check)</p>
-              {pdfDocumentsByUser[e.userId]?.length ? (
-                <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                  {pdfDocumentsByUser[e.userId].slice(0, 3).map((doc) => (
-                    <a
-                      key={doc.id}
-                      href={`/api/org/${params.orgSlug}/documents/${doc.id}/view`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-md border border-indigo-200 bg-white px-2 py-1 font-medium text-indigo-700 hover:bg-indigo-50"
-                    >
-                      View {doc.type} · {doc.createdAt.toISOString().slice(0, 10)}
-                    </a>
-                  ))}
-                </div>
+              <p className="text-xs font-medium text-slate-700">Payslip PDFs (manual check)</p>
+              {e.stipendPaid ? (
+                payslipPdfDocumentsByUser[e.userId]?.length ? (
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                    {payslipPdfDocumentsByUser[e.userId].slice(0, 3).map((doc) => (
+                      <a
+                        key={doc.id}
+                        href={`/api/org/${params.orgSlug}/documents/${doc.id}/view`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-md border border-indigo-200 bg-white px-2 py-1 font-medium text-indigo-700 hover:bg-indigo-50"
+                      >
+                        View payslip · {doc.createdAt.toISOString().slice(0, 10)}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-slate-500">No payslip PDF available yet for this paid learner.</p>
+                )
               ) : (
-                <p className="mt-1 text-xs text-slate-500">No PDF documents available for this learner.</p>
+                <p className="mt-1 text-xs text-slate-500">Payslip documents are shown only after stipend is marked paid.</p>
               )}
             </div>
 
