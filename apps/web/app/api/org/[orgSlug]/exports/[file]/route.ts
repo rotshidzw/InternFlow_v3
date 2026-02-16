@@ -8,19 +8,45 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string;
   const org = await prisma.organization.findUnique({ where: { slug: params.orgSlug } });
   if (!org) return new Response("Not found", { status: 404 });
 
-  if (params.file === "stipend.csv") {
-    const rows = await prisma.enrollment.findMany({ where: { organizationId: org.id }, include: { user: true, cohort: true } });
-    const body = csv([["email", "cohort", "stipendPaid", "stipendMonth"], ...rows.map((r) => [r.user.email, r.cohort?.name ?? "", String(r.stipendPaid), r.stipendMonth ?? ""])]);
+  if (params.file === "reports.csv") {
+    const rows = await prisma.logbookEntry.findMany({
+      where: { user: { memberships: { some: { organizationId: org.id } } } },
+      include: { user: true, approvals: { orderBy: { createdAt: "desc" }, take: 1 } },
+      orderBy: { createdAt: "desc" }
+    });
+
+    const body = csv([
+      ["studentEmail", "weekStart", "summary", "latestApproval", "submittedAt"],
+      ...rows.map((r) => [
+        r.user.email,
+        r.weekStart.toISOString().slice(0, 10),
+        r.summary,
+        r.approvals[0]?.status ?? "PENDING",
+        r.createdAt.toISOString()
+      ])
+    ]);
     return new Response(body, { headers: { "Content-Type": "text/csv" } });
   }
 
+  if (params.file === "report-documents.csv") {
+    const rows = await prisma.logbookEntry.findMany({
+      where: { user: { memberships: { some: { organizationId: org.id } } } },
+      include: { user: true },
+      orderBy: { createdAt: "desc" }
+    });
 
-  if (params.file === "compliance.csv") {
-    const docs = await prisma.document.findMany({ where: { organizationId: org.id }, include: { user: true } });
-    const body = csv([["email", "type", "status", "createdAt"], ...docs.map((d) => [d.user.email, d.type, d.status, d.createdAt.toISOString()])]);
+    const body = csv([
+      ["studentEmail", "weekStart", "hasDocument", "documentKey", "viewPath"],
+      ...rows.map((r) => [
+        r.user.email,
+        r.weekStart.toISOString().slice(0, 10),
+        String(Boolean(r.evidenceKey)),
+        r.evidenceKey ?? "",
+        r.evidenceKey ? `/api/org/${params.orgSlug}/logbooks/${r.id}/evidence` : ""
+      ])
+    ]);
     return new Response(body, { headers: { "Content-Type": "text/csv" } });
   }
-  const learners = await prisma.membership.findMany({ where: { organizationId: org.id, role: "STUDENT" }, include: { user: true } });
-  const body = csv([["email", "name"], ...learners.map((l) => [l.user.email, l.user.name ?? ""]) ]);
-  return new Response(body, { headers: { "Content-Type": "text/csv" } });
+
+  return new Response("Export not found", { status: 404 });
 }
