@@ -22,6 +22,21 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/staff?error=invalid`, req.url));
   }
 
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      memberships: { select: { organizationId: true } }
+    }
+  });
+
+  const hasDifferentOrgMembership = existingUser
+    ? existingUser.memberships.some((membership) => membership.organizationId !== access.membership.organizationId)
+    : false;
+
+  if (hasDifferentOrgMembership) {
+    return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/staff?error=cross-tenant-user`, req.url));
+  }
+
   const user = await prisma.user.upsert({
     where: { email },
     update: { name: name || undefined, role: role as any },
