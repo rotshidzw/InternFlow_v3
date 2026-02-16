@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
+import { ensureSystemPayslipForEnrollment } from "@/lib/payslips";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -21,14 +22,21 @@ export async function POST(req: Request) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const result = await prisma.enrollment.updateMany({
+  const targets = await prisma.enrollment.findMany({
     where: {
       organizationId,
       status: "ACTIVE",
       OR: [{ stipendPaid: false }, { stipendMonth: { not: month } }]
     },
+    select: { id: true }
+  });
+
+  const result = await prisma.enrollment.updateMany({
+    where: { id: { in: targets.map((item) => item.id) } },
     data: { stipendPaid: true, stipendMonth: month }
   });
+
+  await Promise.all(targets.map((item) => ensureSystemPayslipForEnrollment(item.id, month)));
 
   redirectUrl.searchParams.set("stipend", "bulk-updated");
   redirectUrl.searchParams.set("month", month);
