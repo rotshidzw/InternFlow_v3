@@ -25,25 +25,26 @@ type NavItem = {
   href: string;
   label: string;
   icon: ComponentType<{ className?: string }>;
+  roles?: string[];
 };
 
 const primaryItems: NavItem[] = [
   { href: "dashboard", label: "Dashboard", icon: Gauge },
-  { href: "programs", label: "Programs", icon: GraduationCap },
-  { href: "templates", label: "Templates", icon: LayoutTemplate },
-  { href: "opportunities", label: "Opportunities", icon: Briefcase },
-  { href: "applicants", label: "Applicants", icon: UserSquare2 },
-  { href: "enrollments", label: "Enrollments", icon: ClipboardList },
-  { href: "documents", label: "Documents", icon: FolderOpen },
-  { href: "logbooks", label: "Logbooks", icon: FileText },
-  { href: "approvals", label: "Approvals", icon: FileCheck2 }
+  { href: "programs", label: "Programs", icon: GraduationCap, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "templates", label: "Templates", icon: LayoutTemplate, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "opportunities", label: "Opportunities", icon: Briefcase, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "applicants", label: "Applicants", icon: UserSquare2, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "enrollments", label: "Enrollments", icon: ClipboardList, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] },
+  { href: "documents", label: "Documents", icon: FolderOpen, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] },
+  { href: "logbooks", label: "Logbooks", icon: FileText, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] },
+  { href: "approvals", label: "Approvals", icon: FileCheck2, roles: ["PROVIDER_ADMIN", "COORDINATOR"] }
 ];
 
 const footerItems: NavItem[] = [
-  { href: "reports", label: "Reports", icon: FileSpreadsheet },
-  { href: "stipends", label: "Stipends", icon: HandCoins },
-  { href: "staff", label: "Staff", icon: Users },
-  { href: "settings", label: "Settings", icon: Settings }
+  { href: "reports", label: "Reports", icon: FileSpreadsheet, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] },
+  { href: "stipends", label: "Stipends", icon: HandCoins, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "staff", label: "Staff", icon: Users, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
+  { href: "settings", label: "Settings", icon: Settings, roles: ["PROVIDER_ADMIN", "COORDINATOR"] }
 ];
 
 export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {
@@ -69,6 +70,9 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
   const navClass =
     "group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-200 hover:bg-white/80 hover:text-slate-900";
 
+  const allowedPrimaryItems = primaryItems.filter((item) => !item.roles || item.roles.includes(role));
+  const allowedFooterItems = footerItems.filter((item) => !item.roles || item.roles.includes(role));
+
   return (
     <div className={`min-h-screen ${shellBg} text-slate-900 transition-colors duration-300`}>
       <div className={`grid min-h-screen ${collapsed ? "md:grid-cols-[92px_1fr]" : "md:grid-cols-[292px_1fr]"}`}>
@@ -93,7 +97,7 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
 
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">Tenant portal</p>
           <nav className="space-y-1.5">
-            {primaryItems.map(({ href, label, icon: Icon }) => (
+            {allowedPrimaryItems.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
                 <Icon className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-blue-600" />
                 {!collapsed && <span>{label}</span>}
@@ -105,7 +109,7 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
 
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">Workspace</p>
           <nav className="space-y-1.5">
-            {footerItems.map(({ href, label, icon: Icon }) => (
+            {allowedFooterItems.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
                 <Icon className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-indigo-600" />
                 {!collapsed && <span>{label}</span>}
