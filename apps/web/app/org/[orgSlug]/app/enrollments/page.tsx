@@ -6,7 +6,7 @@ export default async function EnrollmentsPage({
   searchParams
 }: {
   params: { orgSlug: string };
-  searchParams?: { stipend?: string; month?: string; enrollment?: string; error?: string };
+  searchParams?: { stipend?: string; month?: string; enrollment?: string; error?: string; count?: string };
 }) {
   const access = await requireTenantAccess(params.orgSlug);
   const enrollments = await prisma.enrollment.findMany({
@@ -24,7 +24,9 @@ export default async function EnrollmentsPage({
   const stipendMessage =
     searchParams?.stipend === "updated"
       ? `Stipend updated${searchParams?.month ? ` for ${searchParams.month}` : ""}.`
-      : null;
+      : searchParams?.stipend === "bulk-updated"
+        ? `${searchParams?.count ?? "0"} enrollment${searchParams?.count === "1" ? "" : "s"} marked paid${searchParams?.month ? ` for ${searchParams.month}` : ""}.`
+        : null;
 
   return (
     <div className="space-y-5">
@@ -33,9 +35,15 @@ export default async function EnrollmentsPage({
         <p className="text-sm text-slate-600">Track active learner placements and quickly process monthly stipend payments.</p>
       </div>
 
-      {searchParams?.error === "invalid-month" && (
+      {(searchParams?.error === "invalid-month" || searchParams?.error === "invalid-request") && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          Please enter a valid stipend month in <span className="font-medium">YYYY-MM</span> format.
+          {searchParams?.error === "invalid-request" ? (
+            "Could not process stipend update request. Please refresh and try again."
+          ) : (
+            <>
+              Please enter a valid stipend month in <span className="font-medium">YYYY-MM</span> format.
+            </>
+          )}
         </div>
       )}
 
@@ -60,6 +68,31 @@ export default async function EnrollmentsPage({
           <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Outstanding</p>
           <p className="mt-1 text-2xl font-semibold text-amber-800">{unpaidStipends}</p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="text-sm font-medium text-slate-900">Bulk monthly payout</p>
+        <p className="mt-1 text-xs text-slate-600">Mark all active enrollments that are still unpaid for a selected month in one click.</p>
+        <form action="/api/enrollments/stipend/bulk" method="post" className="mt-3 flex flex-wrap items-end gap-2">
+          <input type="hidden" name="organizationId" value={access.membership.organizationId} />
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Stipend month
+            <input
+              name="month"
+              defaultValue={currentMonth}
+              placeholder="YYYY-MM"
+              pattern="\d{4}-\d{2}"
+              className="h-9 min-w-[130px] rounded-md border border-slate-300 px-2 text-sm text-slate-700"
+              required
+            />
+          </label>
+          <button
+            className="h-9 rounded-md border border-indigo-300 px-3 text-sm font-medium text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={unpaidStipends === 0}
+          >
+            Mark active enrollments paid
+          </button>
+        </form>
       </div>
 
       <div className="space-y-3">
