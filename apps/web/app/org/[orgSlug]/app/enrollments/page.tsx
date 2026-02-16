@@ -15,6 +15,28 @@ export default async function EnrollmentsPage({
     orderBy: { id: "desc" },
     take: 100
   });
+
+  const userIds = Array.from(new Set(enrollments.map((enrollment) => enrollment.userId)));
+  const learnerDocuments = await prisma.document.findMany({
+    where: { userId: { in: userIds } },
+    include: { versions: { orderBy: { createdAt: "desc" }, take: 1 } },
+    orderBy: { createdAt: "desc" },
+    take: 400
+  });
+
+  const pdfDocumentsByUser = learnerDocuments.reduce<Record<string, Array<{ id: string; type: string; createdAt: Date }>>>((acc, doc) => {
+    const latestVersion = doc.versions[0];
+    if (!latestVersion) return acc;
+
+    const mimeType = latestVersion.mimeType.toLowerCase();
+    const isPdf = mimeType.includes("pdf") || latestVersion.storageKey.toLowerCase().endsWith(".pdf");
+    if (!isPdf) return acc;
+
+    acc[doc.userId] ??= [];
+    acc[doc.userId].push({ id: doc.id, type: doc.type, createdAt: doc.createdAt });
+    return acc;
+  }, {});
+
   const totalEnrollments = enrollments.length;
   const activeEnrollments = enrollments.filter((enrollment) => enrollment.status === "ACTIVE").length;
   const paidStipends = enrollments.filter((enrollment) => enrollment.stipendPaid).length;
@@ -111,6 +133,27 @@ export default async function EnrollmentsPage({
             <p className="mt-2 text-xs text-slate-600">
               Paid month: <span className="font-medium text-slate-700">{e.stipendMonth ?? "Not yet captured"}</span>
             </p>
+
+            <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-medium text-slate-700">Learner PDFs (manual check)</p>
+              {pdfDocumentsByUser[e.userId]?.length ? (
+                <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                  {pdfDocumentsByUser[e.userId].slice(0, 3).map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={`/api/org/${params.orgSlug}/documents/${doc.id}/view`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-md border border-indigo-200 bg-white px-2 py-1 font-medium text-indigo-700 hover:bg-indigo-50"
+                    >
+                      View {doc.type} · {doc.createdAt.toISOString().slice(0, 10)}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">No PDF documents available for this learner.</p>
+              )}
+            </div>
 
             <form action={`/api/enrollments/${e.id}/stipend`} method="post" className="mt-3 flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
