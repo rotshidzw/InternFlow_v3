@@ -16,8 +16,8 @@ export default async function ProgramDetailPage({ params }: { params: { orgSlug:
   const program = await prisma.program.findFirst({
     where: { id: params.programId, organizationId: access.membership.organizationId },
     include: {
-      opportunities: { orderBy: { createdAt: "desc" } },
-      enrollments: { include: { user: true }, orderBy: { createdAt: "desc" } }
+      opportunities: { orderBy: { id: "desc" } },
+      enrollments: { include: { user: true }, orderBy: { id: "desc" } }
     }
   });
 
