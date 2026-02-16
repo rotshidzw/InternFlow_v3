@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
 
@@ -41,13 +42,15 @@ export default async function LogbooksPage({
 
   const rows = logs.map((log) => {
     const latestApproval = log.approvals[0]?.status ?? "PENDING";
-    return { ...log, latestApproval };
+    const hasEvidenceDocument = Boolean(log.evidenceKey?.trim());
+    return { ...log, latestApproval, hasEvidenceDocument };
   });
 
   const totalLogbooks = rows.length;
   const pendingCount = rows.filter((row) => row.latestApproval === "PENDING").length;
   const approvedCount = rows.filter((row) => row.latestApproval === "APPROVED").length;
   const rejectedCount = rows.filter((row) => row.latestApproval === "REJECTED").length;
+  const withDocumentsCount = rows.filter((row) => row.hasEvidenceDocument).length;
 
   const filteredRows = rows.filter((row) => {
     if (activeFilter !== "ALL" && row.latestApproval !== activeFilter) return false;
@@ -62,17 +65,21 @@ export default async function LogbooksPage({
     <div className="space-y-5">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-slate-900">Logbooks</h1>
-        <p className="text-sm text-slate-600">Review weekly learner updates, approve quickly, and track pending items at a glance.</p>
+        <p className="text-sm text-slate-600">Review weekly learner updates, approve quickly, and open supporting documents for manual checks.</p>
       </div>
 
       {searchParams?.reviewed === "1" && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Review submitted successfully.</div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-xl border border-slate-200 bg-white p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total logbooks</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">{totalLogbooks}</p>
+        </div>
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">With documents</p>
+          <p className="mt-1 text-2xl font-semibold text-cyan-800">{withDocumentsCount}</p>
         </div>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Pending</p>
@@ -135,6 +142,23 @@ export default async function LogbooksPage({
 
             <p className="mt-1 text-slate-700">{l.summary}</p>
             <p className="mt-1 text-xs text-slate-500">Submitted: {l.createdAt.toISOString().slice(0, 10)}</p>
+
+            <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-medium text-slate-700">Logbook documents</p>
+              {l.hasEvidenceDocument ? (
+                <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                  <Link
+                    href={`/api/org/${params.orgSlug}/logbooks/${l.id}/evidence`}
+                    target="_blank"
+                    className="rounded-md border border-indigo-200 bg-white px-2 py-1 font-medium text-indigo-700 hover:bg-indigo-50"
+                  >
+                    View evidence document
+                  </Link>
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">No evidence document uploaded for this logbook yet.</p>
+              )}
+            </div>
 
             <form action={`/api/org/${params.orgSlug}/logbooks/${l.id}/approval`} method="post" className="mt-3 flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
