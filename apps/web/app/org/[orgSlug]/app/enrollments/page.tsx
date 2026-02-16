@@ -1,14 +1,30 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
 
-export default async function EnrollmentsPage({ params }: { params: { orgSlug: string } }) {
+export default async function EnrollmentsPage({
+  params,
+  searchParams
+}: {
+  params: { orgSlug: string };
+  searchParams?: { stipend?: string; month?: string; enrollment?: string; error?: string };
+}) {
   const access = await requireTenantAccess(params.orgSlug);
-  const enrollments = await prisma.enrollment.findMany({ where: { organizationId: access.membership.organizationId }, include: { user: true, program: true }, orderBy: { id: "desc" }, take: 100 });
+  const enrollments = await prisma.enrollment.findMany({
+    where: { organizationId: access.membership.organizationId },
+    include: { user: true, program: true },
+    orderBy: { id: "desc" },
+    take: 100
+  });
   const totalEnrollments = enrollments.length;
   const activeEnrollments = enrollments.filter((enrollment) => enrollment.status === "ACTIVE").length;
   const paidStipends = enrollments.filter((enrollment) => enrollment.stipendPaid).length;
   const unpaidStipends = totalEnrollments - paidStipends;
   const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const stipendMessage =
+    searchParams?.stipend === "updated"
+      ? `Stipend updated${searchParams?.month ? ` for ${searchParams.month}` : ""}.`
+      : null;
 
   return (
     <div className="space-y-5">
@@ -16,6 +32,16 @@ export default async function EnrollmentsPage({ params }: { params: { orgSlug: s
         <h1 className="text-2xl font-semibold text-slate-900">Enrollments</h1>
         <p className="text-sm text-slate-600">Track active learner placements and quickly process monthly stipend payments.</p>
       </div>
+
+      {searchParams?.error === "invalid-month" && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          Please enter a valid stipend month in <span className="font-medium">YYYY-MM</span> format.
+        </div>
+      )}
+
+      {stipendMessage && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{stipendMessage}</div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-3">
@@ -49,12 +75,16 @@ export default async function EnrollmentsPage({ params }: { params: { orgSlug: s
               </div>
             </div>
 
+            <p className="mt-2 text-xs text-slate-600">
+              Paid month: <span className="font-medium text-slate-700">{e.stipendMonth ?? "Not yet captured"}</span>
+            </p>
+
             <form action={`/api/enrollments/${e.id}/stipend`} method="post" className="mt-3 flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
                 Stipend month
                 <input
                   name="month"
-                  defaultValue={currentMonth}
+                  defaultValue={e.stipendMonth ?? currentMonth}
                   placeholder="YYYY-MM"
                   pattern="\d{4}-\d{2}"
                   className="h-9 min-w-[130px] rounded-md border border-slate-300 px-2 text-sm text-slate-700"
