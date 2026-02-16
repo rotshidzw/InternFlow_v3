@@ -5,7 +5,7 @@ export async function getUserStatus(userId: string) {
   return enrollments ? "Enrolled in active programme" : "Not enrolled";
 }
 export async function listMissingDocs(userId: string) {
-  const docs = await prisma.document.findMany({ where: { userId, status: { in: ["PENDING", "FAIL"] } } });
+  const docs = await prisma.document.findMany({ where: { userId, status: { in: ["SUBMITTED", "SCAN_FAILED", "REJECTED"] } } });
   return docs.map((d) => `${d.type} (${d.status})`);
 }
 export async function getChecklist(userId: string) {

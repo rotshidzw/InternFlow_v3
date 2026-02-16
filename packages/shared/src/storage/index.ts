@@ -17,14 +17,35 @@ class MinioStorageAdapter implements StorageAdapter {
     secretKey: process.env.MINIO_SECRET_KEY ?? "minioadmin"
   });
   private bucket = process.env.MINIO_BUCKET ?? "internflow-docs";
+  private bucketInitPromise: Promise<void> | null = null;
+
+  private async ensureBucket() {
+    if (!this.bucketInitPromise) {
+      this.bucketInitPromise = (async () => {
+        const exists = await this.client.bucketExists(this.bucket);
+        if (!exists) {
+          await this.client.makeBucket(this.bucket);
+          console.info(`[storage] Created MinIO bucket: ${this.bucket}`);
+        }
+      })().catch((error) => {
+        this.bucketInitPromise = null;
+        throw error;
+      });
+    }
+
+    return this.bucketInitPromise;
+  }
 
   async put(key: string, body: Buffer, contentType: string) {
+    await this.ensureBucket();
     await this.client.putObject(this.bucket, key, body, body.length, { "Content-Type": contentType });
   }
   async getSignedUrl(key: string) {
+    await this.ensureBucket();
     return this.client.presignedGetObject(this.bucket, key, 60 * 10);
   }
   async delete(key: string) {
+    await this.ensureBucket();
     await this.client.removeObject(this.bucket, key);
   }
 }
@@ -52,6 +73,12 @@ class ObsStorageAdapter implements StorageAdapter {
   }
 }
 
+let adapter: StorageAdapter | null = null;
+
 export function getStorageAdapter(): StorageAdapter {
-  return process.env.STORAGE_PROVIDER === "obs" ? new ObsStorageAdapter() : new MinioStorageAdapter();
+  if (!adapter) {
+    adapter = process.env.STORAGE_PROVIDER === "obs" ? new ObsStorageAdapter() : new MinioStorageAdapter();
+  }
+
+  return adapter;
 }

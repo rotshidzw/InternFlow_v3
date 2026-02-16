@@ -6,8 +6,12 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "InternFlow",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    background_color: "#020617",
     theme_color: "#10b981",
-    icons: [{ src: "/icon.png", sizes: "192x192", type: "image/png" }]
+    icons: [
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+      { src: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml" }
+    ]
   };
 }
