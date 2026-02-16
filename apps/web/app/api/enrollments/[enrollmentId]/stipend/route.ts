@@ -1,8 +1,10 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { ensureSystemPayslipForEnrollment } from "@/lib/payslips";
+import { getOrgAccess } from "@/lib/org-access";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const CAN_MANAGE_STIPENDS = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
 
 export async function POST(req: Request, { params }: { params: { enrollmentId: string } }) {
   const form = await req.formData();
@@ -13,6 +15,22 @@ export async function POST(req: Request, { params }: { params: { enrollmentId: s
 
   if (!MONTH_PATTERN.test(month)) {
     redirectUrl.searchParams.set("error", "invalid-month");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { id: params.enrollmentId },
+    include: { organization: { select: { slug: true, id: true } } }
+  });
+
+  if (!enrollment?.organization?.slug) {
+    redirectUrl.searchParams.set("error", "invalid-request");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  const access = await getOrgAccess(enrollment.organization.slug);
+  if ("error" in access || access.membership.organizationId !== enrollment.organization.id || !CAN_MANAGE_STIPENDS.has(access.membership.role)) {
+    redirectUrl.searchParams.set("error", "invalid-request");
     return NextResponse.redirect(redirectUrl);
   }
 

@@ -44,7 +44,7 @@ const footerItems: NavItem[] = [
   { href: "reports", label: "Reports", icon: FileSpreadsheet, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] },
   { href: "stipends", label: "Stipends", icon: HandCoins, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
   { href: "staff", label: "Staff", icon: Users, roles: ["PROVIDER_ADMIN", "COORDINATOR"] },
-  { href: "settings", label: "Settings", icon: Settings, roles: ["PROVIDER_ADMIN", "COORDINATOR"] }
+  { href: "settings", label: "Settings", icon: Settings, roles: ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] }
 ];
 
 export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {

@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 const CAN_MANAGE_SETTINGS = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
 const CAN_CREATE_TICKETS = new Set(["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"]);
@@ -18,6 +19,7 @@ export default async function TenantSettingsPage({
   searchParams?: SettingsSearchParams;
 }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "settings");
   const orgId = access.membership.organizationId;
   const canManageSettings = CAN_MANAGE_SETTINGS.has(access.membership.role);
   const canCreateTickets = CAN_CREATE_TICKETS.has(access.membership.role);

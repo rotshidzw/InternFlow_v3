@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 export default async function EnrollmentsPage({
   params,
@@ -9,6 +10,7 @@ export default async function EnrollmentsPage({
   searchParams?: { stipend?: string; month?: string; enrollment?: string; error?: string; count?: string };
 }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "enrollments");
   const enrollments = await prisma.enrollment.findMany({
     where: { organizationId: access.membership.organizationId },
     include: { user: true, program: true },
@@ -98,6 +100,7 @@ export default async function EnrollmentsPage({
         <p className="mt-1 text-xs text-slate-600">Mark all active enrollments that are still unpaid for a selected month in one click.</p>
         <form action="/api/enrollments/stipend/bulk" method="post" className="mt-3 flex flex-wrap items-end gap-2">
           <input type="hidden" name="organizationId" value={access.membership.organizationId} />
+          <input type="hidden" name="orgSlug" value={params.orgSlug} />
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
             Stipend month
             <input

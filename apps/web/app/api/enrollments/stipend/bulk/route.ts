@@ -1,18 +1,27 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { ensureSystemPayslipForEnrollment } from "@/lib/payslips";
+import { getOrgAccess } from "@/lib/org-access";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const CAN_MANAGE_STIPENDS = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
 
 export async function POST(req: Request) {
   const form = await req.formData();
   const month = String(form.get("month") ?? "").trim();
   const organizationId = String(form.get("organizationId") ?? "").trim();
+  const orgSlug = String(form.get("orgSlug") ?? "").trim();
 
   const referer = req.headers.get("referer") ?? "/workspaces";
   const redirectUrl = new URL(referer, req.url);
 
-  if (!organizationId) {
+  if (!organizationId || !orgSlug) {
+    redirectUrl.searchParams.set("error", "invalid-request");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  const access = await getOrgAccess(orgSlug);
+  if ("error" in access || access.membership.organizationId !== organizationId || !CAN_MANAGE_STIPENDS.has(access.membership.role)) {
     redirectUrl.searchParams.set("error", "invalid-request");
     return NextResponse.redirect(redirectUrl);
   }

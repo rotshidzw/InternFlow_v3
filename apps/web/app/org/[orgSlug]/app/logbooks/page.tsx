@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 type LogbooksPageSearchParams = {
   reviewed?: string;
@@ -18,6 +19,7 @@ export default async function LogbooksPage({
   searchParams?: LogbooksPageSearchParams;
 }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "logbooks");
   const memberIds = await prisma.membership.findMany({
     where: { organizationId: access.membership.organizationId },
     select: { userId: true }

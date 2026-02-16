@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 type StaffSearchParams = {
   q?: string;
@@ -18,6 +19,7 @@ export default async function StaffPage({
   searchParams?: StaffSearchParams;
 }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "staff");
   const orgId = access.membership.organizationId;
 
   const rawRoleFilter = String(searchParams?.role ?? "ALL").toUpperCase();

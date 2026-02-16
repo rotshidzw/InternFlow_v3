@@ -1,5 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 const BASE_REQUIRED_DOCS = ["ID", "CV", "CERTIFICATE", "AFFIDAVIT", "PROOF_OF_ADDRESS"];
 
@@ -35,6 +36,7 @@ export default async function DocumentsPage({
   searchParams?: { q?: string; program?: string };
 }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "documents");
 
   const enrollments = await prisma.enrollment.findMany({
     where: { organizationId: access.membership.organizationId },
