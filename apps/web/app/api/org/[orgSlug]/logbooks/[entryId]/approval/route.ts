@@ -14,5 +14,5 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
 
   await prisma.logbookApproval.create({ data: { entryId: params.entryId, reviewerId: user.id, status, comment } });
 
-  return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/logbooks`, req.url));
+  return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/logbooks?reviewed=1`, req.url));
 }
