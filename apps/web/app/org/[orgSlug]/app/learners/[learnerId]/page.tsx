@@ -1,8 +1,10 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 export default async function LearnerPage({ params }: { params: { orgSlug: string; learnerId: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "learners");
   const user = await prisma.user.findUnique({ where: { id: params.learnerId } });
   if (!user) return <div>Learner not found.</div>;
 

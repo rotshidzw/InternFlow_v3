@@ -1,9 +1,11 @@
 import { prisma } from "@internflow/db/src";
 import { TemplateBuilderForm } from "@/components/tenant/template-builder";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 export default async function TemplatesPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "templates");
   const templates = await prisma.settings.findMany({
     where: { organizationId: access.membership.organizationId, key: { startsWith: "template_" } },
     orderBy: { id: "desc" }

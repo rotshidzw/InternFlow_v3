@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@internflow/db/src";
 import { BriefcaseBusiness, GraduationCap, UserRoundCheck } from "lucide-react";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 function toneForStatus(status: string) {
   if (["PUBLISHED", "ACTIVE", "OPEN"].includes(status)) return "bg-emerald-100 text-emerald-700 border-emerald-200";
@@ -12,6 +13,7 @@ function toneForStatus(status: string) {
 
 export default async function ProgramDetailPage({ params }: { params: { orgSlug: string; programId: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "programs");
 
   const program = await prisma.program.findFirst({
     where: { id: params.programId, organizationId: access.membership.organizationId },

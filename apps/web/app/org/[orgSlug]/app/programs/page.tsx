@@ -1,9 +1,11 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 export default async function ProgramsPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "programs");
   const programs = await prisma.program.findMany({ where: { organizationId: access.membership.organizationId }, orderBy: { name: "asc" }, include: { _count: { select: { opportunities: true, enrollments: true } } } as any });
 
   return (
