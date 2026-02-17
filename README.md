@@ -76,6 +76,31 @@ Use `/auth` and check OTP in MailHog at `http://localhost:8025`.
 - HQ users and role assignment with audit logging
 - Writing Assistant (local Grammarly-style suggestions) for cleaner tenant communication
 
+
+## Role-based login routing (quick guide)
+Use `/auth` and sign in with the role account below. InternFlow routes each role to the correct area automatically:
+
+- **Student** (`student@demo.com`) → `/app/student`
+- **Coordinator** (`coordinator@demo.com`) → `/org/<your-org-slug>/coordinator`
+- **Provider Admin** (`provider@demo.com`) → `/org/<your-org-slug>/provider-admin`
+- **Supervisor** (seeded supervisor account for your org) → `/org/<your-org-slug>/supervisor`
+- **Platform Admin** (`admin@internflow.com`) → `/hq/dashboard`
+
+If a role opens a page outside its allowed area, the app redirects to that role's home page with `?error=forbidden`.
+
+## Windows Turbo warning troubleshooting
+If you see Turbo warnings like stale PID files or lockfile parsing issues:
+
+1. Stop all running dev terminals.
+2. Delete Turbo daemon temp folders in `%LOCALAPPDATA%\Temp\turbod\`.
+3. Ensure the workspace lockfile exists at repo root:
+   - `package-lock.json` for npm projects.
+4. Re-run:
+   - `npm install`
+   - `npm run dev`
+
+> Note: Turbo can still run without lockfile metadata, but workspace graph features are reduced and warnings are expected.
+
 ## Dev-only impersonation
 `POST /api/hq/impersonate/[orgId]` only works when:
 - `ENABLE_DEV_IMPERSONATION=true`
