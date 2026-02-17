@@ -3,9 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { getOrgAccess } from "@/lib/org-access";
 import { redirect } from "next/navigation";
 
+const SUPERVISOR_ALLOWED = new Set(["SUPERVISOR", "COORDINATOR", "PROVIDER_ADMIN"]);
+
 export default async function SupervisorPage({ params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) redirect(access.error === "unauthenticated" ? "/auth" : "/workspaces");
+  if (!SUPERVISOR_ALLOWED.has(access.membership.role)) redirect(`/org/${params.orgSlug}/${access.membership.role.toLowerCase().replace("_", "-")}`);
 
   const logbooks = await prisma.logbookEntry.findMany({
     where: { user: { memberships: { some: { organizationId: access.membership.organizationId } } } },
@@ -21,9 +24,7 @@ export default async function SupervisorPage({ params }: { params: { orgSlug: st
       <section className="mt-4 space-y-2 rounded-xl border border-white/15 bg-white/5 p-4">
         {logbooks.map((entry) => (
           <div key={entry.id} className="rounded-lg border border-white/10 p-2 text-sm">
-            <p>
-              {entry.user.email} · {entry.summary}
-            </p>
+            <p>{entry.user.email} · {entry.summary}</p>
             <form action={`/api/org/${params.orgSlug}/logbooks/${entry.id}/approval`} method="post" className="mt-2 flex gap-2">
               <select name="status" className="rounded border border-white/20 bg-slate-950/40 px-2 py-1">
                 <option value="APPROVED">Approve</option>
