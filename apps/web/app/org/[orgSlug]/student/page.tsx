@@ -12,6 +12,7 @@ function growthSummary(summaries: string[]) {
 export default async function StudentOrgPage({ params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) redirect(access.error === "unauthenticated" ? "/auth" : "/workspaces");
+  if (access.membership.role !== "STUDENT") redirect(`/org/${params.orgSlug}/${access.membership.role.toLowerCase().replace("_", "-")}`);
 
   const applications = await prisma.application.findMany({ where: { userId: access.user.id, opportunity: { organizationId: access.membership.organizationId } }, include: { opportunity: true, checklist: { include: { items: true } } }, orderBy: { createdAt: "desc" } });
   const logbooks = await prisma.logbookEntry.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 8 });
