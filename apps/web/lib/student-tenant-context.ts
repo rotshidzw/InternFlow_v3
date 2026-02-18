@@ -29,7 +29,7 @@ export async function resolveStudentTenantContext(userId: string): Promise<Stude
   const activeEnrollment = await prisma.enrollment.findFirst({
     where: { userId, status: "ACTIVE" },
     include: { organization: true, program: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: { id: "desc" }
   });
 
   if (activeEnrollment) {
