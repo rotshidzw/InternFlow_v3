@@ -53,13 +53,6 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const approvedLogs = logbooks.filter((entry) => entry.approvals[0]?.status === "APPROVED").length;
   const pendingLogs = logbooks.length - approvedLogs;
 
-  const programWorkspaceUrl =
-    context.type === "ENROLLED"
-      ? `/org/${context.enrollment.organizationSlug}/student`
-      : context.type === "APPLICATION"
-      ? `/org/${context.application.organizationSlug}/student`
-      : null;
-
   const showApplied = searchParams?.applied === "1";
   const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
@@ -71,14 +64,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           <h1 className="text-3xl font-semibold text-slate-900">Student Portal</h1>
           <p className="text-sm text-slate-600">A smooth journey across applications, onboarding, messages, logbooks and payslips.</p>
         </div>
-        {programWorkspaceUrl && (
-          <Link href={programWorkspaceUrl} className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 shadow-sm">
-            Open program workspace
-          </Link>
-        )}
+        <Link href="/opportunities" className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 shadow-sm">
+          Browse opportunities
+        </Link>
       </div>
 
-      {showApplied && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">Application submitted. Track progress below. Once accepted, use “Open program workspace”.</div>}
+      {showApplied && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">Application submitted. Track progress below.</div>}
       {showAlreadyApplied && <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">You already applied for this opportunity.</div>}
       {showActiveEnrollmentError && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">You already have an active enrollment in another organization. You cannot apply elsewhere until that enrollment is completed/cancelled.</div>
@@ -114,15 +105,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-              <p className="text-sm font-semibold text-slate-900">After you apply (next step URL)</p>
+              <p className="text-sm font-semibold text-slate-900">What happens after applying?</p>
               <ol className="mt-2 space-y-2 text-sm text-slate-700">
-                <li>1. Application enters tenant screening.</li>
-                <li>2. If accepted, enrollment is created under that tenant.</li>
-                <li>3. Your active portal URL becomes: <span className="font-semibold">/org/{`{tenantSlug}`}/student</span>.</li>
+                <li>1. Your application enters tenant screening.</li>
+                <li>2. If accepted, you become enrolled under the program.</li>
+                <li>3. This same student portal switches to program mode automatically.</li>
               </ol>
-              {programWorkspaceUrl && (
-                <Link href={programWorkspaceUrl} className="mt-3 inline-flex rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800">Go to current tenant student portal</Link>
-              )}
             </div>
           </div>
 
@@ -135,10 +123,6 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
                   <p className="text-xs text-slate-600">{opp.organization.name} · {opp.type}</p>
                 </div>
               ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Link href="/opportunities" className="inline-flex rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800">Open marketplace</Link>
-              <Link href="/app/whatsapp-sim" className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Open messages & docs</Link>
             </div>
           </div>
         </>
@@ -179,10 +163,8 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-            <p className="text-sm font-semibold text-slate-900">Program mode access</p>
-            <p className="mt-1 text-xs text-slate-600">Main URL: /org/{context.enrollment.organizationSlug}/student</p>
-            <p className="text-xs text-slate-600">Weeks done: {approvedLogs} · Pending approvals: {pendingLogs}</p>
-            <Link href={`/org/${context.enrollment.organizationSlug}/student`} className="mt-2 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Go to tenant student portal</Link>
+            <p className="text-sm font-semibold text-slate-900">Program mode is active in this student portal</p>
+            <p className="mt-1 text-xs text-slate-600">Weeks done: {approvedLogs} · Pending approvals: {pendingLogs}</p>
           </div>
         </>
       )}
