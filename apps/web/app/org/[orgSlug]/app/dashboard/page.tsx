@@ -1,6 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { assertTenantAreaAccess } from "@/lib/tenant-rbac";
 
 function pct(value: number, total: number) {
   return total === 0 ? 0 : Math.round((value / total) * 100);
@@ -8,6 +9,7 @@ function pct(value: number, total: number) {
 
 export default async function TenantDashboardPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  assertTenantAreaAccess(params.orgSlug, access.membership.role, "dashboard");
   const orgId = access.membership.organizationId;
 
   const [programs, opportunities, applications, enrollments, docs, approvalsPending, recentApps, recentLogs, recentAudits, onboardingProgress] =

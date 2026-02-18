@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 export default async function ProviderAdminPage({ params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) redirect(access.error === "unauthenticated" ? "/auth" : "/workspaces");
+  if (access.membership.role !== "PROVIDER_ADMIN") redirect(`/org/${params.orgSlug}/${access.membership.role.toLowerCase().replace("_", "-")}`);
 
   const [org, opportunities, applicants] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: access.membership.organizationId } }),
