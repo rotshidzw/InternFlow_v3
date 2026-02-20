@@ -39,7 +39,15 @@ export async function POST(req: Request) {
   const memberships = user ? await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } }) : [];
   const singleMembership = memberships.length === 1 ? memberships[0] : null;
   const rememberedWorkspace = cookies().get("if_workspace")?.value;
-  const rememberedMembership = memberships.find((m) => m.organization.slug === rememberedWorkspace);
+  let rememberedMembership: (typeof memberships)[number] | null = null;
+  if (rememberedWorkspace) {
+    for (const membership of memberships) {
+      if (membership.organization.slug === rememberedWorkspace) {
+        rememberedMembership = membership;
+        break;
+      }
+    }
+  }
   const redirectTo = !user
     ? "/onboarding"
     : platformMembership
@@ -47,9 +55,13 @@ export async function POST(req: Request) {
       : memberships.length === 0
         ? "/onboarding"
         : singleMembership
-          ? `/org/${singleMembership.organization.slug}/app`
+          ? singleMembership.role === "STUDENT"
+            ? "/app/student"
+            : `/org/${singleMembership.organization.slug}/app`
           : rememberedMembership
-            ? `/org/${rememberedMembership.organization.slug}/app`
+            ? rememberedMembership.role === "STUDENT"
+              ? "/app/student"
+              : `/org/${rememberedMembership.organization.slug}/app`
             : "/workspaces";
 
   const response = NextResponse.json({
