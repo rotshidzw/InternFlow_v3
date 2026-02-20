@@ -46,14 +46,14 @@ export default async function WhatsAppSimPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-4 rounded-3xl border border-cyan-200/60 bg-[linear-gradient(125deg,#0f172a_0%,#0f766e_45%,#2563eb_100%)] p-4 text-white shadow-xl shadow-cyan-900/20">
-      <div className="flex flex-wrap items-center justify-center gap-3 rounded-xl border border-white/20 bg-slate-950/25 p-3 text-center backdrop-blur sm:justify-between sm:text-left">
+    <div className="space-y-4 rounded-3xl border border-cyan-200/60 bg-[linear-gradient(125deg,#0f172a_0%,#0f766e_45%,#2563eb_100%)] p-4 text-white shadow-xl shadow-cyan-900/20">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/20 bg-slate-950/25 p-3 backdrop-blur">
         <div>
           <h1 className="text-lg font-semibold">WhatsApp student channel</h1>
           <p className="text-xs text-cyan-100">Chat with tenant support, upload docs, and request certificates/payslips.</p>
         </div>
-        <Link href="/" className="inline-flex rounded-xl border border-white/20 bg-slate-950/40 px-4 py-2 text-xs font-semibold text-slate-100 transition hover:bg-white/10">
-          ← Back to Home
+        <Link href="/app/student" className="inline-flex rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/20">
+          ← Back to Student Portal
         </Link>
       </div>
 
