@@ -68,7 +68,7 @@ export default async function WhatsAppSimPage() {
           </div>
           <p className="mt-3 text-xs text-cyan-100">Student shortcut actions:</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Link href="/app/tickets" className="rounded border border-white/30 px-2 py-1 text-xs">Tickets</Link>
+            <Link href="/app/whatsapp-sim" className="rounded border border-white/30 px-2 py-1 text-xs">Raise concern</Link>
             <Link href="/app/student" className="rounded border border-white/30 px-2 py-1 text-xs">Dashboard</Link>
           </div>
         </aside>

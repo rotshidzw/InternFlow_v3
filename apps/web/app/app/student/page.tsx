@@ -73,11 +73,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Student Portal</h1>
-          <p className="text-sm text-slate-600">A smooth journey across applications, onboarding, messages, logbooks, tickets and payslips.</p>
+          <p className="text-sm text-slate-600">A smooth journey across applications, onboarding, messages, logbooks, tenant concerns and payslips.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/app/whatsapp-sim" className="inline-flex rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800 shadow-sm">Messages</Link>
-          <Link href="/app/tickets" className="inline-flex rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 shadow-sm">Support tickets</Link>
+          <Link href="/app/whatsapp-sim" className="inline-flex rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 shadow-sm">Raise tenant concern</Link>
           {programWorkspaceUrl && (
             <Link href={programWorkspaceUrl} className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 shadow-sm">
               Open program workspace
@@ -112,7 +112,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           <p className="mt-1 text-2xl font-semibold text-amber-800">{dueSoonItems}</p>
         </div>
         <div className="rounded-xl border border-violet-200 bg-violet-50/90 p-4">
-          <p className="text-xs uppercase text-violet-700">Tickets + payslips</p>
+          <p className="text-xs uppercase text-violet-700">Concerns + payslips</p>
           <p className="mt-1 text-2xl font-semibold text-violet-800">{payslips}</p>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               <p className="text-xs text-slate-600">Weeks done: {approvedLogs} · Pending approvals: {pendingLogs}</p>
               <div className="mt-3 flex gap-2">
                 <Link href={`/org/${context.enrollment.organizationSlug}/student`} className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Go to tenant student portal</Link>
-                <Link href="/app/tickets" className="inline-flex rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">Open support ticket</Link>
+                <Link href="/app/whatsapp-sim" className="inline-flex rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">Raise concern with tenant</Link>
               </div>
             </div>
           </div>
