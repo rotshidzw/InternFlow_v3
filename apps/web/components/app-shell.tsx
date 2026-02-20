@@ -4,8 +4,10 @@ import { PropsWithChildren } from "react";
 const roleNav: Record<string, { href: string; label: string }[]> = {
   STUDENT: [
     { href: "student", label: "Dashboard" },
-    { href: "student", label: "Applications" },
-    { href: "student", label: "Documents" }
+    { href: "student#applications", label: "Applications" },
+    { href: "student#checklist", label: "Checklist" },
+    { href: "student#documents", label: "Documents" },
+    { href: "student#growth", label: "Growth" }
   ],
   COORDINATOR: [
     { href: "coordinator", label: "Cohorts" },
@@ -40,7 +42,7 @@ export function AppShell({ children, orgSlug, role, orgName }: PropsWithChildren
           <div className="flex items-center gap-4 text-sm">
             {role === "SYSTEM_ADMIN" && <Link href="/hq/dashboard">HQ</Link>}
             {role !== "SYSTEM_ADMIN" && <Link href="/app/whatsapp-sim">WhatsApp</Link>}
-            <Link href="/workspaces">Switch workspace</Link>
+            {role !== "STUDENT" && <Link href="/workspaces">Switch workspace</Link>}
             <span className="rounded-full border border-white/20 px-3 py-1 text-xs">{orgSlug}</span>
           </div>
         </div>
