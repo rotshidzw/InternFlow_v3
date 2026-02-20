@@ -180,7 +180,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
               <p className="text-sm font-semibold text-slate-900">Next actions checklist</p>
               <div className="mt-2 space-y-2">
                 {nextActions.map((item) => (
@@ -193,11 +193,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
               <p className="text-sm font-semibold text-slate-900">Recent messages with tenant</p>
               <div className="mt-2 space-y-2 text-sm">
                 {recentMessages.map((message) => (
-                  <div key={message.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{message.body}</div>
+                  <div key={message.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{message.body}</div>
                 ))}
                 {threads.length === 0 && <p className="text-xs text-slate-500">No messages yet.</p>}
               </div>
@@ -206,11 +206,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
               <p className="text-sm font-semibold text-slate-900">Document quick vault</p>
               <div className="mt-2 space-y-2 text-sm">
                 {recentlyUploadedDocs.map((d) => (
-                  <p key={d.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{d.type} · {d.status}</p>
+                  <p key={d.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{d.type} · {d.status}</p>
                 ))}
                 {recentlyUploadedDocs.length === 0 && <p className="text-xs text-slate-500">No documents uploaded yet.</p>}
               </div>
