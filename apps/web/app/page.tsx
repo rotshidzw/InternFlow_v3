@@ -56,9 +56,8 @@ export default function HomePage() {
               and compliance from one polished platform.
             </p>
             <p className="text-sm text-emerald-200">
-              Student joining for an internship? Use{" "}
-              <span className="font-semibold">Student Register</span> to create
-              your account with OTP and start applying.
+              Students do not create organisations. Use an invite link/token to
+              join a tenant, then apply for internships in that organisation.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -68,10 +67,10 @@ export default function HomePage() {
                 Try Demo
               </Link>
               <Link
-                href="/auth"
+                href="/auth/setup?mode=join"
                 className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200"
               >
-                Student Register
+                Student Join via Invite
               </Link>
               <Link
                 href="/auth"

@@ -31,10 +31,10 @@ export function SiteShell({ children }: PropsWithChildren) {
               </Link>
             ))}
             <Link
-              href="/auth"
+              href="/auth/setup?mode=join"
               className="rounded-lg border border-white/20 px-3 py-1"
             >
-              Student Register
+              Student Join
             </Link>
             <Link
               href="/auth"
@@ -66,10 +66,10 @@ export function SiteShell({ children }: PropsWithChildren) {
                   </Link>
                 ))}
                 <Link
-                  href="/auth"
+                  href="/auth/setup?mode=join"
                   className="rounded-md border border-white/20 px-2 py-1 text-center"
                 >
-                  Student Register
+                  Student Join
                 </Link>
                 <Link
                   href="/auth"
