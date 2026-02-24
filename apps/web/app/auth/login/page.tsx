@@ -71,8 +71,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-xl md:p-8">
-      <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Secure access</p>
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-xl md:p-8">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Secure access</p>
+        <button type="button" onClick={() => router.push("/")} className="inline-flex rounded-xl border border-white/20 bg-slate-950/40 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10">
+          Back to Home
+        </button>
+      </div>
       <h1 className="mt-2 text-3xl font-semibold text-white">Sign in with one-time passcode</h1>
       <p className="mt-2 text-sm text-slate-200">Organisation teams and students log in here. If you are new, you can continue to organisation setup after verification.</p>
 
@@ -108,6 +114,7 @@ export default function LoginPage() {
       </div>
 
       {error && <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+      </div>
     </div>
   );
 }

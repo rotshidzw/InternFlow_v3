@@ -7,5 +7,6 @@ export async function requireTenantAccess(orgSlug: string) {
     if (access.error === "unauthenticated") redirect("/auth");
     redirect("/workspaces");
   }
+  if (access.membership.role === "STUDENT") redirect(`/org/${orgSlug}/student`);
   return access;
 }

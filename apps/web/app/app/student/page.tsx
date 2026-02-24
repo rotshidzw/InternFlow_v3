@@ -49,6 +49,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const checklistDone = checklistItems.filter((item) => item.status === "DONE").length;
   const checklistProgress = latestChecklist?.progress ?? pct(checklistDone, checklistItems.length);
   const nextActions = checklistItems.filter((item) => item.status !== "DONE").slice(0, 4);
+  const dueSoonItems = checklistItems.filter((item) => item.dueDate && item.status !== "DONE" && item.dueDate.getTime() - now.getTime() <= 5 * 24 * 60 * 60 * 1000).length;
 
   const approvedLogs = logbooks.filter((entry) => entry.approvals[0]?.status === "APPROVED").length;
   const pendingLogs = logbooks.length - approvedLogs;
@@ -60,22 +61,29 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       ? `/org/${context.application.organizationSlug}/student`
       : null;
 
+  const recentMessages = threads.flatMap((thread) => thread.messages).slice(0, 5);
+  const recentlyUploadedDocs = docs.slice(0, 4);
+
   const showApplied = searchParams?.applied === "1";
   const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
 
   return (
-    <div className="space-y-6 rounded-3xl border border-slate-200 bg-[radial-gradient(circle_at_top,#dbeafe_0%,#eef2ff_35%,#f8fafc_80%)] p-6 shadow-sm">
+    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-indigo-100 bg-[linear-gradient(125deg,#eef2ff_0%,#f0fdfa_42%,#ecfeff_100%)] p-6 shadow-lg shadow-indigo-100/50">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Student Portal</h1>
-          <p className="text-sm text-slate-600">A smooth journey across applications, onboarding, messages, logbooks and payslips.</p>
+          <p className="text-sm text-slate-600">A smooth journey across applications, onboarding, messages, logbooks, tenant concerns and payslips.</p>
         </div>
-        {programWorkspaceUrl && (
-          <Link href={programWorkspaceUrl} className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 shadow-sm">
-            Open program workspace
-          </Link>
-        )}
+        <div className="flex gap-2">
+          <Link href="/app/whatsapp-sim" className="inline-flex rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800 shadow-sm">Messages</Link>
+          <Link href="/app/whatsapp-sim" className="inline-flex rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800 shadow-sm">Raise tenant concern</Link>
+          {programWorkspaceUrl && (
+            <Link href={programWorkspaceUrl} className="inline-flex rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 shadow-sm">
+              Open program workspace
+            </Link>
+          )}
+        </div>
       </div>
 
       {showApplied && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">Application submitted. Track progress below. Once accepted, use “Open program workspace”.</div>}
@@ -90,13 +98,32 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </div>
       )}
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+          <p className="text-xs uppercase text-slate-500">Profile readiness</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{employabilityScore}%</p>
+        </div>
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50/90 p-4">
+          <p className="text-xs uppercase text-cyan-700">Recent messages</p>
+          <p className="mt-1 text-2xl font-semibold text-cyan-800">{recentMessages.length}</p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4">
+          <p className="text-xs uppercase text-amber-700">Due soon actions</p>
+          <p className="mt-1 text-2xl font-semibold text-amber-800">{dueSoonItems}</p>
+        </div>
+        <div className="rounded-xl border border-violet-200 bg-violet-50/90 p-4">
+          <p className="text-xs uppercase text-violet-700">Concerns + payslips</p>
+          <p className="mt-1 text-2xl font-semibold text-violet-800">{payslips}</p>
+        </div>
+      </div>
+
       {context.type !== "ENROLLED" ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white/90 p-4"><p className="text-xs uppercase text-slate-500">Applications</p><p className="mt-1 text-2xl font-semibold text-slate-900">{applications.length}</p></div>
             <div className="rounded-xl border border-indigo-200 bg-indigo-50/90 p-4"><p className="text-xs uppercase text-indigo-700">In pipeline</p><p className="mt-1 text-2xl font-semibold text-indigo-800">{submitted + shortlisted}</p></div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4"><p className="text-xs uppercase text-emerald-700">Accepted</p><p className="mt-1 text-2xl font-semibold text-emerald-800">{accepted}</p></div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4"><p className="text-xs uppercase text-amber-700">Employability score</p><p className="mt-1 text-2xl font-semibold text-amber-800">{employabilityScore}%</p></div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4"><p className="text-xs uppercase text-amber-700">Documents</p><p className="mt-1 text-2xl font-semibold text-amber-800">{docs.length}</p></div>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
@@ -153,7 +180,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
               <p className="text-sm font-semibold text-slate-900">Next actions checklist</p>
               <div className="mt-2 space-y-2">
                 {nextActions.map((item) => (
@@ -166,11 +193,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
               <p className="text-sm font-semibold text-slate-900">Recent messages with tenant</p>
               <div className="mt-2 space-y-2 text-sm">
-                {threads.flatMap((thread) => thread.messages).slice(0, 5).map((message) => (
-                  <div key={message.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{message.body}</div>
+                {recentMessages.map((message) => (
+                  <div key={message.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{message.body}</div>
                 ))}
                 {threads.length === 0 && <p className="text-xs text-slate-500">No messages yet.</p>}
               </div>
@@ -178,11 +205,25 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-            <p className="text-sm font-semibold text-slate-900">Program mode access</p>
-            <p className="mt-1 text-xs text-slate-600">Main URL: /org/{context.enrollment.organizationSlug}/student</p>
-            <p className="text-xs text-slate-600">Weeks done: {approvedLogs} · Pending approvals: {pendingLogs}</p>
-            <Link href={`/org/${context.enrollment.organizationSlug}/student`} className="mt-2 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Go to tenant student portal</Link>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4 text-slate-900">
+              <p className="text-sm font-semibold text-slate-900">Document quick vault</p>
+              <div className="mt-2 space-y-2 text-sm">
+                {recentlyUploadedDocs.map((d) => (
+                  <p key={d.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">{d.type} · {d.status}</p>
+                ))}
+                {recentlyUploadedDocs.length === 0 && <p className="text-xs text-slate-500">No documents uploaded yet.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+              <p className="text-sm font-semibold text-slate-900">Program mode access</p>
+              <p className="mt-1 text-xs text-slate-600">Main URL: /org/{context.enrollment.organizationSlug}/student</p>
+              <p className="text-xs text-slate-600">Weeks done: {approvedLogs} · Pending approvals: {pendingLogs}</p>
+              <div className="mt-3 flex gap-2">
+                <Link href={`/org/${context.enrollment.organizationSlug}/student`} className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">Go to tenant student portal</Link>
+                <Link href="/app/whatsapp-sim" className="inline-flex rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">Raise concern with tenant</Link>
+              </div>
+            </div>
           </div>
         </>
       )}

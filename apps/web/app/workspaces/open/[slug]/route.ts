@@ -16,7 +16,11 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
 
   if (!membership) return NextResponse.redirect(new URL("/workspaces", req.url));
 
-  const target = membership.organization.status === "APPROVED" ? `/org/${params.slug}/app` : "/onboarding/verify-org";
+  const target = membership.organization.status !== "APPROVED"
+    ? "/onboarding/verify-org"
+    : membership.role === "STUDENT"
+      ? "/app/student"
+      : `/org/${params.slug}/app`;
 
   const response = NextResponse.redirect(new URL(target, req.url));
   response.cookies.set("if_workspace", params.slug, { path: "/", sameSite: "lax" });

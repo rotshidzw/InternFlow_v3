@@ -28,8 +28,7 @@ export type StudentTenantContext =
 export async function resolveStudentTenantContext(userId: string): Promise<StudentTenantContext> {
   const activeEnrollment = await prisma.enrollment.findFirst({
     where: { userId, status: "ACTIVE" },
-    include: { organization: true, program: true },
-    orderBy: { createdAt: "desc" }
+    include: { organization: true, program: true }
   });
 
   if (activeEnrollment) {

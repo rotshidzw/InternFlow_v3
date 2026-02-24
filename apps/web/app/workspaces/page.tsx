@@ -20,13 +20,14 @@ export default async function WorkspacesPage() {
   const rememberedMembership = remembered ? user.memberships.find((m) => m.organization.slug === remembered) : null;
 
   if (rememberedMembership) {
+    if (rememberedMembership.role === "STUDENT") redirect("/app/student");
     redirect(`/org/${rememberedMembership.organization.slug}/app`);
   }
 
   if (user.memberships.length === 1) {
     const single = user.memberships[0];
     cookies().set("if_workspace", single.organization.slug, { path: "/", sameSite: "lax" });
-    const rolePath = single.role.toLowerCase().replace("_", "-");
+    if (single.role === "STUDENT") redirect("/app/student");
     redirect(`/org/${single.organization.slug}/app`);
   }
 

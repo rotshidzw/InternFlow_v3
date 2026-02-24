@@ -1,6 +1,14 @@
 import { prisma } from "@internflow/db/src";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
 export default async function TicketsPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth");
+
+  const platformMembership = await prisma.platformMembership.findFirst({ where: { userId: user.id } });
+  if (!platformMembership) redirect("/app/student");
+
   const tickets = await prisma.ticket.findMany({ include: { user: true, events: true }, orderBy: { createdAt: "desc" }, take: 30 });
 
   return (
