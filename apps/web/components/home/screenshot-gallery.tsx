@@ -27,14 +27,14 @@ const screens = [
 export function ScreenshotGallery() {
   return (
     <section id="inside" className="space-y-3">
-      <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
+      <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
         Inside InternFlow
       </p>
       <h2 className="text-3xl font-semibold">A quick view of real workflows</h2>
       <div className="grid gap-4 md:grid-cols-2">
         {screens.map((screen) => (
           <AnimatedCard key={screen.src}>
-            <div className="overflow-hidden rounded-xl border border-white/15">
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/15">
               <Image
                 src={screen.src}
                 alt={screen.title}
@@ -45,11 +45,13 @@ export function ScreenshotGallery() {
               />
             </div>
             <p className="mt-3 text-sm font-medium">{screen.title}</p>
-            <p className="mt-1 text-xs text-slate-300">{screen.caption}</p>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+              {screen.caption}
+            </p>
           </AnimatedCard>
         ))}
       </div>
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-slate-500 dark:text-slate-400">
         Demo data shown. Real workflows in pilot.
       </p>
     </section>

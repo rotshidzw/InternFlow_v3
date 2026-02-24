@@ -3,14 +3,36 @@
 @tailwind utilities;
 
 body {
-  @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+  @apply min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
 }
 
 .animated-bg-overlay {
   background:
     radial-gradient(
       circle at 20% 20%,
-      rgba(16, 185, 129, 0.22),
+      rgba(14, 165, 233, 0.16),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 80% 10%,
+      rgba(16, 185, 129, 0.14),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 40% 80%,
+      rgba(96, 165, 250, 0.15),
+      transparent 48%
+    );
+  background-size: 150% 150%;
+  animation: internflow-water-shift 24s linear infinite;
+  opacity: 0.18;
+}
+
+.dark .animated-bg-overlay {
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(16, 185, 129, 0.2),
       transparent 40%
     ),
     radial-gradient(
@@ -20,15 +42,13 @@ body {
     ),
     radial-gradient(
       circle at 40% 80%,
-      rgba(99, 102, 241, 0.18),
+      rgba(99, 102, 241, 0.16),
       transparent 45%
     );
-  background-size: 140% 140%;
-  animation: internflow-gradient-shift 20s linear infinite;
-  opacity: 0.18;
+  opacity: 0.16;
 }
 
-@keyframes internflow-gradient-shift {
+@keyframes internflow-water-shift {
   0% {
     background-position: 0% 50%;
   }

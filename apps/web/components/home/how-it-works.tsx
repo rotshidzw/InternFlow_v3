@@ -9,7 +9,7 @@ const steps = [
 export function HowItWorks() {
   return (
     <section id="how-it-works" className="space-y-3">
-      <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
+      <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
         How it works
       </p>
       <h2 className="text-3xl font-semibold">
@@ -18,10 +18,12 @@ export function HowItWorks() {
       <div className="grid gap-4 md:grid-cols-3">
         {steps.map((step, index) => (
           <AnimatedCard key={step}>
-            <p className="text-xs uppercase tracking-[0.16em] text-emerald-300">
+            <p className="text-xs uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
               Step {index + 1}
             </p>
-            <p className="mt-2 text-sm text-slate-100">{step}</p>
+            <p className="mt-2 text-sm text-slate-700 dark:text-slate-100">
+              {step}
+            </p>
           </AnimatedCard>
         ))}
       </div>
