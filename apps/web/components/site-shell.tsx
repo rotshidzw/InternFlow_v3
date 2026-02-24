@@ -6,10 +6,10 @@ import { PropsWithChildren, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navLinks = [
-  { href: "/#how-it-works", label: "How it works" },
-  { href: "/#inside", label: "Inside InternFlow" },
-  { href: "/#trust", label: "Trust & Security" },
-  { href: "/#ops-depth", label: "Admin Ops Depth" },
+  { href: "/#product", label: "Product" },
+  { href: "/#how", label: "How it Works" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/#security", label: "Security" },
 ];
 
 export function SiteShell({ children }: PropsWithChildren) {
@@ -24,21 +24,22 @@ export function SiteShell({ children }: PropsWithChildren) {
       <div className="relative z-10">
         <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link href="/" className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-xl font-bold text-emerald-600 dark:text-emerald-300"
+            >
               <Image
                 src="/icon-512.svg"
-                alt="InternFlow"
-                width={36}
-                height={36}
+                alt="InternFlow logo"
+                width={32}
+                height={32}
                 className="rounded-lg"
                 priority
               />
-              <span className="text-xl font-bold text-emerald-600 dark:text-emerald-300">
-                InternFlow
-              </span>
+              <span>InternFlow</span>
             </Link>
 
-            <div className="hidden items-center gap-3 text-sm md:flex">
+            <div className="hidden items-center gap-4 text-sm md:flex">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -48,28 +49,25 @@ export function SiteShell({ children }: PropsWithChildren) {
                   {link.label}
                 </Link>
               ))}
-              <ThemeToggle />
-              <Link
-                href="/onboarding/create-org"
-                className="rounded-lg bg-emerald-500 px-3 py-1.5 font-semibold text-slate-950"
-              >
-                Register Organisation
-              </Link>
-              <Link
-                href="/onboarding/profile"
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 dark:border-white/25 dark:text-slate-100"
-              >
-                Student: Get Started
-              </Link>
               <Link
                 href="/auth/setup?mode=join"
-                className="text-emerald-700 underline-offset-4 hover:underline dark:text-emerald-200"
+                className="rounded-lg border border-slate-300 px-3 py-1 dark:border-white/20"
               >
-                Join via Invite
+                Student Join
               </Link>
-              <Link href="/auth" className="underline-offset-4 hover:underline">
+              <Link
+                href="/auth"
+                className="rounded-lg border border-emerald-300/50 px-3 py-1 text-emerald-700 dark:text-emerald-200"
+              >
                 Login
               </Link>
+              <Link
+                href="/onboarding/create-org"
+                className="rounded-lg border border-slate-300 px-3 py-1 dark:border-white/20"
+              >
+                Register Organization
+              </Link>
+              <ThemeToggle />
             </div>
 
             <div className="flex items-center gap-2 md:hidden">
@@ -100,32 +98,25 @@ export function SiteShell({ children }: PropsWithChildren) {
                   </Link>
                 ))}
                 <Link
-                  href="/onboarding/create-org"
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-md bg-emerald-500 px-3 py-2 text-center font-semibold text-slate-950"
-                >
-                  Register Organisation
-                </Link>
-                <Link
-                  href="/onboarding/profile"
+                  href="/auth/setup?mode=join"
                   onClick={() => setMobileOpen(false)}
                   className="rounded-md border border-slate-300 px-3 py-2 text-center dark:border-white/25"
                 >
-                  Student: Get Started
-                </Link>
-                <Link
-                  href="/auth/setup?mode=join"
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-md px-2 py-1 text-emerald-700 dark:text-emerald-200"
-                >
-                  Student Join via Invite
+                  Student Join
                 </Link>
                 <Link
                   href="/auth"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-md px-2 py-1"
+                  className="rounded-md border border-emerald-300/50 px-3 py-2 text-center text-emerald-700 dark:text-emerald-200"
                 >
                   Login
+                </Link>
+                <Link
+                  href="/onboarding/create-org"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md bg-emerald-500 px-3 py-2 text-center font-semibold text-slate-950"
+                >
+                  Register Organization
                 </Link>
               </div>
             </div>
@@ -136,11 +127,11 @@ export function SiteShell({ children }: PropsWithChildren) {
         <footer className="border-t border-slate-200/80 bg-white/75 dark:border-white/10 dark:bg-slate-950/50">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-600 dark:text-slate-300 md:flex-row md:items-center md:justify-between">
             <p>
-              InternFlow · Pilot-first internship and learnership operations.
+              InternFlow · Multi-organisation internship and learnership
+              operations.
             </p>
             <div className="flex gap-3">
-              <Link href="/onboarding/create-org">Register Organisation</Link>
-              <Link href="/onboarding/profile">Student profile</Link>
+              <Link href="/onboarding/create-org">Register Organization</Link>
               <Link href="/auth">Login</Link>
             </div>
           </div>
