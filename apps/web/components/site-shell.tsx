@@ -51,7 +51,7 @@ export function SiteShell({ children }: PropsWithChildren) {
               ))}
               <Link
                 href="/auth/setup?mode=join"
-                className="rounded-lg border border-slate-300 px-3 py-1 dark:border-white/20"
+                className="rounded-lg border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-100 dark:border-white/20 dark:text-slate-100 dark:hover:bg-white/10"
               >
                 Student Join
               </Link>
@@ -63,7 +63,7 @@ export function SiteShell({ children }: PropsWithChildren) {
               </Link>
               <Link
                 href="/onboarding/create-org"
-                className="rounded-lg border border-slate-300 px-3 py-1 dark:border-white/20"
+                className="rounded-lg border border-slate-300 px-3 py-1 text-slate-700 hover:bg-slate-100 dark:border-white/20 dark:text-slate-100 dark:hover:bg-white/10"
               >
                 Register Organization
               </Link>
@@ -100,7 +100,7 @@ export function SiteShell({ children }: PropsWithChildren) {
                 <Link
                   href="/auth/setup?mode=join"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-center dark:border-white/25"
+                  className="rounded-md border border-slate-300 px-3 py-2 text-center text-slate-700 dark:border-white/25 dark:text-slate-100"
                 >
                   Student Join
                 </Link>
@@ -131,8 +131,18 @@ export function SiteShell({ children }: PropsWithChildren) {
               operations.
             </p>
             <div className="flex gap-3">
-              <Link href="/onboarding/create-org">Register Organization</Link>
-              <Link href="/auth">Login</Link>
+              <Link
+                href="/onboarding/create-org"
+                className="text-slate-700 hover:underline dark:text-slate-200"
+              >
+                Register Organization
+              </Link>
+              <Link
+                href="/auth"
+                className="text-slate-700 hover:underline dark:text-slate-200"
+              >
+                Login
+              </Link>
             </div>
           </div>
         </footer>

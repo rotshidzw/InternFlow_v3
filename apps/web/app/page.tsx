@@ -83,19 +83,19 @@ export default function HomePage() {
                 />
                 <Link
                   href="/auth/setup?mode=join"
-                  className="rounded-xl border border-emerald-300/70 px-4 py-2 text-emerald-700 dark:text-emerald-200"
+                  className="rounded-xl border border-emerald-300/70 px-4 py-2 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-200 dark:hover:bg-emerald-500/10"
                 >
                   Student Join via Invite
                 </Link>
                 <Link
                   href="/auth"
-                  className="rounded-xl border border-slate-300 px-4 py-2 dark:border-white/30"
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100 dark:border-white/30 dark:text-slate-100 dark:hover:bg-white/10"
                 >
                   Login
                 </Link>
                 <Link
                   href="/onboarding/create-org"
-                  className="rounded-xl border border-emerald-300/70 px-4 py-2 text-emerald-700 dark:text-emerald-200"
+                  className="rounded-xl border border-emerald-300/70 px-4 py-2 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-200 dark:hover:bg-emerald-500/10"
                 >
                   Register Organization
                 </Link>
