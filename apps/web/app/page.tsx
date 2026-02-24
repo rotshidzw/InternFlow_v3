@@ -1,6 +1,18 @@
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
+import { FadeInSection } from "@/components/fade-in-section";
+import { MotionLinkButton } from "@/components/motion-link-button";
+
+const AnimatedCounter = dynamic(
+  () =>
+    import("@/components/animated-counter").then((mod) => mod.AnimatedCounter),
+  { ssr: false },
+);
 
 const modules = [
   {
@@ -35,81 +47,123 @@ const modules = [
 ];
 
 export default function HomePage() {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <SiteShell>
       <div className="space-y-10">
-        <section
-          id="product"
-          className="grid gap-6 md:grid-cols-2 md:items-center"
-        >
-          <div className="space-y-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
-              InternFlow platform
-            </p>
-            <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-              Multi-organisation internship operations, built for real program
-              delivery.
-            </h1>
-            <p className="text-slate-200">
-              Organisations first register with InternFlow, get their own
-              isolated workspace, then manage student applications, approvals,
-              and compliance from one polished platform.
-            </p>
-            <p className="text-sm text-emerald-200">
-              Students do not create organisations. Use an invite link/token to
-              join a tenant, then apply for internships in that organisation.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/demo"
-                className="rounded-xl bg-emerald-500 px-4 py-2 font-medium text-slate-950"
-              >
-                Try Demo
-              </Link>
-              <Link
-                href="/auth/setup?mode=join"
-                className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200"
-              >
-                Student Join via Invite
-              </Link>
-              <Link
-                href="/auth"
-                className="rounded-xl border border-white/30 px-4 py-2 text-white"
-              >
-                Login
-              </Link>
-              <Link
-                href="/onboarding/create-org"
-                className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200"
-              >
-                Register Organization
-              </Link>
+        <FadeInSection>
+          <section
+            id="product"
+            className="grid gap-6 md:grid-cols-2 md:items-center"
+          >
+            <div className="space-y-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
+                InternFlow platform
+              </p>
+              <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
+                Multi-organisation internship operations, built for real program
+                delivery.
+              </h1>
+              <p className="text-slate-200">
+                Organisations first register with InternFlow, get their own
+                isolated workspace, then manage student applications, approvals,
+                and compliance from one polished platform.
+              </p>
+              <p className="text-sm text-emerald-200">
+                Students do not create organisations. Use an invite link/token
+                to join a tenant, then apply for internships in that
+                organisation.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <MotionLinkButton
+                  href="/demo"
+                  label="Try Demo"
+                  className="rounded-xl bg-emerald-500 px-4 py-2 font-medium text-slate-950 shadow-sm transition-shadow hover:shadow-[0_10px_30px_rgba(16,185,129,0.35)]"
+                />
+                <Link
+                  href="/auth/setup?mode=join"
+                  className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200"
+                >
+                  Student Join via Invite
+                </Link>
+                <Link
+                  href="/auth"
+                  className="rounded-xl border border-white/30 px-4 py-2 text-white"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/onboarding/create-org"
+                  className="rounded-xl border border-emerald-300/50 px-4 py-2 text-emerald-200"
+                >
+                  Register Organization
+                </Link>
+              </div>
             </div>
-          </div>
-          <AnimatedCard>
-            <h2 className="text-xl font-semibold">Platform flow</h2>
-            <ol className="mt-3 space-y-2 text-sm text-slate-100">
-              <li>
-                <span className="font-semibold text-emerald-300">
-                  1. Organisation onboarding:
-                </span>{" "}
-                company creates account and workspace.
-              </li>
-              <li>
-                <span className="font-semibold text-emerald-300">
-                  2. Program setup:
-                </span>{" "}
-                organisation configures opportunities and requirements.
-              </li>
-              <li>
-                <span className="font-semibold text-emerald-300">
-                  3. Student lifecycle:
-                </span>{" "}
-                apply → review → accepted/rejected → ongoing tracking.
-              </li>
-            </ol>
-          </AnimatedCard>
-        </section>
+
+            <motion.div
+              animate={prefersReducedMotion ? undefined : { y: [0, -8, 0] }}
+              transition={
+                prefersReducedMotion
+                  ? undefined
+                  : {
+                      duration: 7,
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      ease: "easeInOut",
+                    }
+              }
+            >
+              <AnimatedCard>
+                <h2 className="text-xl font-semibold">Platform flow</h2>
+                <ol className="mt-3 space-y-2 text-sm text-slate-100">
+                  <li>
+                    <span className="font-semibold text-emerald-300">
+                      1. Organisation onboarding:
+                    </span>{" "}
+                    company creates account and workspace.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-emerald-300">
+                      2. Program setup:
+                    </span>{" "}
+                    organisation configures opportunities and requirements.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-emerald-300">
+                      3. Student lifecycle:
+                    </span>{" "}
+                    apply → review → accepted/rejected → ongoing tracking.
+                  </li>
+                </ol>
+              </AnimatedCard>
+            </motion.div>
+          </section>
+        </FadeInSection>
+
+        <FadeInSection>
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Compliance", target: 95, suffix: "%" },
+              { label: "Admin reduction", target: 60, suffix: "%" },
+              { label: "Workspaces", target: 120, suffix: "+" },
+              { label: "Onboarding SLA", target: 14, suffix: "d" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-white/15 bg-white/5 p-4"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
+                  {stat.label}
+                </p>
+                <p className="mt-2 text-3xl font-semibold text-emerald-200">
+                  <AnimatedCounter target={stat.target} suffix={stat.suffix} />
+                </p>
+              </div>
+            ))}
+          </section>
+        </FadeInSection>
 
         <section id="how" className="grid gap-4 md:grid-cols-3">
           {modules.map((module) => (
@@ -122,27 +176,29 @@ export default function HomePage() {
           ))}
         </section>
 
-        <section id="security" className="grid gap-4 md:grid-cols-2">
-          <AnimatedCard>
-            <h3 className="text-xl font-semibold">
-              Tenant isolation by design
-            </h3>
-            <p className="mt-2 text-sm text-slate-200">
-              Every organisation operates in its own data boundary. Teams manage
-              their own users, programs, and student records without
-              cross-tenant leakage.
-            </p>
-          </AnimatedCard>
-          <AnimatedCard>
-            <h3 className="text-xl font-semibold">
-              Compliance + POPIA posture
-            </h3>
-            <p className="mt-2 text-sm text-slate-200">
-              Auditable events, role-scoped access, secure object storage, and
-              export-ready reporting are built into daily workflows.
-            </p>
-          </AnimatedCard>
-        </section>
+        <FadeInSection>
+          <section id="security" className="grid gap-4 md:grid-cols-2">
+            <AnimatedCard>
+              <h3 className="text-xl font-semibold">
+                Tenant isolation by design
+              </h3>
+              <p className="mt-2 text-sm text-slate-200">
+                Every organisation operates in its own data boundary. Teams
+                manage their own users, programs, and student records without
+                cross-tenant leakage.
+              </p>
+            </AnimatedCard>
+            <AnimatedCard>
+              <h3 className="text-xl font-semibold">
+                Compliance + POPIA posture
+              </h3>
+              <p className="mt-2 text-sm text-slate-200">
+                Auditable events, role-scoped access, secure object storage, and
+                export-ready reporting are built into daily workflows.
+              </p>
+            </AnimatedCard>
+          </section>
+        </FadeInSection>
       </div>
     </SiteShell>
   );
