@@ -28,21 +28,21 @@ export default async function ExplorePage() {
   const interested = new Set(interests.map((interest) => interest.postId));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 text-white">
+    <div className="mx-auto max-w-5xl px-4 py-10 text-slate-900 dark:text-white">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
             Explore
           </p>
           <h1 className="text-3xl font-semibold">Public opportunities</h1>
-          <p className="mt-1 text-sm text-slate-300">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             Open posts from approved tenants. Express interest even before
             joining a tenant.
           </p>
         </div>
         <Link
           href="/onboarding/profile"
-          className="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
         >
           Edit profile
         </Link>
@@ -52,14 +52,16 @@ export default async function ExplorePage() {
         {posts.map((post) => (
           <article
             key={post.id}
-            className="rounded-2xl border border-white/15 bg-white/5 p-4"
+            className="rounded-2xl border border-slate-200 bg-white/85 p-4 dark:border-white/15 dark:bg-white/5"
           >
-            <p className="text-xs uppercase tracking-[0.15em] text-emerald-300">
+            <p className="text-xs uppercase tracking-[0.15em] text-emerald-700 dark:text-emerald-300">
               {post.tenant.name}
             </p>
             <h2 className="mt-1 text-xl font-semibold">{post.title}</h2>
-            <p className="mt-2 text-sm text-slate-200">{post.description}</p>
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-200">
+              {post.description}
+            </p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Closes:{" "}
               {post.closesAt
                 ? post.closesAt.toISOString().slice(0, 10)
@@ -82,7 +84,7 @@ export default async function ExplorePage() {
       </div>
 
       {posts.length === 0 && (
-        <p className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+        <p className="rounded-xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
           No public opportunities available right now.
         </p>
       )}

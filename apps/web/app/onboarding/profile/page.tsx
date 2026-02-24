@@ -72,14 +72,14 @@ export default function StudentProfileOnboardingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl rounded-3xl border border-white/20 bg-white/10 p-6 text-white shadow-2xl backdrop-blur-xl md:p-8">
-      <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">
+    <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white/85 p-6 text-slate-900 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-white/10 dark:text-white md:p-8">
+      <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
         Student onboarding
       </p>
       <h1 className="mt-2 text-3xl font-semibold">
         Create your student profile
       </h1>
-      <p className="mt-2 text-sm text-slate-200">
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-200">
         You can explore public opportunities even before joining a tenant.
         Complete your profile so providers can evaluate fit.
       </p>
@@ -90,49 +90,49 @@ export default function StudentProfileOnboardingPage() {
           onChange={(e) => setFullName(e.target.value)}
           required
           placeholder="Full name"
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40"
         />
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Phone"
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40"
         />
         <input
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="Location (city/province)"
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3 md:col-span-2"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           placeholder="Short bio"
           rows={3}
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3 md:col-span-2"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
         <input
           value={skillsInput}
           onChange={(e) => setSkillsInput(e.target.value)}
           placeholder="Skills (comma separated)"
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3 md:col-span-2"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
         <textarea
           value={education}
           onChange={(e) => setEducation(e.target.value)}
           placeholder='Education JSON or text, e.g. {"highest":"Diploma IT"}'
           rows={3}
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3 md:col-span-2"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
         <textarea
           value={experience}
           onChange={(e) => setExperience(e.target.value)}
           placeholder="Experience JSON or text"
           rows={3}
-          className="rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3 md:col-span-2"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
 
-        <label className="md:col-span-2 flex items-center gap-2 rounded-xl border border-white/20 bg-slate-950/30 p-3 text-sm">
+        <label className="md:col-span-2 flex items-center gap-2 rounded-xl border border-slate-300 bg-white p-3 text-sm dark:border-white/20 dark:bg-slate-950/30">
           <input
             type="checkbox"
             checked={isDiscoverable}
@@ -150,7 +150,7 @@ export default function StudentProfileOnboardingPage() {
       </form>
 
       {error && (
-        <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
           {error}
         </p>
       )}
