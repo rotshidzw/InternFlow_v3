@@ -1,13 +1,18 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useState } from "react";
+
+const navLinks = [
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#inside", label: "Inside InternFlow" },
+  { href: "/#trust", label: "Trust & Security" },
+  { href: "/pricing", label: "Pricing" },
+];
 
 export function SiteShell({ children }: PropsWithChildren) {
-  const navLinks = [
-    { href: "/#product", label: "Product" },
-    { href: "/#how", label: "How it Works" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/#security", label: "Security" },
-  ];
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,#134e4a_0%,#0f172a_40%,#020617_100%)] text-slate-100">
@@ -16,20 +21,23 @@ export function SiteShell({ children }: PropsWithChildren) {
         aria-hidden
       />
       <div className="relative z-10">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-xl font-bold text-emerald-300"
-            >
-              <img
-                src="/icon.svg"
-                alt="InternFlow logo"
-                className="h-8 w-8 rounded-lg"
+            <Link href="/" className="flex items-center gap-3">
+              <Image
+                src="/icon-512.svg"
+                alt="InternFlow"
+                width={36}
+                height={36}
+                className="rounded-lg"
+                priority
               />
-              <span>InternFlow</span>
+              <span className="text-xl font-bold text-emerald-300">
+                InternFlow
+              </span>
             </Link>
-            <div className="hidden gap-4 text-sm md:flex">
+
+            <div className="hidden items-center gap-4 text-sm md:flex">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                   {link.label}
@@ -37,71 +45,93 @@ export function SiteShell({ children }: PropsWithChildren) {
               ))}
               <Link
                 href="/auth/setup?mode=join"
-                className="rounded-lg border border-white/20 px-3 py-1"
+                className="rounded-lg border border-white/25 px-3 py-1"
               >
-                Student Join
-              </Link>
-              <Link
-                href="/auth"
-                className="rounded-lg border border-emerald-300/40 px-3 py-1 text-emerald-200"
-              >
-                Login
+                Student: Get Started
               </Link>
               <Link
                 href="/onboarding/create-org"
-                className="rounded-lg border border-white/20 px-3 py-1"
+                className="rounded-lg bg-emerald-500 px-3 py-1.5 font-semibold text-slate-950"
               >
-                Register Organization
+                Register Organisation
+              </Link>
+              <Link
+                href="/auth/setup?mode=join"
+                className="text-emerald-200 underline-offset-4 hover:underline"
+              >
+                Student Join via Invite
+              </Link>
+              <Link href="/auth" className="underline-offset-4 hover:underline">
+                Login
               </Link>
             </div>
 
-            <details className="group relative md:hidden">
-              <summary className="list-none cursor-pointer rounded-lg border border-white/20 bg-slate-900/60 px-3 py-2 text-sm text-white">
-                Menu
-              </summary>
-              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/20 bg-slate-950/95 p-3 text-sm shadow-2xl">
-                <div className="flex flex-col gap-2">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="rounded-md px-2 py-1 hover:bg-white/10"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  <Link
-                    href="/auth/setup?mode=join"
-                    className="rounded-md border border-white/20 px-2 py-1 text-center"
-                  >
-                    Student Join
-                  </Link>
-                  <Link
-                    href="/auth"
-                    className="rounded-md border border-emerald-300/40 px-2 py-1 text-center text-emerald-200"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/onboarding/create-org"
-                    className="rounded-md border border-white/20 px-2 py-1 text-center"
-                  >
-                    Register Organization
-                  </Link>
-                </div>
-              </div>
-            </details>
+            <button
+              type="button"
+              aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((open) => !open)}
+              className="rounded-lg border border-white/20 px-3 py-2 text-sm md:hidden"
+            >
+              ☰
+            </button>
           </nav>
+
+          {mobileOpen && (
+            <div className="border-t border-white/10 bg-slate-950/95 px-4 py-3 md:hidden">
+              <div className="flex flex-col gap-2 text-sm">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-md px-2 py-1 hover:bg-white/10"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <Link
+                  href="/onboarding/create-org"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md bg-emerald-500 px-3 py-2 text-center font-semibold text-slate-950"
+                >
+                  Register Organisation
+                </Link>
+                <Link
+                  href="/auth/setup?mode=join"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md border border-white/25 px-3 py-2 text-center"
+                >
+                  Student: Get Started
+                </Link>
+                <Link
+                  href="/auth/setup?mode=join"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md px-2 py-1 text-emerald-200"
+                >
+                  Student Join via Invite
+                </Link>
+                <Link
+                  href="/auth"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md px-2 py-1"
+                >
+                  Login
+                </Link>
+              </div>
+            </div>
+          )}
         </header>
+
         <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
         <footer className="border-t border-white/10 bg-slate-950/50">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-300 md:flex-row md:items-center md:justify-between">
             <p>
-              InternFlow · Multi-organisation internship and learnership
-              operations.
+              InternFlow · Pilot-first internship and learnership operations.
             </p>
             <div className="flex gap-3">
-              <Link href="/onboarding/create-org">Register Organization</Link>
+              <Link href="/onboarding/create-org">Register Organisation</Link>
+              <Link href="/onboarding/profile">Student profile</Link>
               <Link href="/auth">Login</Link>
             </div>
           </div>
