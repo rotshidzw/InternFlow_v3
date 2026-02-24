@@ -1,7 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
-import { PreviousStepButton } from "@/components/previous-step-button";
 
 export default async function ProgramsPage({
   params,
@@ -19,12 +18,7 @@ export default async function ProgramsPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <PreviousStepButton
-          fallbackHref={`/org/${params.orgSlug}/app/dashboard`}
-        />
-        <h1 className="text-2xl font-semibold">Programs</h1>
-      </div>
+      <h1 className="text-2xl font-semibold">Programs</h1>
       <form
         action={`/api/org/${params.orgSlug}/programs`}
         method="post"
