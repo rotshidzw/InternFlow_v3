@@ -64,7 +64,7 @@ export default function CertificatePreviewPage() {
       formData.append("signatureImage", signatureImageFile);
     }
 
-    const response = await fetch(`/api/org/${orgSlug}/certificates/issue`, {
+    const response = await fetch(`/api/org/${orgSlug}/certificates/issue?response=json`, {
       method: "POST",
       body: formData
     });

@@ -137,7 +137,9 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     });
   }
 
-  if (!contentType.includes("application/json")) {
+  const wantsJsonResponse = contentType.includes("application/json") || new URL(req.url).searchParams.get("response") === "json";
+
+  if (!wantsJsonResponse) {
     return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/certificates`, req.url));
   }
 
