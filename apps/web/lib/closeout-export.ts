@@ -8,6 +8,19 @@ function sanitize(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
 }
 
+function extractProfileValue(profile: { education: unknown; experience: unknown } | null | undefined, path: "idNumber" | "dateOfBirth" | "cvUrl") {
+  const education = (profile?.education ?? {}) as Record<string, unknown>;
+  const experience = (profile?.experience ?? {}) as Record<string, unknown>;
+  const personalDetails = (education.personalDetails ?? {}) as Record<string, unknown>;
+
+  if (path === "cvUrl") {
+    return (experience.cvUrl as string | undefined) ?? "";
+  }
+
+  const source = path in education ? education : personalDetails;
+  return (source[path] as string | undefined) ?? "";
+}
+
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -350,7 +363,7 @@ export async function generateCloseoutZipForJob(jobId: string) {
       ...enrollments.map((row, index) => [
         String(index + 1),
         row.user.studentProfile?.fullName ?? row.user.name ?? "",
-        ((row.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "N/A",
+        extractProfileValue(row.user.studentProfile, "idNumber") || "N/A",
         row.user.email,
         row.user.studentProfile?.phone ?? "",
         row.status,
@@ -372,9 +385,9 @@ export async function generateCloseoutZipForJob(jobId: string) {
         row.user.studentProfile?.phone ?? "",
         row.user.studentProfile?.location ?? "",
         row.user.studentProfile?.bio ?? "",
-        ((row.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "",
-        ((row.user.studentProfile?.education as any)?.dateOfBirth as string | undefined) ?? "",
-        ((row.user.studentProfile?.experience as any)?.cvUrl as string | undefined) ?? ""
+        extractProfileValue(row.user.studentProfile, "idNumber"),
+        extractProfileValue(row.user.studentProfile, "dateOfBirth"),
+        extractProfileValue(row.user.studentProfile, "cvUrl")
       ])
     ].map((row) => row.map((cell) => String(cell ?? "")));
 
@@ -454,7 +467,7 @@ export async function generateCloseoutZipForJob(jobId: string) {
       const summaryLines = [
         `Learner: ${profileName}`,
         `Email: ${enrollment.user.email}`,
-        `ID Number: ${((enrollment.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "Not captured"}`,
+        `ID Number: ${extractProfileValue(enrollment.user.studentProfile, "idNumber") || "Not captured"}`,
         "",
         "Documents in this folder:"
       ];

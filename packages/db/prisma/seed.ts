@@ -157,8 +157,26 @@ async function main() {
         location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
         bio: "Learner in technical and workplace readiness programmes.",
         skills: ["Work readiness", "Communication", "Digital literacy"],
-        education: { idNumber: `90010${String(1000 + i)}`, dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`, highestQualification: "National Certificate" },
-        experience: { cvUrl: `https://demo.internflow.local/cv/${student.id}`, references: ["Demo employer reference"] },
+        education: {
+          personalDetails: {
+            idNumber: `90010${String(1000 + i)}`,
+            dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`,
+            gender: i % 2 === 0 ? "Female" : "Male",
+            citizenship: "South African"
+          },
+          highestQualification: "National Certificate",
+          institutionName: "Demo TVET College",
+          fieldOfStudy: "Business Administration",
+          addressDetails: { city: "Johannesburg", province: "Gauteng" }
+        },
+        experience: {
+          cvUrl: `https://demo.internflow.local/cv/${student.id}`,
+          employmentStatus: "Seeking placement",
+          preferredProgrammeType: i % 2 === 0 ? "Learnership" : "Internship",
+          emergencyContactName: "Demo Guardian",
+          emergencyContactPhone: `07${String(70000000 + i).slice(0, 8)}`,
+          references: ["Demo employer reference"]
+        },
         isDiscoverable: true
       },
       create: {
@@ -168,8 +186,26 @@ async function main() {
         location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
         bio: "Learner in technical and workplace readiness programmes.",
         skills: ["Work readiness", "Communication", "Digital literacy"],
-        education: { idNumber: `90010${String(1000 + i)}`, dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`, highestQualification: "National Certificate" },
-        experience: { cvUrl: `https://demo.internflow.local/cv/${student.id}`, references: ["Demo employer reference"] },
+        education: {
+          personalDetails: {
+            idNumber: `90010${String(1000 + i)}`,
+            dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`,
+            gender: i % 2 === 0 ? "Female" : "Male",
+            citizenship: "South African"
+          },
+          highestQualification: "National Certificate",
+          institutionName: "Demo TVET College",
+          fieldOfStudy: "Business Administration",
+          addressDetails: { city: "Johannesburg", province: "Gauteng" }
+        },
+        experience: {
+          cvUrl: `https://demo.internflow.local/cv/${student.id}`,
+          employmentStatus: "Seeking placement",
+          preferredProgrammeType: i % 2 === 0 ? "Learnership" : "Internship",
+          emergencyContactName: "Demo Guardian",
+          emergencyContactPhone: `07${String(70000000 + i).slice(0, 8)}`,
+          references: ["Demo employer reference"]
+        },
         isDiscoverable: true
       }
     });

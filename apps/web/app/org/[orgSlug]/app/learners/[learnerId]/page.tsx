@@ -21,9 +21,12 @@ export default async function LearnerPage({ params }: { params: { orgSlug: strin
     return acc;
   }, {});
 
-  const idNumber = (user.studentProfile?.education as { idNumber?: string } | null)?.idNumber;
-  const dateOfBirth = (user.studentProfile?.education as { dateOfBirth?: string } | null)?.dateOfBirth;
-  const cvUrl = (user.studentProfile?.experience as { cvUrl?: string } | null)?.cvUrl;
+  const educationData = (user.studentProfile?.education as { idNumber?: string; dateOfBirth?: string; addressDetails?: { city?: string; province?: string; addressLine1?: string } } | null) ?? null;
+  const experienceData = (user.studentProfile?.experience as { cvUrl?: string; employmentStatus?: string; currentEmployer?: string; jobTitle?: string; emergencyContactName?: string; emergencyContactPhone?: string } | null) ?? null;
+
+  const idNumber = educationData?.idNumber;
+  const dateOfBirth = educationData?.dateOfBirth;
+  const cvUrl = experienceData?.cvUrl;
 
   return (
     <div className="space-y-4">
@@ -37,6 +40,10 @@ export default async function LearnerPage({ params }: { params: { orgSlug: strin
           <p><span className="text-slate-500">Date of Birth:</span> {dateOfBirth ?? "Not captured"}</p>
           <p className="md:col-span-2"><span className="text-slate-500">Location:</span> {user.studentProfile?.location ?? "Not captured"}</p>
           <p className="md:col-span-2"><span className="text-slate-500">Bio:</span> {user.studentProfile?.bio ?? "Not captured"}</p>
+          <p><span className="text-slate-500">Employment status:</span> {experienceData?.employmentStatus ?? "Not captured"}</p>
+          <p><span className="text-slate-500">Current employer:</span> {experienceData?.currentEmployer ?? "Not captured"}</p>
+          <p><span className="text-slate-500">Job title:</span> {experienceData?.jobTitle ?? "Not captured"}</p>
+          <p><span className="text-slate-500">Emergency contact:</span> {experienceData?.emergencyContactName && experienceData?.emergencyContactPhone ? `${experienceData.emergencyContactName} (${experienceData.emergencyContactPhone})` : "Not captured"}</p>
           <p className="md:col-span-2"><span className="text-slate-500">CV:</span> {cvUrl ? <a className="text-blue-600 underline" href={cvUrl} target="_blank">Open profile CV</a> : "Not captured"}</p>
         </div>
       </div>
