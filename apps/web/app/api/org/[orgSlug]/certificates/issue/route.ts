@@ -50,6 +50,30 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   return Buffer.from(text, "utf8");
 }
 
+
+export async function GET(_req: Request, { params }: { params: { orgSlug: string } }) {
+  const access = await getOrgAccess(params.orgSlug);
+  if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: {
+      organizationId: access.membership.organizationId,
+      status: "COMPLETED"
+    },
+    include: { user: true, program: true },
+    take: 100
+  });
+
+  return NextResponse.json({
+    ok: true,
+    enrollments: enrollments.map((enrollment) => ({
+      id: enrollment.id,
+      learnerName: enrollment.user.name ?? enrollment.user.email,
+      programmeName: enrollment.program.name
+    }))
+  });
+}
+
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
