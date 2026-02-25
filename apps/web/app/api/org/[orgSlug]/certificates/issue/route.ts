@@ -13,7 +13,8 @@ function decodeDataUrl(dataUrl: string) {
   return { mimeType: match[1], bytes: Buffer.from(match[2], "base64") };
 }
 
-function certificatePdf(learnerName: string, programmeName: string, managerName: string, signature: string, hasImageSignature: boolean) {
+function certificatePdf(tenantName: string, learnerName: string, programmeName: string, managerName: string, signature: string, hasImageSignature: boolean) {
+  const safeTenant = escapePdfText(tenantName);
   const safeLearner = escapePdfText(learnerName);
   const safeProgramme = escapePdfText(programmeName);
   const safeManager = escapePdfText(managerName);
@@ -23,11 +24,12 @@ function certificatePdf(learnerName: string, programmeName: string, managerName:
     : `BT /F2 14 Tf 70 620 Td (${safeSignature}) Tj ET`;
 
   const stream = [
+    `BT /F1 10 Tf 70 790 Td (${safeTenant} Certification) Tj ET`,
     "BT /F1 24 Tf 70 760 Td (Certificate of Completion) Tj ET",
     `BT /F1 14 Tf 70 700 Td (${safeLearner} has successfully completed ${safeProgramme}.) Tj ET`,
     `BT /F1 12 Tf 70 640 Td (Authorised by: ${safeManager}) Tj ET`,
     signatureLine,
-    "BT /F1 10 Tf 420 760 Td (INTERNFLOW OFFICIAL STAMP) Tj ET"
+    `BT /F1 10 Tf 420 760 Td (${safeTenant} OFFICIAL STAMP) Tj ET`
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
@@ -56,14 +58,16 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
   let enrollmentId = "";
   let managerNameInput = "";
   let signatureInput = "";
+  let tenantNameInput = "";
   let signatureImageBytes: Buffer | null = null;
   let signatureImageMime = "image/png";
 
   if (contentType.includes("application/json")) {
-    const payload = (await req.json()) as { enrollmentId?: string; managerName?: string; signature?: string; signatureImageBase64?: string };
+    const payload = (await req.json()) as { enrollmentId?: string; managerName?: string; signature?: string; tenantName?: string; signatureImageBase64?: string };
     enrollmentId = payload.enrollmentId ?? "";
     managerNameInput = payload.managerName ?? "";
     signatureInput = payload.signature ?? "";
+    tenantNameInput = payload.tenantName ?? "";
 
     if (payload.signatureImageBase64) {
       const decoded = decodeDataUrl(payload.signatureImageBase64);
@@ -77,6 +81,7 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     enrollmentId = String(formData.get("enrollmentId") ?? "");
     managerNameInput = String(formData.get("managerName") ?? "");
     signatureInput = String(formData.get("signature") ?? "");
+    tenantNameInput = String(formData.get("tenantName") ?? "");
 
     const signatureFile = formData.get("signatureImage");
     if (signatureFile instanceof File && signatureFile.size > 0) {
@@ -93,8 +98,9 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
 
   const managerName = managerNameInput.trim() || access.user.name || "Programme Manager";
   const signature = signatureInput.trim() || "Signed digitally";
+  const tenantName = tenantNameInput.trim() || access.membership.organization.name;
   const learnerName = enrollment.user.name || enrollment.user.email;
-  const pdf = certificatePdf(learnerName, enrollment.program.name, managerName, signature, Boolean(signatureImageBytes));
+  const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, signature, Boolean(signatureImageBytes));
 
   const storage = getStorageAdapter();
   const storageKey = `certificates/${access.membership.organizationId}/${enrollment.userId}-${Date.now()}.pdf`;

@@ -18,6 +18,12 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
       take: 100
     })
   ]);
+  const latestCompletedEnrollmentByUser = new Map<string, { id: string; programName: string }>();
+  for (const enrollment of completedEnrollments) {
+    if (!latestCompletedEnrollmentByUser.has(enrollment.userId)) {
+      latestCompletedEnrollmentByUser.set(enrollment.userId, { id: enrollment.id, programName: enrollment.program.name });
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -29,7 +35,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           </div>
           <Link
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
-            href={`/org/${params.orgSlug}/app/certificates/preview?learner=Demo%20Learner&programme=Demo%20Programme&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`}
+            href={`/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&learner=Demo%20Learner&programme=Demo%20Programme&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`}
           >
             View demo certificate
           </Link>
@@ -42,13 +48,14 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           {completedEnrollments.length === 0 ? <p className="text-slate-500">No completed enrollments yet.</p> : completedEnrollments.map((enrollment) => {
             const learnerName = enrollment.user.name ?? enrollment.user.email;
             const managerDefault = access.user.name ?? "Programme Manager";
-            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=Signed%20digitally`;
+            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=Signed%20digitally`;
             return (
               <form key={enrollment.id} action={`/api/org/${params.orgSlug}/certificates/issue`} method="post" encType="multipart/form-data" className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-7">
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <p className="md:col-span-2">{learnerName} · {enrollment.program.name}</p>
                 <input name="managerName" placeholder="Manager name" defaultValue={managerDefault} className="rounded border border-slate-300 px-2 py-1" />
                 <input name="signature" placeholder="Digital signature text" defaultValue="Signed digitally" className="rounded border border-slate-300 px-2 py-1" />
+                <input type="hidden" name="tenantName" value={access.membership.organization.name} />
                 <input type="file" name="signatureImage" accept="image/*" className="rounded border border-slate-300 px-2 py-1 text-xs" />
                 <a className="rounded border border-slate-300 px-3 py-1 text-center text-slate-700" href={previewHref}>View certificate</a>
                 <button className="rounded bg-emerald-600 px-3 py-1 text-white">Save + issue PDF</button>
@@ -63,7 +70,8 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
         <div className="mt-3 space-y-2 text-sm">
           {certificates.length === 0 ? <p className="text-slate-500">No certificates issued yet.</p> : certificates.map((doc) => {
             const learnerName = doc.user.name ?? doc.user.email;
-            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?learner=${encodeURIComponent(learnerName)}&programme=Completed%20Programme&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`;
+            const enrollmentLink = latestCompletedEnrollmentByUser.get(doc.userId);
+            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}${enrollmentLink ? `&enrollmentId=${enrollmentLink.id}` : ""}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollmentLink?.programName ?? "Completed Programme")}&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`;
             return (
               <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
                 <p>{learnerName} · {doc.createdAt.toISOString().slice(0, 10)}</p>

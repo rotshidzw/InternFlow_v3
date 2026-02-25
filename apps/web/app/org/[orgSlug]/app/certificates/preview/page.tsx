@@ -11,12 +11,14 @@ export default function CertificatePreviewPage() {
   const orgSlug = params.orgSlug;
   const enrollmentId = searchParams.get("enrollmentId") ?? "";
 
+  const tenantName = searchParams.get("tenant") ?? "Tenant";
   const learnerName = searchParams.get("learner") ?? "Learner Name";
   const programmeName = searchParams.get("programme") ?? "Programme Name";
 
   const [managerName, setManagerName] = useState(searchParams.get("manager") ?? "Programme Manager");
   const [signature, setSignature] = useState(searchParams.get("signature") ?? "Signed digitally");
   const [signatureImageBase64, setSignatureImageBase64] = useState<string | null>(null);
+  const [signatureImageFile, setSignatureImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [issuedDocumentId, setIssuedDocumentId] = useState<string | null>(null);
@@ -29,6 +31,7 @@ export default function CertificatePreviewPage() {
   async function onSignatureImageSelected(file: File | null) {
     if (!file) {
       setSignatureImageBase64(null);
+      setSignatureImageFile(null);
       return;
     }
 
@@ -40,6 +43,7 @@ export default function CertificatePreviewPage() {
     });
 
     setSignatureImageBase64(base64);
+    setSignatureImageFile(file);
   }
 
   async function saveSignedCertificate() {
@@ -51,10 +55,18 @@ export default function CertificatePreviewPage() {
     setSaving(true);
     setSaveError(null);
 
+    const formData = new FormData();
+    formData.append("enrollmentId", enrollmentId);
+    formData.append("managerName", managerName);
+    formData.append("signature", signature);
+    formData.append("tenantName", tenantName);
+    if (signatureImageFile) {
+      formData.append("signatureImage", signatureImageFile);
+    }
+
     const response = await fetch(`/api/org/${orgSlug}/certificates/issue`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enrollmentId, managerName, signature, signatureImageBase64 })
+      body: formData
     });
 
     const payload = await response.json().catch(() => ({ error: "Unable to save certificate" }));
@@ -139,7 +151,7 @@ export default function CertificatePreviewPage() {
         </div>
 
         <div className="rounded-2xl border-4 border-emerald-200 bg-gradient-to-br from-white to-emerald-50 p-8 shadow lg:col-span-2">
-          <p className="text-center text-xs uppercase tracking-[0.25em] text-slate-500">InternFlow Programme Certification</p>
+          <p className="text-center text-xs uppercase tracking-[0.25em] text-slate-500">{tenantName} Programme Certification</p>
           <h2 className="mt-4 text-center text-4xl font-bold text-slate-900">Certificate of Completion</h2>
           <p className="mt-10 text-center text-slate-700">This certifies that</p>
           <p className="mt-2 text-center text-3xl font-semibold text-emerald-700">{learnerName}</p>
@@ -161,7 +173,7 @@ export default function CertificatePreviewPage() {
             </div>
             <div className="flex items-center justify-end">
               <div className="h-28 w-28 rounded-full border-4 border-rose-300 bg-rose-50/90 p-3 text-center text-xs font-semibold text-rose-700">
-                <p>INTERNFLOW</p>
+                <p>{tenantName.toUpperCase()}</p>
                 <p className="mt-1">OFFICIAL</p>
                 <p className="mt-1">STAMP</p>
                 <p className="mt-2 text-[10px]">Verified</p>
