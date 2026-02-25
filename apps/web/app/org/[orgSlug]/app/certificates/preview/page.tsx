@@ -16,6 +16,7 @@ export default function CertificatePreviewPage() {
 
   const [managerName, setManagerName] = useState(searchParams.get("manager") ?? "Programme Manager");
   const [signature, setSignature] = useState(searchParams.get("signature") ?? "Signed digitally");
+  const [signatureImageBase64, setSignatureImageBase64] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [issuedDocumentId, setIssuedDocumentId] = useState<string | null>(null);
@@ -25,9 +26,25 @@ export default function CertificatePreviewPage() {
     return `/api/org/${orgSlug}/certificates/${issuedDocumentId}/download`;
   }, [issuedDocumentId, orgSlug]);
 
+  async function onSignatureImageSelected(file: File | null) {
+    if (!file) {
+      setSignatureImageBase64(null);
+      return;
+    }
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(new Error("Failed to read image"));
+      reader.readAsDataURL(file);
+    });
+
+    setSignatureImageBase64(base64);
+  }
+
   async function saveSignedCertificate() {
     if (!enrollmentId) {
-      setSaveError("Missing enrollment context. Open preview from an enrollment row.");
+      setSaveError("This preview is in demo mode. To save and download, click View certificate from the learner issue row.");
       return;
     }
 
@@ -37,7 +54,7 @@ export default function CertificatePreviewPage() {
     const response = await fetch(`/api/org/${orgSlug}/certificates/issue`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enrollmentId, managerName, signature })
+      body: JSON.stringify({ enrollmentId, managerName, signature, signatureImageBase64 })
     });
 
     const payload = await response.json().catch(() => ({ error: "Unable to save certificate" }));
@@ -55,7 +72,7 @@ export default function CertificatePreviewPage() {
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <h1 className="text-2xl font-semibold">Certificate preview (demo design)</h1>
-        <p className="text-sm text-slate-600">Sign certificate, save it, then download the signed PDF.</p>
+        <p className="text-sm text-slate-600">Use typed signature font or upload signature image, then save and download.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -70,12 +87,22 @@ export default function CertificatePreviewPage() {
             />
           </label>
           <label className="block text-sm text-slate-700">
-            Signature
+            Typed signature
             <input
               value={signature}
               onChange={(event) => setSignature(event.target.value)}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
               placeholder="Type digital signature"
+            />
+          </label>
+
+          <label className="block text-sm text-slate-700">
+            Signature image (optional)
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => onSignatureImageSelected(event.target.files?.[0] ?? null)}
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
             />
           </label>
 
@@ -95,7 +122,11 @@ export default function CertificatePreviewPage() {
           ) : null}
 
           {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
-          {!enrollmentId ? <p className="text-xs text-amber-600">Open this page from an enrollment row to enable save/download.</p> : null}
+          {!enrollmentId ? (
+            <p className="text-xs text-amber-600">
+              Demo preview only. To save/download, go back and click <strong>View certificate</strong> from a learner issue row (that passes enrollment context).
+            </p>
+          ) : null}
 
           <Link href={`/org/${orgSlug}/app/certificates`} className="block rounded border border-slate-300 px-3 py-2 text-center text-sm text-slate-700">
             Back to certificates
@@ -114,7 +145,14 @@ export default function CertificatePreviewPage() {
             <div>
               <p className="text-xs uppercase text-slate-500">Authorised by</p>
               <p className="text-lg font-semibold text-slate-900">{managerName}</p>
-              <p className="text-sm text-slate-600">Signature: {signature}</p>
+              <p className="text-sm text-slate-600">Typed signature:</p>
+              <p className="text-2xl text-slate-800" style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive' }}>{signature}</p>
+              {signatureImageBase64 ? (
+                <div className="mt-2 rounded border border-slate-200 bg-white p-2">
+                  <p className="text-xs text-slate-500">Image signature preview</p>
+                  <img src={signatureImageBase64} alt="Signature preview" className="mt-1 max-h-20 w-auto object-contain" />
+                </div>
+              ) : null}
             </div>
             <div className="flex items-center justify-end">
               <div className="h-28 w-28 rounded-full border-4 border-rose-300 bg-rose-50/90 p-3 text-center text-xs font-semibold text-rose-700">

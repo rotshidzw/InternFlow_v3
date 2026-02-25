@@ -44,11 +44,12 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
             const managerDefault = access.user.name ?? "Programme Manager";
             const previewHref = `/org/${params.orgSlug}/app/certificates/preview?enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=Signed%20digitally`;
             return (
-              <form key={enrollment.id} action={`/api/org/${params.orgSlug}/certificates/issue`} method="post" className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-6">
+              <form key={enrollment.id} action={`/api/org/${params.orgSlug}/certificates/issue`} method="post" encType="multipart/form-data" className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-7">
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <p className="md:col-span-2">{learnerName} · {enrollment.program.name}</p>
                 <input name="managerName" placeholder="Manager name" defaultValue={managerDefault} className="rounded border border-slate-300 px-2 py-1" />
                 <input name="signature" placeholder="Digital signature text" defaultValue="Signed digitally" className="rounded border border-slate-300 px-2 py-1" />
+                <input type="file" name="signatureImage" accept="image/*" className="rounded border border-slate-300 px-2 py-1 text-xs" />
                 <a className="rounded border border-slate-300 px-3 py-1 text-center text-slate-700" href={previewHref}>View certificate</a>
                 <button className="rounded bg-emerald-600 px-3 py-1 text-white">Save + issue PDF</button>
               </form>
