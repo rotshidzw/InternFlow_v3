@@ -415,6 +415,7 @@ export async function generateCloseoutZipForJob(jobId: string) {
       `- Total logbook entries submitted: ${actualLogbooks.length}`,
       `- Total approved logbook entries: ${approvedLogbooksCount}`,
       `- Document type distribution: ${Object.keys(docsByType).length === 0 ? "No documents uploaded" : Object.entries(docsByType).map(([k, v]) => `${k} (${v})`).join(", ")}`,
+      `- Certificates included in learner folders: ${docsByType.CERTIFICATE ?? 0}`,
       "",
       "Branding",
       logoDoc ? "- Company logo included in this export bundle under 07_Reports/." : "- Company logo not yet uploaded in InternFlow. Please add the approved logo manually in the section below.",
@@ -478,6 +479,22 @@ export async function generateCloseoutZipForJob(jobId: string) {
           summaryLines.push(`   fileKey: ${doc.versions[0].storageKey}`);
         }
       });
+
+      for (const doc of learnerDocs.filter((item) => item.type === "CERTIFICATE")) {
+        const version = doc.versions[0];
+        if (!version?.storageKey) continue;
+
+        try {
+          const bytes = await getStorageAdapter().getBuffer(version.storageKey);
+          const ext = version.storageKey.split(".").pop() ?? "pdf";
+          zipEntries.push({
+            name: `04_Learner_Documents/${folder}/Certificates/${doc.id}.${sanitize(ext)}`,
+            data: bytes
+          });
+        } catch (error) {
+          console.warn("[closeout-export] failed to include learner certificate", { jobId, learnerId: enrollment.userId, documentId: doc.id, error });
+        }
+      }
 
       zipEntries.push({
         name: `04_Learner_Documents/${folder}/Learner_Document_Index.txt`,

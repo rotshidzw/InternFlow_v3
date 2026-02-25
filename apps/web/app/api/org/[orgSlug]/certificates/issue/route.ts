@@ -9,7 +9,7 @@ function certificatePdf(learnerName: string, programmeName: string, managerName:
     "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
     "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
     "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj",
-    `4 0 obj << /Length 220 >> stream\nBT /F1 24 Tf 70 760 Td (Certificate of Completion) Tj ET\nBT /F1 14 Tf 70 700 Td (${learnerName} has successfully completed ${programmeName}.) Tj ET\nBT /F1 12 Tf 70 640 Td (Authorised by: ${managerName}) Tj ET\nBT /F1 12 Tf 70 620 Td (Signature: ${signature}) Tj ET\nendstream endobj`,
+    `4 0 obj << /Length 220 >> stream\nBT /F1 24 Tf 70 760 Td (Certificate of Completion) Tj ET\nBT /F1 14 Tf 70 700 Td (${learnerName} has successfully completed ${programmeName}.) Tj ET\nBT /F1 12 Tf 70 640 Td (Authorised by: ${managerName}) Tj ET\nBT /F1 12 Tf 70 620 Td (Signature: ${signature}) Tj ET\nBT /F1 10 Tf 420 760 Td (INTERNFLOW OFFICIAL STAMP) Tj ET\nendstream endobj`,
     "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
     "xref\n0 6\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000117 00000 n \n0000000243 00000 n \n0000000533 00000 n ",
     "trailer << /Root 1 0 R /Size 6 >>",
