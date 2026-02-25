@@ -14,22 +14,54 @@ function decodeDataUrl(dataUrl: string) {
 }
 
 function certificatePdf(tenantName: string, learnerName: string, programmeName: string, managerName: string, signature: string, hasImageSignature: boolean) {
-  const safeTenant = escapePdfText(tenantName);
+  const safeTenant = escapePdfText(tenantName.toUpperCase());
   const safeLearner = escapePdfText(learnerName);
   const safeProgramme = escapePdfText(programmeName);
   const safeManager = escapePdfText(managerName);
   const safeSignature = escapePdfText(signature);
   const signatureLine = hasImageSignature
-    ? "BT /F1 11 Tf 70 620 Td (Signature: image signature attached in certificate record.) Tj ET"
-    : `BT /F2 14 Tf 70 620 Td (${safeSignature}) Tj ET`;
+    ? "BT /F1 12 Tf 72 116 Td (Image signature attached to this certificate record.) Tj ET"
+    : `BT /F3 22 Tf 72 116 Td (${safeSignature}) Tj ET`;
 
   const stream = [
-    `BT /F1 10 Tf 70 790 Td (${safeTenant} Certification) Tj ET`,
-    "BT /F1 24 Tf 70 760 Td (Certificate of Completion) Tj ET",
-    `BT /F1 14 Tf 70 700 Td (${safeLearner} has successfully completed ${safeProgramme}.) Tj ET`,
-    `BT /F1 12 Tf 70 640 Td (Authorised by: ${safeManager}) Tj ET`,
+    // soft certificate background + border
+    "0.95 0.97 0.96 rg 8 8 826 579 re f",
+    "0.51 0.88 0.74 RG 4 w 8 8 826 579 re S",
+
+    // header + title block
+    "0.20 0.34 0.50 rg",
+    `BT /F1 16 Tf 250 545 Td (${safeTenant} PROGRAMME CERTIFICATION) Tj ET`,
+    "0.03 0.12 0.29 rg",
+    "BT /F2 56 Tf 160 470 Td (Certificate of Completion) Tj ET",
+
+    // body center content
+    "0.10 0.20 0.34 rg",
+    "BT /F1 24 Tf 330 385 Td (This certifies that) Tj ET",
+    "0.00 0.48 0.40 rg",
+    `BT /F2 52 Tf 220 315 Td (${safeLearner}) Tj ET`,
+    "0.10 0.20 0.34 rg",
+    "BT /F1 24 Tf 290 255 Td (has successfully completed) Tj ET",
+    "0.03 0.12 0.29 rg",
+    `BT /F2 40 Tf 300 200 Td (${safeProgramme}) Tj ET`,
+
+    // authorised/signature block
+    "0.20 0.34 0.50 rg",
+    "BT /F1 14 Tf 72 168 Td (AUTHORISED BY) Tj ET",
+    "0.03 0.12 0.29 rg",
+    `BT /F2 18 Tf 72 145 Td (${safeManager}) Tj ET`,
+    "0.20 0.34 0.50 rg",
+    "BT /F1 12 Tf 72 128 Td (Typed signature:) Tj ET",
+    "0.02 0.08 0.20 rg",
     signatureLine,
-    `BT /F1 10 Tf 420 760 Td (${safeTenant} OFFICIAL STAMP) Tj ET`
+
+    // stamp
+    "1.00 0.94 0.95 rg 670 28 140 140 re f",
+    "0.94 0.58 0.65 RG 5 w 670 28 140 140 re S",
+    "0.82 0.08 0.19 rg",
+    `BT /F2 12 Tf 708 116 Td (${safeTenant}) Tj ET`,
+    "BT /F2 12 Tf 710 88 Td (OFFICIAL) Tj ET",
+    "BT /F2 12 Tf 725 64 Td (STAMP) Tj ET",
+    "BT /F2 10 Tf 722 40 Td (Verified) Tj ET"
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
@@ -38,12 +70,14 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     "%PDF-1.4",
     "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
     "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >> endobj",
+    // landscape page to better match certificate card ratio
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >> >> endobj",
     `4 0 obj << /Length ${contentLength} >> stream\n${stream}\nendstream endobj`,
     "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
-    "6 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Times-Italic >> endobj",
-    "xref\n0 7\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000117 00000 n \n0000000270 00000 n \n0000000000 00000 n \n0000000000 00000 n ",
-    "trailer << /Root 1 0 R /Size 7 >>",
+    "6 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> endobj",
+    "7 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Times-Italic >> endobj",
+    "xref\n0 8\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000117 00000 n \n0000000298 00000 n \n0000000000 00000 n \n0000000000 00000 n \n0000000000 00000 n ",
+    "trailer << /Root 1 0 R /Size 8 >>",
     "startxref\n999\n%%EOF"
   ].join("\n");
 
