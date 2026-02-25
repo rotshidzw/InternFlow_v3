@@ -1,10 +1,6 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest, NextResponse } from "next/server";
-import { Queue } from "bullmq";
-import IORedis from "ioredis";
-
-const redisConnection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
-const exportQueue = new Queue("programme-closeout-export", { connection: redisConnection });
+import { generateCloseoutZipForJob } from "@/lib/closeout-export";
 
 async function getTenantContext(req: NextRequest, orgSlug: string) {
   const email = req.cookies.get("if_user")?.value;
@@ -44,6 +40,13 @@ export async function POST(req: NextRequest, { params }: { params: { orgSlug: st
   });
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
+  console.info("[closeout-export] creating job", {
+    tenantId: context.membership.organizationId,
+    programmeId,
+    exportTemplateId,
+    userId: context.user.id
+  });
+
   const job = await prisma.programmeExportJob.create({
     data: {
       tenantId: context.membership.organizationId,
@@ -66,18 +69,13 @@ export async function POST(req: NextRequest, { params }: { params: { orgSlug: st
   });
 
   try {
-    await exportQueue.add("generate-closeout-export", { jobId: job.id });
+    await generateCloseoutZipForJob(job.id);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to queue export job";
-    await prisma.programmeExportJob.update({
-      where: { id: job.id },
-      data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) }
-    });
-
-    return NextResponse.json({ error: "Unable to queue export job", detail: message }, { status: 503 });
+    const message = error instanceof Error ? error.message : "Failed to generate export";
+    return NextResponse.json({ error: "Close-out export generation failed", detail: message, jobId: job.id }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, jobId: job.id, status: job.status });
+  return NextResponse.json({ ok: true, jobId: job.id, status: "DONE" });
 }
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {
