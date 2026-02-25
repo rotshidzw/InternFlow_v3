@@ -144,6 +144,37 @@ async function main() {
   }
 
 
+
+
+  const profileUsers = [demoStudent, ...students];
+  for (let i = 0; i < profileUsers.length; i++) {
+    const student = profileUsers[i];
+    await prisma.studentProfile.upsert({
+      where: { userId: student.id },
+      update: {
+        fullName: student.name ?? `Learner ${i + 1}`,
+        phone: `07${String(10000000 + i).slice(0, 8)}`,
+        location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
+        bio: "Learner in technical and workplace readiness programmes.",
+        skills: ["Work readiness", "Communication", "Digital literacy"],
+        education: { idNumber: `90010${String(1000 + i)}`, dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`, highestQualification: "National Certificate" },
+        experience: { cvUrl: `https://demo.internflow.local/cv/${student.id}`, references: ["Demo employer reference"] },
+        isDiscoverable: true
+      },
+      create: {
+        userId: student.id,
+        fullName: student.name ?? `Learner ${i + 1}`,
+        phone: `07${String(10000000 + i).slice(0, 8)}`,
+        location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
+        bio: "Learner in technical and workplace readiness programmes.",
+        skills: ["Work readiness", "Communication", "Digital literacy"],
+        education: { idNumber: `90010${String(1000 + i)}`, dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`, highestQualification: "National Certificate" },
+        experience: { cvUrl: `https://demo.internflow.local/cv/${student.id}`, references: ["Demo employer reference"] },
+        isDiscoverable: true
+      }
+    });
+  }
+
   for (const tenant of tenants) {
     await prisma.exportTemplate.createMany({
       data: [

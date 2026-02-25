@@ -10,6 +10,9 @@ export default function StudentProfileOnboardingPage() {
   const [skillsInput, setSkillsInput] = useState("");
   const [education, setEducation] = useState("");
   const [experience, setExperience] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [cvUrl, setCvUrl] = useState("");
   const [isDiscoverable, setIsDiscoverable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,6 +59,9 @@ export default function StudentProfileOnboardingPage() {
         skills,
         education: educationJson,
         experience: experienceJson,
+        idNumber,
+        dateOfBirth,
+        cvUrl,
         isDiscoverable,
       }),
     });
@@ -102,6 +108,25 @@ export default function StudentProfileOnboardingPage() {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           placeholder="Location (city/province)"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
+        />
+
+        <input
+          value={idNumber}
+          onChange={(e) => setIdNumber(e.target.value)}
+          placeholder="National ID / Passport number"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40"
+        />
+        <input
+          value={dateOfBirth}
+          onChange={(e) => setDateOfBirth(e.target.value)}
+          placeholder="Date of birth (YYYY-MM-DD)"
+          className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40"
+        />
+        <input
+          value={cvUrl}
+          onChange={(e) => setCvUrl(e.target.value)}
+          placeholder="CV / portfolio URL (optional)"
           className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40 md:col-span-2"
         />
         <textarea

@@ -11,6 +11,9 @@ const schema = z.object({
   skills: z.array(z.string()).default([]),
   education: z.any().optional(),
   experience: z.any().optional(),
+  idNumber: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  cvUrl: z.string().url().optional().or(z.literal("")),
   isDiscoverable: z.boolean().default(false),
 });
 
@@ -47,6 +50,17 @@ export async function POST(req: Request) {
     where: { userId: user.id },
   });
 
+  const mergedEducation = {
+    ...(typeof body.data.education === "object" && body.data.education ? body.data.education : {}),
+    ...(body.data.idNumber ? { idNumber: body.data.idNumber } : {}),
+    ...(body.data.dateOfBirth ? { dateOfBirth: body.data.dateOfBirth } : {})
+  };
+
+  const mergedExperience = {
+    ...(typeof body.data.experience === "object" && body.data.experience ? body.data.experience : {}),
+    ...(body.data.cvUrl ? { cvUrl: body.data.cvUrl } : {})
+  };
+
   const profile = await prisma.studentProfile.upsert({
     where: { userId: user.id },
     update: {
@@ -55,8 +69,8 @@ export async function POST(req: Request) {
       location: body.data.location,
       bio: body.data.bio,
       skills: body.data.skills,
-      education: body.data.education,
-      experience: body.data.experience,
+      education: mergedEducation,
+      experience: mergedExperience,
       isDiscoverable: body.data.isDiscoverable,
     },
     create: {
@@ -66,8 +80,8 @@ export async function POST(req: Request) {
       location: body.data.location,
       bio: body.data.bio,
       skills: body.data.skills,
-      education: body.data.education,
-      experience: body.data.experience,
+      education: mergedEducation,
+      experience: mergedExperience,
       isDiscoverable: body.data.isDiscoverable,
     },
   });
@@ -81,6 +95,8 @@ export async function POST(req: Request) {
       metadata: {
         isDiscoverable: profile.isDiscoverable,
         skillsCount: profile.skills.length,
+        hasIdNumber: Boolean((profile.education as Record<string, unknown> | null)?.idNumber),
+        hasCvUrl: Boolean((profile.experience as Record<string, unknown> | null)?.cvUrl),
       },
     },
   });

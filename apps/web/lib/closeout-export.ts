@@ -250,6 +250,43 @@ function createDocxBuffer(lines: string[]) {
   ]);
 }
 
+function createPdfBuffer(title: string, lines: string[]) {
+  const safe = [title, ...lines].map((line) => line.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)"));
+  const content = [
+    "BT",
+    "/F1 14 Tf",
+    "50 790 Td",
+    `(${safe[0]}) Tj`,
+    "/F1 10 Tf",
+    ...safe.slice(1).flatMap((line, idx) => [`50 ${770 - idx * 14} Td`, `(${line}) Tj`]),
+    "ET"
+  ].join("\n");
+
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
+    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
+    `5 0 obj << /Length ${Buffer.byteLength(content, "utf8")} >> stream\n${content}\nendstream endobj`
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const obj of objects) {
+    offsets.push(Buffer.byteLength(pdf, "utf8"));
+    pdf += `${obj}\n`;
+  }
+  const xrefOffset = Buffer.byteLength(pdf, "utf8");
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+  for (const offset of offsets.slice(1)) {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return Buffer.from(pdf, "utf8");
+}
+
+
 export function buildDownloadFileName(tenantName: string, programmeName: string) {
   return `${sanitize(tenantName)}_${sanitize(programmeName)}_CloseOut.zip`;
 }
@@ -275,9 +312,9 @@ export async function generateCloseoutZipForJob(jobId: string) {
     const [enrollments, docs, logoDoc] = await Promise.all([
       prisma.enrollment.findMany({
         where: { organizationId: job.tenantId, programId: job.programmeId },
-        include: { user: true }
+        include: { user: { include: { studentProfile: true } }, program: true }
       }),
-      prisma.document.findMany({ where: { organizationId: job.tenantId } }),
+      prisma.document.findMany({ where: { organizationId: job.tenantId }, include: { versions: true } }),
       prisma.organizationDocument.findFirst({ where: { orgId: job.tenantId, category: { contains: "LOGO" } } })
     ]);
 
@@ -287,12 +324,62 @@ export async function generateCloseoutZipForJob(jobId: string) {
       prisma.logbookApproval.count({ where: { entry: { userId: { in: learnerIds } }, status: "APPROVED" } })
     ]);
 
+    const headerRows = [
+      ["Programme Attendance Register"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      ["Reporting period", `${job.programme.startDate.toISOString().slice(0, 10)} to ${job.programme.endDate.toISOString().slice(0, 10)}`],
+      ["Prepared on", new Date().toISOString().slice(0, 10)],
+      []
+    ];
+
     const registerRows = [
-      ["LearnerId", "Name", "Email", "Status"],
-      ...enrollments.map((row) => [row.userId, row.user.name ?? "", row.user.email, row.status])
-    ].map((row) => row.map((cell) => String(cell)));
+      ...headerRows,
+      [
+        "#",
+        "Learner Name",
+        "Learner ID",
+        "Email",
+        "Phone",
+        "Status",
+        "Programme",
+        "Training Signature",
+        "Workplace Signature",
+        "Manager Signature"
+      ],
+      ...enrollments.map((row, index) => [
+        String(index + 1),
+        row.user.studentProfile?.fullName ?? row.user.name ?? "",
+        ((row.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "N/A",
+        row.user.email,
+        row.user.studentProfile?.phone ?? "",
+        row.status,
+        row.program.name,
+        "",
+        "",
+        ""
+      ])
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const learnerProfileRows = [
+      ["Learner Profile Register"],
+      [],
+      ["Learner ID", "Full Name", "Email", "Phone", "Location", "Bio", "ID Number", "Date of Birth", "CV / Portfolio"],
+      ...enrollments.map((row) => [
+        row.userId,
+        row.user.studentProfile?.fullName ?? row.user.name ?? "",
+        row.user.email,
+        row.user.studentProfile?.phone ?? "",
+        row.user.studentProfile?.location ?? "",
+        row.user.studentProfile?.bio ?? "",
+        ((row.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "",
+        ((row.user.studentProfile?.education as any)?.dateOfBirth as string | undefined) ?? "",
+        ((row.user.studentProfile?.experience as any)?.cvUrl as string | undefined) ?? ""
+      ])
+    ].map((row) => row.map((cell) => String(cell ?? "")));
 
     const xlsxBuffer = createXlsxBuffer(registerRows);
+    const learnerProfileXlsxBuffer = createXlsxBuffer(learnerProfileRows);
 
     const docsByType = docs.reduce<Record<string, number>>((acc, item) => {
       acc[item.type] = (acc[item.type] ?? 0) + 1;
@@ -337,12 +424,68 @@ export async function generateCloseoutZipForJob(jobId: string) {
     ];
 
     const docxBuffer = createDocxBuffer(reportLines);
+    const pdfBuffer = createPdfBuffer(`${job.tenant.name} - ${job.programme.name} Close-Out`, reportLines.slice(2, 24));
 
     const zipEntries: ZipEntry[] = [
       { name: "01_ID/.keep", data: Buffer.from("keep") },
-      { name: "02_Attendance_Register/Learner_Register.xlsx", data: xlsxBuffer },
-      { name: "07_Reports/Programme_CloseOut_Report.docx", data: docxBuffer }
+      { name: "02_Attendance_Register/Learner_Register_Designed.xlsx", data: xlsxBuffer },
+      { name: "02_Attendance_Register/Learner_Profile_Register.xlsx", data: learnerProfileXlsxBuffer },
+      { name: "03_Group_Documents/.keep", data: Buffer.from("keep") },
+      { name: "04_Learner_Documents/.keep", data: Buffer.from("keep") },
+      { name: "07_Reports/Programme_CloseOut_Report.docx", data: docxBuffer },
+      { name: "07_Reports/Programme_CloseOut_Report.pdf", data: pdfBuffer }
     ];
+
+
+
+    for (const enrollment of enrollments) {
+      const profileName = enrollment.user.studentProfile?.fullName ?? enrollment.user.name ?? enrollment.user.email;
+      const folder = sanitize(`${profileName}_${enrollment.userId}`);
+      const learnerDocs = docs.filter((doc) => doc.userId === enrollment.userId);
+
+      if (learnerDocs.length === 0) {
+        zipEntries.push({
+          name: `04_Learner_Documents/${folder}/README.txt`,
+          data: Buffer.from("No learner documents have been uploaded yet. Add signed registers, ID, CV, and supporting institutional records.")
+        });
+        continue;
+      }
+
+      const summaryLines = [
+        `Learner: ${profileName}`,
+        `Email: ${enrollment.user.email}`,
+        `ID Number: ${((enrollment.user.studentProfile?.education as any)?.idNumber as string | undefined) ?? "Not captured"}`,
+        "",
+        "Documents in this folder:"
+      ];
+
+      learnerDocs.forEach((doc, index) => {
+        summaryLines.push(`${index + 1}. ${doc.type} (${doc.status})`);
+        if (doc.versions[0]?.storageKey) {
+          summaryLines.push(`   fileKey: ${doc.versions[0].storageKey}`);
+        }
+      });
+
+      zipEntries.push({
+        name: `04_Learner_Documents/${folder}/Learner_Document_Index.txt`,
+        data: Buffer.from(summaryLines.join("\n"), "utf8")
+      });
+    }
+
+    const groupSummary = [
+      `Tenant: ${job.tenant.name}`,
+      `Programme: ${job.programme.name}`,
+      `Total learners: ${enrollments.length}`,
+      `Total documents: ${docs.length}`,
+      "",
+      "Document distribution by type:"
+    ];
+
+    Object.entries(docsByType).forEach(([type, count]) => {
+      groupSummary.push(`- ${type}: ${count}`);
+    });
+
+    zipEntries.push({ name: "03_Group_Documents/Programme_Document_Summary.txt", data: Buffer.from(groupSummary.join("\n"), "utf8") });
 
     if (logoDoc?.fileKey) {
       try {
