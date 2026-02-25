@@ -132,14 +132,14 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const lineTwoText = "has successfully completed";
 
   const headerSize = fitFontSize(headerText, 16, 14, 620, 0.5);
-  const titleSize = fitFontSize(titleText, 52, 42, 720, 0.5);
+  const titleSize = fitFontSize(titleText, 44, 34, 720, 0.5);
   const learnerSize = fitFontSize(safeLearner, 48, 30, 700, 0.5);
   const programmeSize = fitFontSize(safeProgramme, 32, 24, 640, 0.5);
   const tenantStampSize = fitFontSize(safeTenant, 12, 9, 102, 0.53);
 
   const signatureLine = hasImageSignature
-    ? "BT /F1 10 Tf 98 64 Td (Signed via uploaded image signature.) Tj ET"
-    : `BT /F3 18 Tf 98 54 Td (${safeSignature}) Tj ET`;
+    ? "BT /F3 12 Tf 98 58 Td (Signature on file) Tj ET"
+    : `BT /F3 20 Tf 98 58 Td (${safeSignature}) Tj ET`;
 
   const stream = [
     // background + subtle glass gradient approximation
@@ -168,7 +168,7 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     `BT /F1 20 Tf ${centerTextX(lineTwoText, 20, 0.50)} 204 Td (${lineTwoText}) Tj ET`,
     "0.12 0.16 0.22 rg",
     `BT /F2 ${programmeSize} Tf ${centerTextX(safeProgramme, programmeSize, 0.49)} 144 Td (${safeProgramme}) Tj ET`,
-    `BT /F1 10 Tf ${centerTextX(`Completed on ${issueDate}`, 10, 0.5)} 122 Td (Completed on ${issueDate}) Tj ET`,
+    `BT /F1 10 Tf ${centerTextX(`Completed on ${issueDate}`, 10, 0.5)} 132 Td (Completed on ${issueDate}) Tj ET`,
 
     // zone 3: left signature block
     "0.20 0.34 0.50 rg",
@@ -177,30 +177,29 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     `BT /F2 16 Tf 98 110 Td (${safeManager}) Tj ET`,
     "0.30 0.35 0.40 rg",
     "BT /F1 11 Tf 98 92 Td (Programme Coordinator) Tj ET",
-    "BT /F1 11 Tf 98 78 Td (Signed digitally) Tj ET",
     "0.16 0.20 0.28 RG 0.8 w 98 74 m 270 74 l S",
+    "0.30 0.35 0.40 rg",
+    "BT /F1 10 Tf 98 62 Td (Signed digitally) Tj ET",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
     // zone 3: right circular stamp
     "1.00 0.95 0.96 rg",
-    "746 130 m 746 169.76 713.76 202 674 202 c 634.24 202 602 169.76 602 130 c 602 90.24 634.24 58 674 58 c 713.76 58 746 90.24 746 130 c f",
+    "792 130 m 792 169.76 759.76 202 720 202 c 680.24 202 648 169.76 648 130 c 648 90.24 680.24 58 720 58 c 759.76 58 792 90.24 792 130 c f",
     "0.86 0.29 0.38 RG 4 w",
-    "746 130 m 746 169.76 713.76 202 674 202 c 634.24 202 602 169.76 602 130 c 602 90.24 634.24 58 674 58 c 713.76 58 746 90.24 746 130 c S",
+    "792 130 m 792 169.76 759.76 202 720 202 c 680.24 202 648 169.76 648 130 c 648 90.24 680.24 58 720 58 c 759.76 58 792 90.24 792 130 c S",
     "0.86 0.29 0.38 RG 1 w",
-    "736 130 m 736 164.23 708.23 192 674 192 c 639.77 192 612 164.23 612 130 c 612 95.77 639.77 68 674 68 c 708.23 68 736 95.77 736 130 c S",
+    "782 130 m 782 164.23 754.23 192 720 192 c 685.77 192 658 164.23 658 130 c 658 95.77 685.77 68 720 68 c 754.23 68 782 95.77 782 130 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 287} 144 Td (${safeTenant}) Tj ET`,
-    "BT /F2 13 Tf 637 122 Td (OFFICIAL) Tj ET",
-    "BT /F2 13 Tf 652 100 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 648 80 Td (Verified) Tj ET",
+    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 333} 146 Td (${safeTenant}) Tj ET`,
+    "BT /F2 13 Tf 686 122 Td (OFFICIAL) Tj ET",
+    "BT /F2 13 Tf 700 100 Td (STAMP) Tj ET",
+    "BT /F2 10 Tf 693 80 Td (Verified) Tj ET",
 
     // footer divider + metadata
     "0.18 0.44 0.34 RG 0.9 w 86 34 m 756 34 l S",
     "0.35 0.40 0.45 rg",
-    "BT /F1 9 Tf 96 14 Td (Certificate ID: IF-ISSUED) Tj ET",
-    "BT /F1 9 Tf 376 14 Td (INTERNFLOW) Tj ET",
-    `BT /F1 9 Tf 664 14 Td (Issue Date: ${issueDate}) Tj ET`
+    `BT /F1 10 Tf 644 20 Td (Issue Date: ${issueDate}) Tj ET`
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
