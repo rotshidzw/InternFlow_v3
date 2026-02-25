@@ -14,6 +14,16 @@ type ExportJob = {
   exportTemplate: { name: string };
 };
 
+
+function toIsoDate(value: string | Date) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return value.slice(0, 10);
+}
+
+function toIsoDateTime(value: string) {
+  return value.slice(0, 19).replace("T", " ") + "Z";
+}
+
 export function CloseoutExportsPanel({ orgSlug, programmes, templates, initialJobs }: { orgSlug: string; programmes: Programme[]; templates: ExportTemplate[]; initialJobs: ExportJob[] }) {
   const [programmeId, setProgrammeId] = useState(programmes[0]?.id ?? "");
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
@@ -75,7 +85,7 @@ export function CloseoutExportsPanel({ orgSlug, programmes, templates, initialJo
         </div>
         {selectedProgramme ? (
           <p className="text-xs text-slate-500">
-            Programme dates: {new Date(selectedProgramme.startDate).toLocaleDateString()} - {new Date(selectedProgramme.endDate).toLocaleDateString()}
+            Programme dates: {toIsoDate(selectedProgramme.startDate)} - {toIsoDate(selectedProgramme.endDate)}
           </p>
         ) : null}
         <button
@@ -101,7 +111,7 @@ export function CloseoutExportsPanel({ orgSlug, programmes, templates, initialJo
                 <p className="font-medium">
                   {job.programme.name} · {job.exportTemplate.name}
                 </p>
-                <p className="text-xs text-slate-500">Created {new Date(job.createdAt).toLocaleString()} · Status: {job.status}</p>
+                <p className="text-xs text-slate-500">Created {toIsoDateTime(job.createdAt)} · Status: {job.status}</p>
                 {job.status === "FAILED" && job.errorMessage ? <p className="text-xs text-red-600">Reason: {job.errorMessage}</p> : null}
               </div>
               <div>
