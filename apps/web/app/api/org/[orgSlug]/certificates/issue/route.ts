@@ -20,8 +20,8 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const safeManager = escapePdfText(managerName);
   const safeSignature = escapePdfText(signature);
   const signatureLine = hasImageSignature
-    ? "BT /F1 12 Tf 72 116 Td (Image signature attached to this certificate record.) Tj ET"
-    : `BT /F3 22 Tf 72 116 Td (${safeSignature}) Tj ET`;
+    ? "BT /F1 12 Tf 72 100 Td (Image signature attached to this certificate record.) Tj ET"
+    : `BT /F3 22 Tf 72 94 Td (${safeSignature}) Tj ET`;
 
   const stream = [
     // soft certificate background + border
@@ -50,18 +50,20 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     "0.03 0.12 0.29 rg",
     `BT /F2 18 Tf 72 145 Td (${safeManager}) Tj ET`,
     "0.20 0.34 0.50 rg",
-    "BT /F1 12 Tf 72 128 Td (Typed signature:) Tj ET",
+    "BT /F1 12 Tf 72 124 Td (Typed signature:) Tj ET",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
-    // stamp
-    "1.00 0.94 0.95 rg 670 28 140 140 re f",
-    "0.94 0.58 0.65 RG 5 w 670 28 140 140 re S",
+    // circular stamp
+    "1.00 0.94 0.95 rg",
+    "740 98 m 740 136.66 708.66 168 670 168 c 631.34 168 600 136.66 600 98 c 600 59.34 631.34 28 670 28 c 708.66 28 740 59.34 740 98 c f",
+    "0.94 0.58 0.65 RG 5 w",
+    "740 98 m 740 136.66 708.66 168 670 168 c 631.34 168 600 136.66 600 98 c 600 59.34 631.34 28 670 28 c 708.66 28 740 59.34 740 98 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 12 Tf 708 116 Td (${safeTenant}) Tj ET`,
-    "BT /F2 12 Tf 710 88 Td (OFFICIAL) Tj ET",
-    "BT /F2 12 Tf 725 64 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 722 40 Td (Verified) Tj ET"
+    `BT /F2 12 Tf 633 116 Td (${safeTenant}) Tj ET`,
+    "BT /F2 12 Tf 636 88 Td (OFFICIAL) Tj ET",
+    "BT /F2 12 Tf 650 64 Td (STAMP) Tj ET",
+    "BT /F2 10 Tf 647 40 Td (Verified) Tj ET"
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
