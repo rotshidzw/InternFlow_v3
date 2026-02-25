@@ -112,6 +112,11 @@ function centerTextX(text: string, fontSize: number, weight = 0.52) {
   return Math.max(48, Math.round((pageWidth - estimatedWidth) / 2));
 }
 
+function centerTextAtX(text: string, fontSize: number, centerX: number, weight = 0.52) {
+  const estimatedWidth = text.length * fontSize * weight;
+  return Math.round(centerX - estimatedWidth / 2);
+}
+
 function fitFontSize(text: string, maxSize: number, minSize: number, maxWidth: number, weight = 0.52) {
   let size = maxSize;
   while (size > minSize && text.length * size * weight > maxWidth) size -= 1;
@@ -189,10 +194,11 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     "0.86 0.29 0.38 RG 1 w",
     "782 130 m 782 164.23 754.23 192 720 192 c 685.77 192 658 164.23 658 130 c 658 95.77 685.77 68 720 68 c 754.23 68 782 95.77 782 130 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 333} 146 Td (${safeTenant}) Tj ET`,
-    "BT /F2 13 Tf 686 122 Td (OFFICIAL) Tj ET",
-    "BT /F2 13 Tf 700 100 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 693 80 Td (Verified) Tj ET",
+    `BT /F2 ${tenantStampSize} Tf ${centerTextAtX(safeTenant, tenantStampSize, 720, 0.53)} 150 Td (${safeTenant}) Tj ET`,
+    `BT /F2 12 Tf ${centerTextAtX("OFFICIAL", 12, 720, 0.53)} 124 Td (OFFICIAL) Tj ET`,
+    `BT /F2 12 Tf ${centerTextAtX("STAMP", 12, 720, 0.53)} 104 Td (STAMP) Tj ET`,
+    `BT /F2 16 Tf ${centerTextAtX("*", 16, 720, 0.53)} 88 Td (*) Tj ET`,
+    `BT /F2 10 Tf ${centerTextAtX("VERIFIED", 10, 720, 0.53)} 72 Td (VERIFIED) Tj ET`,
 
     // footer divider + metadata
     "0.18 0.44 0.34 RG 0.9 w 86 34 m 756 34 l S",
