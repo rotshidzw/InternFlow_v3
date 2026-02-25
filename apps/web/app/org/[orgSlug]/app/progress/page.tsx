@@ -15,7 +15,7 @@ export default async function ProgressPage({ params }: { params: { orgSlug: stri
   const [enrollments, logbooks, checklists] = await Promise.all([
     prisma.enrollment.findMany({ where: { organizationId: orgId } , include: { user: true, program: true }, take: 100 }),
     prisma.logbookEntry.findMany({ where: { user: { memberships: { some: { organizationId: orgId } } } }, include: { user: true }, orderBy: { weekStart: "desc" }, take: 500 }),
-    prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, include: { application: { include: { user: true } }, items: true }, orderBy: { createdAt: "desc" }, take: 200 })
+    prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, include: { application: { include: { user: true } }, items: true }, orderBy: { applicationId: "desc" }, take: 200 })
   ]);
 
   const progressRows = enrollments.map((enrollment) => {
