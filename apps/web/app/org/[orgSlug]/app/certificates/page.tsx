@@ -14,13 +14,13 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
     prisma.enrollment.findMany({
       where: { organizationId: access.membership.organizationId },
       include: { user: true, program: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { id: "desc" },
       take: 300
     }),
     prisma.document.findMany({
       where: { organizationId: access.membership.organizationId, type: "CERTIFICATE" },
       include: { user: true, versions: { orderBy: { createdAt: "desc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { id: "desc" },
       take: 100
     })
   ]);
