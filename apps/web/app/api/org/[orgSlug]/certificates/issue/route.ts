@@ -45,8 +45,8 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const tenantStampSize = fitFontSize(safeTenant, 12, 9, 102, 0.53);
 
   const signatureLine = hasImageSignature
-    ? "BT /F1 10 Tf 98 84 Td (Signed via uploaded image signature.) Tj ET"
-    : `BT /F3 22 Tf 98 66 Td (${safeSignature}) Tj ET`;
+    ? "BT /F1 10 Tf 98 48 Td (Signed via uploaded image signature.) Tj ET"
+    : `BT /F3 22 Tf 98 34 Td (${safeSignature}) Tj ET`;
 
   const stream = [
     // background + subtle glass gradient approximation
@@ -79,28 +79,28 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
 
     // zone 3: left signature block
     "0.20 0.34 0.50 rg",
-    "BT /F1 13 Tf 98 108 Td (AUTHORISED BY) Tj ET",
+    "BT /F1 13 Tf 98 116 Td (AUTHORISED BY) Tj ET",
     "0.03 0.12 0.29 rg",
-    `BT /F2 16 Tf 98 88 Td (${safeManager}) Tj ET`,
+    `BT /F2 16 Tf 98 96 Td (${safeManager}) Tj ET`,
     "0.30 0.35 0.40 rg",
-    "BT /F1 12 Tf 98 72 Td (Programme Coordinator) Tj ET",
-    "BT /F1 11 Tf 98 58 Td (Signed digitally) Tj ET",
-    "0.16 0.20 0.28 RG 0.8 w 98 54 m 270 54 l S",
+    "BT /F1 11 Tf 98 80 Td (Programme Coordinator) Tj ET",
+    "BT /F1 11 Tf 98 66 Td (Signed digitally) Tj ET",
+    "0.16 0.20 0.28 RG 0.8 w 98 60 m 270 60 l S",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
     // zone 3: right circular stamp
     "1.00 0.95 0.96 rg",
-    "760 92 m 760 139.50 721.50 178 674 178 c 626.50 178 588 139.50 588 92 c 588 44.50 626.50 6 674 6 c 721.50 6 760 44.50 760 92 c f",
-    "0.86 0.29 0.38 RG 5 w",
-    "760 92 m 760 139.50 721.50 178 674 178 c 626.50 178 588 139.50 588 92 c 588 44.50 626.50 6 674 6 c 721.50 6 760 44.50 760 92 c S",
-    "0.86 0.29 0.38 RG 1.2 w",
-    "748 92 m 748 132.87 714.87 166 674 166 c 633.13 166 600 132.87 600 92 c 600 51.13 633.13 18 674 18 c 714.87 18 748 51.13 748 92 c S",
+    "746 130 m 746 169.76 713.76 202 674 202 c 634.24 202 602 169.76 602 130 c 602 90.24 634.24 58 674 58 c 713.76 58 746 90.24 746 130 c f",
+    "0.86 0.29 0.38 RG 4 w",
+    "746 130 m 746 169.76 713.76 202 674 202 c 634.24 202 602 169.76 602 130 c 602 90.24 634.24 58 674 58 c 713.76 58 746 90.24 746 130 c S",
+    "0.86 0.29 0.38 RG 1 w",
+    "736 130 m 736 164.23 708.23 192 674 192 c 639.77 192 612 164.23 612 130 c 612 95.77 639.77 68 674 68 c 708.23 68 736 95.77 736 130 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 287} 106 Td (${safeTenant}) Tj ET`,
-    "BT /F2 13 Tf 637 80 Td (OFFICIAL) Tj ET",
-    "BT /F2 13 Tf 652 55 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 648 31 Td (Verified) Tj ET",
+    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 287} 144 Td (${safeTenant}) Tj ET`,
+    "BT /F2 13 Tf 637 122 Td (OFFICIAL) Tj ET",
+    "BT /F2 13 Tf 652 100 Td (STAMP) Tj ET",
+    "BT /F2 10 Tf 648 80 Td (Verified) Tj ET",
 
     // footer divider + metadata
     "0.18 0.44 0.34 RG 0.9 w 86 40 m 756 40 l S",
