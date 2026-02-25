@@ -65,7 +65,17 @@ export async function POST(req: NextRequest, { params }: { params: { orgSlug: st
     }
   });
 
-  await exportQueue.add("generate-closeout-export", { jobId: job.id });
+  try {
+    await exportQueue.add("generate-closeout-export", { jobId: job.id });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to queue export job";
+    await prisma.programmeExportJob.update({
+      where: { id: job.id },
+      data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) }
+    });
+
+    return NextResponse.json({ error: "Unable to queue export job", detail: message }, { status: 503 });
+  }
 
   return NextResponse.json({ ok: true, jobId: job.id, status: job.status });
 }

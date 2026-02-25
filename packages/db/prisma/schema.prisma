@@ -638,6 +638,7 @@ model ProgrammeExportJob {
   createdByUserId  String
   createdAt        DateTime             @default(now())
   finishedAt       DateTime?
+  errorMessage     String?
   tenant           Organization         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   programme        Program              @relation(fields: [programmeId], references: [id], onDelete: Cascade)
   exportTemplate   ExportTemplate       @relation(fields: [exportTemplateId], references: [id], onDelete: Cascade)

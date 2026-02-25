@@ -61,7 +61,11 @@ const closeoutExportWorker = new Worker(
       await generateExportZip(jobId);
       return { ok: true };
     } catch (error) {
-      await prisma.programmeExportJob.update({ where: { id: jobId }, data: { status: "FAILED", finishedAt: new Date() } });
+      const message = error instanceof Error ? error.message : "Unknown export failure";
+      await prisma.programmeExportJob.update({
+        where: { id: jobId },
+        data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) }
+      });
       throw error;
     }
   },

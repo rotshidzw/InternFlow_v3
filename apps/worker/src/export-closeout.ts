@@ -67,7 +67,7 @@ export async function generateExportZip(jobId: string) {
 
   if (!job) throw new Error("Export job not found");
 
-  await prisma.programmeExportJob.update({ where: { id: job.id }, data: { status: "RUNNING" } });
+  await prisma.programmeExportJob.update({ where: { id: job.id }, data: { status: "RUNNING", errorMessage: null } });
 
   const includeRules = (job.exportTemplate.includeRulesJson ?? {}) as IncludeRules;
   const structure = (job.exportTemplate.structureJson ?? {}) as StructureTemplate;
@@ -187,7 +187,7 @@ export async function generateExportZip(jobId: string) {
 
     await prisma.programmeExportJob.update({
       where: { id: job.id },
-      data: { status: "DONE", zipObsKey, reportPdfObsKey, finishedAt: new Date() }
+      data: { status: "DONE", zipObsKey, reportPdfObsKey, finishedAt: new Date(), errorMessage: null }
     });
 
     await prisma.auditEvent.create({

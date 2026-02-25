@@ -9,6 +9,7 @@ type ExportJob = {
   status: "QUEUED" | "RUNNING" | "DONE" | "FAILED";
   createdAt: string;
   finishedAt: string | null;
+  errorMessage?: string | null;
   programme: { name: string };
   exportTemplate: { name: string };
 };
@@ -97,6 +98,7 @@ export function CloseoutExportsPanel({ orgSlug, programmes, templates, initialJo
               <div>
                 <p className="font-medium">{job.programme.name} · {job.exportTemplate.name}</p>
                 <p className="text-xs text-slate-500">Created {new Date(job.createdAt).toLocaleString()} · Status: {job.status}</p>
+                {job.status === "FAILED" && job.errorMessage ? <p className="text-xs text-red-600">Reason: {job.errorMessage}</p> : null}
               </div>
               <div>
                 {job.status === "DONE" ? (
