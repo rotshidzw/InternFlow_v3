@@ -98,10 +98,10 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
             <p className="text-xs text-slate-500">Access conversation, progress tracking, register exports, and certificate release tools.</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <Link href="/app/whatsapp-sim" className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Chat with learners</Link>
-            <Link href={`/org/${params.orgSlug}/app/logbooks`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Track progress</Link>
-            <Link href={`/org/${params.orgSlug}/app/reports/exports`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Upload/Export registers</Link>
-            <Link href={`/org/${params.orgSlug}/app/reports/exports`} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700">One-click certificate release (PDF)</Link>
+            <Link href={`/org/${params.orgSlug}/app/learner-chat`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Chat with learners</Link>
+            <Link href={`/org/${params.orgSlug}/app/progress`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Track progress</Link>
+            <Link href={`/org/${params.orgSlug}/app/registers`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Upload/Export registers</Link>
+            <Link href={`/org/${params.orgSlug}/app/certificates`} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700">One-click certificate release (PDF)</Link>
           </div>
         </div>
       </div>

@@ -20,6 +20,18 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const nextTask = checklist?.items.find((i) => i.status !== "DONE");
   const overdue = checklist?.items.filter((i) => i.status !== "DONE" && i.dueDate && i.dueDate < new Date()).length ?? 0;
 
+  const currentWeekStart = new Date();
+  currentWeekStart.setHours(0, 0, 0, 0);
+  currentWeekStart.setDate(currentWeekStart.getDate() - ((currentWeekStart.getDay() + 6) % 7));
+  const currentWeekEnd = new Date(currentWeekStart);
+  currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+  const weeklyGoals = checklist?.items.filter((item) => {
+    if (!item.dueDate) return true;
+    return item.dueDate >= currentWeekStart && item.dueDate <= currentWeekEnd;
+  }) ?? [];
+  const weeklyCompleted = weeklyGoals.filter((item) => item.status === "DONE").length;
+
   return (
     <AppShell orgSlug={params.orgSlug} role={access.membership.role} orgName={access.membership.organization.name}>
       <h1 className="text-2xl font-semibold">Student lifecycle dashboard</h1>
@@ -48,6 +60,19 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
         </div>
       </section>
 
+      <section id="weekly-goals" className="mt-3 rounded-xl border border-white/15 bg-white/5 p-4">
+        <h2 className="font-semibold">Weekly goals tracker</h2>
+        <p className="mt-1 text-sm text-slate-200">Week window: {currentWeekStart.toISOString().slice(0, 10)} to {currentWeekEnd.toISOString().slice(0, 10)} · completed {weeklyCompleted}/{weeklyGoals.length}</p>
+        <div className="mt-2 space-y-2 text-sm">
+          {weeklyGoals.length === 0 ? <p className="text-slate-300">No goals configured for this week yet.</p> : weeklyGoals.map((item) => (
+            <div key={item.id} className="flex items-center justify-between rounded-lg border border-white/10 p-2">
+              <span>{item.label}</span>
+              <span className={item.status === "DONE" ? "text-emerald-300" : "text-amber-300"}>{item.status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-3 grid gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-4 md:col-span-2">
           <h2 className="font-semibold text-emerald-200">Student-only workspace access</h2>
@@ -56,6 +81,7 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
             <a href="#applications" className="rounded border border-white/20 px-3 py-1.5 hover:bg-white/10">Jump to applications</a>
             <a href="#checklist" className="rounded border border-white/20 px-3 py-1.5 hover:bg-white/10">Jump to checklist</a>
             <a href="#documents" className="rounded border border-white/20 px-3 py-1.5 hover:bg-white/10">Jump to documents</a>
+            <a href="#weekly-goals" className="rounded border border-white/20 px-3 py-1.5 hover:bg-white/10">Jump to weekly goals</a>
           </div>
         </div>
         <div id="documents" className="rounded-xl border border-white/15 bg-white/5 p-4">
