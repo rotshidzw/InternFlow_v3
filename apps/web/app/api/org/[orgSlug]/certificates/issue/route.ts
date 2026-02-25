@@ -20,50 +20,55 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const safeManager = escapePdfText(managerName);
   const safeSignature = escapePdfText(signature);
   const signatureLine = hasImageSignature
-    ? "BT /F1 12 Tf 72 100 Td (Image signature attached to this certificate record.) Tj ET"
-    : `BT /F3 22 Tf 72 94 Td (${safeSignature}) Tj ET`;
+    ? "BT /F1 11 Tf 84 90 Td (Image signature attached to this certificate record.) Tj ET"
+    : `BT /F3 24 Tf 84 78 Td (${safeSignature}) Tj ET`;
 
   const stream = [
-    // soft certificate background + border
-    "0.95 0.97 0.96 rg 8 8 826 579 re f",
-    "0.51 0.88 0.74 RG 4 w 8 8 826 579 re S",
+    // certificate parchment background + dual border
+    "0.99 0.98 0.94 rg 0 0 842 595 re f",
+    "0.84 0.79 0.66 RG 2 w 18 18 806 559 re S",
+    "0.45 0.59 0.49 RG 3 w 28 28 786 539 re S",
 
-    // header + title block
-    "0.20 0.34 0.50 rg",
-    `BT /F1 16 Tf 250 545 Td (${safeTenant} PROGRAMME CERTIFICATION) Tj ET`,
-    "0.03 0.12 0.29 rg",
-    "BT /F2 56 Tf 160 470 Td (Certificate of Completion) Tj ET",
+    // header ribbon lines
+    "0.45 0.59 0.49 RG 1.2 w 90 520 m 752 520 l S",
+    "0.45 0.59 0.49 RG 1.2 w 90 495 m 752 495 l S",
 
-    // body center content
-    "0.10 0.20 0.34 rg",
-    "BT /F1 24 Tf 330 385 Td (This certifies that) Tj ET",
-    "0.00 0.48 0.40 rg",
-    `BT /F2 52 Tf 220 315 Td (${safeLearner}) Tj ET`,
-    "0.10 0.20 0.34 rg",
-    "BT /F1 24 Tf 290 255 Td (has successfully completed) Tj ET",
-    "0.03 0.12 0.29 rg",
-    `BT /F2 40 Tf 300 200 Td (${safeProgramme}) Tj ET`,
+    // header + title
+    "0.17 0.32 0.50 rg",
+    `BT /F1 20 Tf 230 505 Td (${safeTenant} PROGRAMME CERTIFICATION) Tj ET`,
+    "0.04 0.12 0.29 rg",
+    "BT /F2 62 Tf 154 430 Td (Certificate of Completion) Tj ET",
 
-    // authorised/signature block
+    // centered body copy
+    "0.16 0.24 0.38 rg",
+    "BT /F1 22 Tf 330 350 Td (This certifies that) Tj ET",
+    "0.02 0.48 0.40 rg",
+    `BT /F2 58 Tf 176 280 Td (${safeLearner}) Tj ET`,
+    "0.16 0.24 0.38 rg",
+    "BT /F1 22 Tf 286 218 Td (has successfully completed) Tj ET",
+    "0.04 0.12 0.29 rg",
+    `BT /F2 48 Tf 244 160 Td (${safeProgramme}) Tj ET`,
+
+    // authorisation block
     "0.20 0.34 0.50 rg",
-    "BT /F1 14 Tf 72 168 Td (AUTHORISED BY) Tj ET",
+    "BT /F1 14 Tf 84 132 Td (AUTHORISED BY) Tj ET",
     "0.03 0.12 0.29 rg",
-    `BT /F2 18 Tf 72 145 Td (${safeManager}) Tj ET`,
+    `BT /F2 18 Tf 84 110 Td (${safeManager}) Tj ET`,
     "0.20 0.34 0.50 rg",
-    "BT /F1 12 Tf 72 124 Td (Typed signature:) Tj ET",
+    "BT /F1 12 Tf 84 94 Td (Typed signature:) Tj ET",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
-    // circular stamp
-    "1.00 0.94 0.95 rg",
-    "740 98 m 740 136.66 708.66 168 670 168 c 631.34 168 600 136.66 600 98 c 600 59.34 631.34 28 670 28 c 708.66 28 740 59.34 740 98 c f",
-    "0.94 0.58 0.65 RG 5 w",
-    "740 98 m 740 136.66 708.66 168 670 168 c 631.34 168 600 136.66 600 98 c 600 59.34 631.34 28 670 28 c 708.66 28 740 59.34 740 98 c S",
+    // circular stamp with ring
+    "1.00 0.95 0.96 rg",
+    "770 92 m 770 136.18 734.18 172 690 172 c 645.82 172 610 136.18 610 92 c 610 47.82 645.82 12 690 12 c 734.18 12 770 47.82 770 92 c f",
+    "0.86 0.29 0.38 RG 5 w",
+    "770 92 m 770 136.18 734.18 172 690 172 c 645.82 172 610 136.18 610 92 c 610 47.82 645.82 12 690 12 c 734.18 12 770 47.82 770 92 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 12 Tf 633 116 Td (${safeTenant}) Tj ET`,
-    "BT /F2 12 Tf 636 88 Td (OFFICIAL) Tj ET",
-    "BT /F2 12 Tf 650 64 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 647 40 Td (Verified) Tj ET"
+    `BT /F2 14 Tf 648 108 Td (${safeTenant}) Tj ET`,
+    "BT /F2 14 Tf 652 82 Td (OFFICIAL) Tj ET",
+    "BT /F2 14 Tf 668 56 Td (STAMP) Tj ET",
+    "BT /F2 11 Tf 665 30 Td (Verified) Tj ET"
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
