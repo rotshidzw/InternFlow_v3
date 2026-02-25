@@ -1,18 +1,29 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { PropsWithChildren } from "react";
+import { FadeInSection } from "@/components/fade-in-section";
 
 export function AnimatedCard({ children }: PropsWithChildren) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.35 }}
-      className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-[0_0_35px_rgba(16,185,129,0.15)] backdrop-blur"
-    >
-      {children}
-    </motion.div>
+    <FadeInSection>
+      <motion.div
+        whileHover={
+          prefersReducedMotion
+            ? undefined
+            : {
+                y: -6,
+                scale: 1.02,
+                boxShadow: "0 22px 50px rgba(2, 6, 23, 0.18)",
+              }
+        }
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 shadow-lg transition-all duration-300 ease-out backdrop-blur hover:shadow-2xl dark:border-white/15 dark:bg-white/10"
+      >
+        {children}
+      </motion.div>
+    </FadeInSection>
   );
 }
