@@ -138,8 +138,8 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const tenantStampSize = fitFontSize(safeTenant, 12, 9, 102, 0.53);
 
   const signatureLine = hasImageSignature
-    ? "BT /F3 12 Tf 98 58 Td (Signature on file) Tj ET"
-    : `BT /F3 20 Tf 98 58 Td (${safeSignature}) Tj ET`;
+    ? "BT /F3 12 Tf 98 56 Td (Signature on file) Tj ET"
+    : `BT /F3 20 Tf 98 56 Td (${safeSignature}) Tj ET`;
 
   const stream = [
     // background + subtle glass gradient approximation
@@ -178,8 +178,6 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     "0.30 0.35 0.40 rg",
     "BT /F1 11 Tf 98 92 Td (Programme Coordinator) Tj ET",
     "0.16 0.20 0.28 RG 0.8 w 98 74 m 270 74 l S",
-    "0.30 0.35 0.40 rg",
-    "BT /F1 10 Tf 98 62 Td (Signed digitally) Tj ET",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
