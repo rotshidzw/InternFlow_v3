@@ -123,9 +123,14 @@ export default function CertificatePreviewPage() {
 
           {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
           {!enrollmentId ? (
-            <p className="text-xs text-amber-600">
-              Demo preview only. To save/download, go back and click <strong>View certificate</strong> from a learner issue row (that passes enrollment context).
-            </p>
+            <div className="text-xs text-amber-700">
+              <p>
+                Demo preview only. To save/download, open a real learner row from the certificates page and click <strong>View certificate</strong>.
+              </p>
+              <Link href={`/org/${orgSlug}/app/certificates`} className="mt-1 inline-block underline">
+                Go to certificates issue list
+              </Link>
+            </div>
           ) : null}
 
           <Link href={`/org/${orgSlug}/app/certificates`} className="block rounded border border-slate-300 px-3 py-2 text-center text-sm text-slate-700">
