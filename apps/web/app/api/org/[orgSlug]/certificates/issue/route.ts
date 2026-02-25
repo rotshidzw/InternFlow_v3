@@ -19,6 +19,12 @@ function centerTextX(text: string, fontSize: number, weight = 0.52) {
   return Math.max(48, Math.round((pageWidth - estimatedWidth) / 2));
 }
 
+function fitFontSize(text: string, maxSize: number, minSize: number, maxWidth: number, weight = 0.52) {
+  let size = maxSize;
+  while (size > minSize && text.length * size * weight > maxWidth) size -= 1;
+  return size;
+}
+
 function certificatePdf(tenantName: string, learnerName: string, programmeName: string, managerName: string, signature: string, hasImageSignature: boolean) {
   const safeTenant = escapePdfText(tenantName.toUpperCase());
   const safeLearner = escapePdfText(learnerName);
@@ -31,60 +37,74 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const lineOneText = "This certifies that";
   const lineTwoText = "has successfully completed";
 
+  const headerSize = fitFontSize(headerText, 18, 14, 620, 0.5);
+  const titleSize = fitFontSize(titleText, 68, 48, 760, 0.5);
+  const learnerSize = fitFontSize(safeLearner, 56, 30, 720, 0.5);
+  const programmeSize = fitFontSize(safeProgramme, 52, 28, 700, 0.5);
+  const tenantStampSize = fitFontSize(safeTenant, 13, 10, 110, 0.53);
+
   const signatureLine = hasImageSignature
-    ? "BT /F1 11 Tf 96 92 Td (Image signature attached to this certificate record.) Tj ET"
-    : `BT /F3 24 Tf 96 74 Td (${safeSignature}) Tj ET`;
+    ? "BT /F1 10 Tf 98 84 Td (Image signature attached to this certificate record.) Tj ET"
+    : `BT /F3 22 Tf 98 66 Td (${safeSignature}) Tj ET`;
 
   const stream = [
-    // certificate background (restored to previous soft certificate tone)
+    // smooth glass-blue/green background and classic borders
     "0.95 0.97 0.96 rg 0 0 842 595 re f",
-
-    // double border
-    "0.83 0.77 0.65 RG 2 w 18 18 806 559 re S",
+    "0.84 0.79 0.65 RG 2 w 18 18 806 559 re S",
     "0.45 0.62 0.55 RG 3 w 30 30 782 535 re S",
 
+    // subtle corner ornaments (small line motifs)
+    "0.84 0.79 0.65 RG 1 w 44 548 m 72 548 l S",
+    "0.84 0.79 0.65 RG 1 w 44 548 m 44 520 l S",
+    "0.84 0.79 0.65 RG 1 w 798 548 m 770 548 l S",
+    "0.84 0.79 0.65 RG 1 w 798 548 m 798 520 l S",
+    "0.84 0.79 0.65 RG 1 w 44 46 m 72 46 l S",
+    "0.84 0.79 0.65 RG 1 w 44 46 m 44 74 l S",
+    "0.84 0.79 0.65 RG 1 w 798 46 m 770 46 l S",
+    "0.84 0.79 0.65 RG 1 w 798 46 m 798 74 l S",
+
     // header separators
-    "0.45 0.62 0.55 RG 1.1 w 86 526 m 756 526 l S",
-    "0.45 0.62 0.55 RG 1.1 w 86 500 m 756 500 l S",
+    "0.45 0.62 0.55 RG 1.1 w 96 524 m 746 524 l S",
+    "0.45 0.62 0.55 RG 1.1 w 96 500 m 746 500 l S",
 
-    // heading/title
+    // heading/title (centered and fitted)
     "0.17 0.32 0.50 rg",
-    `BT /F1 19 Tf ${centerTextX(headerText, 19, 0.50)} 510 Td (${headerText}) Tj ET`,
+    `BT /F1 ${headerSize} Tf ${centerTextX(headerText, headerSize, 0.50)} 507 Td (${headerText}) Tj ET`,
     "0.04 0.12 0.29 rg",
-    `BT /F2 72 Tf ${centerTextX(titleText, 72, 0.48)} 430 Td (${titleText}) Tj ET`,
+    `BT /F2 ${titleSize} Tf ${centerTextX(titleText, titleSize, 0.49)} 418 Td (${titleText}) Tj ET`,
 
-    // learner/programme body
+    // body copy (centered and fitted)
     "0.16 0.24 0.38 rg",
-    `BT /F1 22 Tf ${centerTextX(lineOneText, 22, 0.50)} 338 Td (${lineOneText}) Tj ET`,
+    `BT /F1 20 Tf ${centerTextX(lineOneText, 20, 0.50)} 332 Td (${lineOneText}) Tj ET`,
     "0.02 0.48 0.40 rg",
-    `BT /F2 58 Tf ${centerTextX(safeLearner, 58, 0.47)} 266 Td (${safeLearner}) Tj ET`,
+    `BT /F2 ${learnerSize} Tf ${centerTextX(safeLearner, learnerSize, 0.49)} 262 Td (${safeLearner}) Tj ET`,
     "0.16 0.24 0.38 rg",
-    `BT /F1 22 Tf ${centerTextX(lineTwoText, 22, 0.50)} 204 Td (${lineTwoText}) Tj ET`,
+    `BT /F1 20 Tf ${centerTextX(lineTwoText, 20, 0.50)} 202 Td (${lineTwoText}) Tj ET`,
     "0.04 0.12 0.29 rg",
-    `BT /F2 58 Tf ${centerTextX(safeProgramme, 58, 0.47)} 132 Td (${safeProgramme}) Tj ET`,
+    `BT /F2 ${programmeSize} Tf ${centerTextX(safeProgramme, programmeSize, 0.49)} 134 Td (${safeProgramme}) Tj ET`,
 
-    // authorisation block
+    // authorisation block (kept safely below body)
     "0.20 0.34 0.50 rg",
-    "BT /F1 14 Tf 96 136 Td (AUTHORISED BY) Tj ET",
+    "BT /F1 14 Tf 98 118 Td (AUTHORISED BY) Tj ET",
     "0.03 0.12 0.29 rg",
-    `BT /F2 18 Tf 96 112 Td (${safeManager}) Tj ET`,
+    `BT /F2 17 Tf 98 96 Td (${safeManager}) Tj ET`,
     "0.20 0.34 0.50 rg",
-    "BT /F1 12 Tf 96 96 Td (Typed signature:) Tj ET",
+    "BT /F1 12 Tf 98 80 Td (Typed signature:) Tj ET",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
-    // circular stamp aligned bottom-right with inner ring
+    // circular stamp aligned bottom-right
     "1.00 0.95 0.96 rg",
-    "760 96 m 760 143.50 721.50 182 674 182 c 626.50 182 588 143.50 588 96 c 588 48.50 626.50 10 674 10 c 721.50 10 760 48.50 760 96 c f",
+    "760 92 m 760 139.50 721.50 178 674 178 c 626.50 178 588 139.50 588 92 c 588 44.50 626.50 6 674 6 c 721.50 6 760 44.50 760 92 c f",
     "0.86 0.29 0.38 RG 5 w",
-    "760 96 m 760 143.50 721.50 182 674 182 c 626.50 182 588 143.50 588 96 c 588 48.50 626.50 10 674 10 c 721.50 10 760 48.50 760 96 c S",
+    "760 92 m 760 139.50 721.50 178 674 178 c 626.50 178 588 139.50 588 92 c 588 44.50 626.50 6 674 6 c 721.50 6 760 44.50 760 92 c S",
     "0.86 0.29 0.38 RG 1.2 w",
-    "748 96 m 748 136.87 714.87 170 674 170 c 633.13 170 600 136.87 600 96 c 600 55.13 633.13 22 674 22 c 714.87 22 748 55.13 748 96 c S",
+    "748 92 m 748 132.87 714.87 166 674 166 c 633.13 166 600 132.87 600 92 c 600 51.13 633.13 18 674 18 c 714.87 18 748 51.13 748 92 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 14 Tf ${centerTextX(safeTenant, 14, 0.53) + 282} 110 Td (${safeTenant}) Tj ET`,
-    "BT /F2 14 Tf 635 82 Td (OFFICIAL) Tj ET",
-    "BT /F2 14 Tf 650 56 Td (STAMP) Tj ET",
-    "BT /F2 11 Tf 646 30 Td (Verified) Tj ET"
+    `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 287} 106 Td (${safeTenant}) Tj ET`,
+    "BT /F2 13 Tf 637 80 Td (OFFICIAL) Tj ET",
+    "BT /F2 13 Tf 652 55 Td (STAMP) Tj ET",
+    "BT /F2 10 Tf 648 31 Td (Verified) Tj ET"
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");
