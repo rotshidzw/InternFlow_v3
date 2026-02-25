@@ -307,7 +307,7 @@ export async function generateCloseoutZipForJob(jobId: string) {
       `Prepared On: ${new Date().toISOString().slice(0, 10)}`,
       "",
       "Executive Summary",
-      `This report provides a close-out overview for ${job.tenant.name}'s ${job.programme.name}. The pack is generated per tenant scope and includes learner register data and supporting report files for submission to funders and quality assurance stakeholders.",
+      `This report provides a close-out overview for ${job.tenant.name}'s ${job.programme.name}. The pack is generated per tenant scope and includes learner register data and supporting report files for submission to funders and quality assurance stakeholders.`,
       "",
       "Programme Performance Statistics",
       `- Total learners enrolled: ${enrollments.length}`,
