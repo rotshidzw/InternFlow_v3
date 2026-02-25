@@ -1,6 +1,7 @@
 import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import { prisma } from "@internflow/db/src";
+import { generateExportZip } from "./export-closeout";
 
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
 
@@ -50,7 +51,24 @@ const scanWorker = new Worker(
   { connection }
 );
 
-for (const worker of [notificationWorker, scanWorker]) {
+const closeoutExportWorker = new Worker(
+  "programme-closeout-export",
+  async (job) => {
+    if (job.name !== "generate-closeout-export") return { skipped: true };
+    const { jobId } = job.data as { jobId: string };
+
+    try {
+      await generateExportZip(jobId);
+      return { ok: true };
+    } catch (error) {
+      await prisma.programmeExportJob.update({ where: { id: jobId }, data: { status: "FAILED", finishedAt: new Date() } });
+      throw error;
+    }
+  },
+  { connection }
+);
+
+for (const worker of [notificationWorker, scanWorker, closeoutExportWorker]) {
   worker.on("completed", (job) => console.log("Worker completed", job.id));
   worker.on("failed", (job, error) => console.error("Worker failed", job?.id, error));
 }

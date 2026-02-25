@@ -63,6 +63,8 @@ async function main() {
   await prisma.platformMembership.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.auditLog.deleteMany();
+  await prisma.programmeExportJob.deleteMany();
+  await prisma.exportTemplate.deleteMany();
   await prisma.organization.deleteMany();
 
   const platformAdmin = await upsertUser("admin@internflow.com", Role.SYSTEM_ADMIN, "InternFlow HQ Admin");
@@ -139,6 +141,48 @@ async function main() {
     students.push(user);
     const tenant = tenants[i % tenants.length];
     await addTenantMembership(user.id, tenant.id, Role.STUDENT);
+  }
+
+
+  for (const tenant of tenants) {
+    await prisma.exportTemplate.createMany({
+      data: [
+        {
+          tenantId: tenant.id,
+          name: "SITA Close-Out",
+          description: "SITA-aligned close-out folder and evidence configuration",
+          structureJson: {
+            docFolders: ["01_ID", "02_Attendance_Register", "03_Beneficiary_Forms", "04_Qualifications", "05_Logbooks", "06_Images", "07_Reports"]
+          },
+          includeRulesJson: {
+            attendance: true,
+            learnerRegister: true,
+            beneficiaries: true,
+            documents: true,
+            logbooks: true,
+            payslips: false,
+            images: true
+          }
+        },
+        {
+          tenantId: tenant.id,
+          name: "Training Event Pack",
+          description: "Compact export profile for short-form training interventions",
+          structureJson: {
+            docFolders: ["01_ID", "02_Attendance_Register", "03_Beneficiary_Forms", "04_Qualifications", "05_Logbooks", "06_Images", "07_Reports"]
+          },
+          includeRulesJson: {
+            attendance: true,
+            learnerRegister: true,
+            beneficiaries: false,
+            documents: true,
+            logbooks: false,
+            payslips: false,
+            images: false
+          }
+        }
+      ]
+    });
   }
 
   const programs = [] as Awaited<ReturnType<typeof prisma.program.create>>[];

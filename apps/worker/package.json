@@ -11,7 +11,8 @@
   "dependencies": {
     "@internflow/db": "0.0.1",
     "bullmq": "^5.12.15",
-    "ioredis": "^5.4.1"
+    "ioredis": "^5.4.1",
+    "@internflow/shared": "0.0.1"
   },
   "devDependencies": {
     "tsx": "^4.19.1",

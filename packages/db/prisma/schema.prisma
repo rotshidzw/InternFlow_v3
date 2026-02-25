@@ -129,6 +129,13 @@ enum OpportunityVisibility {
   PROGRAMME_ONLY
 }
 
+enum ProgrammeExportStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
 model User {
   id             String        @id @default(cuid())
   email          String        @unique
@@ -155,6 +162,7 @@ model User {
   opportunityPosts OpportunityPost[]
   auditEvents AuditEvent[]
   interests Interest[]
+  createdExportJobs ProgrammeExportJob[] @relation("ProgrammeExportJobCreator")
 }
 
 model Organization {
@@ -186,6 +194,8 @@ model Organization {
   inviteTokens     InviteToken[]
   opportunityPosts OpportunityPost[]
   auditEvents      AuditEvent[]
+  exportTemplates  ExportTemplate[]
+  exportJobs       ProgrammeExportJob[]
 }
 
 model OrganizationDocument {
@@ -302,6 +312,7 @@ model Program {
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   inviteTokens   InviteToken[]
   opportunityPosts OpportunityPost[]
+  exportJobs     ProgrammeExportJob[]
 }
 
 model Opportunity {
@@ -600,6 +611,40 @@ model AuditEvent {
 
   @@index([tenantId, action])
   @@index([userId, createdAt])
+}
+
+model ExportTemplate {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  description      String?
+  structureJson    Json
+  includeRulesJson Json
+  createdAt        DateTime @default(now())
+  tenant           Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs             ProgrammeExportJob[]
+
+  @@index([tenantId, name])
+}
+
+model ProgrammeExportJob {
+  id               String               @id @default(cuid())
+  tenantId         String
+  programmeId      String
+  exportTemplateId String
+  status           ProgrammeExportStatus @default(QUEUED)
+  zipObsKey        String?
+  reportPdfObsKey  String?
+  createdByUserId  String
+  createdAt        DateTime             @default(now())
+  finishedAt       DateTime?
+  tenant           Organization         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programme        Program              @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  exportTemplate   ExportTemplate       @relation(fields: [exportTemplateId], references: [id], onDelete: Cascade)
+  createdBy        User                 @relation("ProgrammeExportJobCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([programmeId, createdAt])
 }
 
 model Settings {
