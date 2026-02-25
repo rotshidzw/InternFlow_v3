@@ -13,6 +13,99 @@ function decodeDataUrl(dataUrl: string) {
   return { mimeType: match[1], bytes: Buffer.from(match[2], "base64") };
 }
 
+
+function sanitizeFileName(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "certificate";
+}
+
+function crc32(input: Buffer) {
+  let crc = 0xffffffff;
+  for (let i = 0; i < input.length; i++) {
+    crc ^= input[i];
+    for (let j = 0; j < 8; j++) {
+      const mask = -(crc & 1);
+      crc = (crc >>> 1) ^ (0xedb88320 & mask);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function toDosDateTime(value: Date) {
+  const year = Math.max(1980, value.getUTCFullYear());
+  const month = value.getUTCMonth() + 1;
+  const day = value.getUTCDate();
+  const hours = value.getUTCHours();
+  const minutes = value.getUTCMinutes();
+  const seconds = Math.floor(value.getUTCSeconds() / 2);
+
+  const time = (hours << 11) | (minutes << 5) | seconds;
+  const date = ((year - 1980) << 9) | (month << 5) | day;
+  return { date, time };
+}
+
+function createZipBuffer(entries: Array<{ name: string; data: Buffer }>) {
+  const now = toDosDateTime(new Date());
+  const localParts: Buffer[] = [];
+  const centralParts: Buffer[] = [];
+  let offset = 0;
+
+  for (const entry of entries) {
+    const nameBytes = Buffer.from(entry.name, "utf8");
+    const crc = crc32(entry.data);
+    const size = entry.data.length;
+
+    const localHeader = Buffer.alloc(30);
+    localHeader.writeUInt32LE(0x04034b50, 0);
+    localHeader.writeUInt16LE(20, 4);
+    localHeader.writeUInt16LE(0, 6);
+    localHeader.writeUInt16LE(0, 8);
+    localHeader.writeUInt16LE(now.time, 10);
+    localHeader.writeUInt16LE(now.date, 12);
+    localHeader.writeUInt32LE(crc, 14);
+    localHeader.writeUInt32LE(size, 18);
+    localHeader.writeUInt32LE(size, 22);
+    localHeader.writeUInt16LE(nameBytes.length, 26);
+    localHeader.writeUInt16LE(0, 28);
+
+    localParts.push(localHeader, nameBytes, entry.data);
+
+    const centralHeader = Buffer.alloc(46);
+    centralHeader.writeUInt32LE(0x02014b50, 0);
+    centralHeader.writeUInt16LE(20, 4);
+    centralHeader.writeUInt16LE(20, 6);
+    centralHeader.writeUInt16LE(0, 8);
+    centralHeader.writeUInt16LE(0, 10);
+    centralHeader.writeUInt16LE(now.time, 12);
+    centralHeader.writeUInt16LE(now.date, 14);
+    centralHeader.writeUInt32LE(crc, 16);
+    centralHeader.writeUInt32LE(size, 20);
+    centralHeader.writeUInt32LE(size, 24);
+    centralHeader.writeUInt16LE(nameBytes.length, 28);
+    centralHeader.writeUInt16LE(0, 30);
+    centralHeader.writeUInt16LE(0, 32);
+    centralHeader.writeUInt16LE(0, 34);
+    centralHeader.writeUInt16LE(0, 36);
+    centralHeader.writeUInt32LE(0, 38);
+    centralHeader.writeUInt32LE(offset, 42);
+
+    centralParts.push(centralHeader, nameBytes);
+    offset += localHeader.length + nameBytes.length + size;
+  }
+
+  const centralSize = centralParts.reduce((sum, p) => sum + p.length, 0);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(entries.length, 8);
+  eocd.writeUInt16LE(entries.length, 10);
+  eocd.writeUInt32LE(centralSize, 12);
+  eocd.writeUInt32LE(offset, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([...localParts, ...centralParts, eocd]);
+}
+
 function centerTextX(text: string, fontSize: number, weight = 0.52) {
   const pageWidth = 842;
   const estimatedWidth = text.length * fontSize * weight;
@@ -129,6 +222,49 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   return Buffer.from(text, "utf8");
 }
 
+
+export async function GET(req: Request, { params }: { params: { orgSlug: string } }) {
+  const access = await getOrgAccess(params.orgSlug);
+  if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const url = new URL(req.url);
+  const programId = (url.searchParams.get("programId") ?? "").trim();
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: {
+      organizationId: access.membership.organizationId,
+      status: "COMPLETED",
+      ...(programId ? { programId } : {})
+    },
+    include: { user: true, program: true },
+    take: 500
+  });
+
+  if (enrollments.length === 0) {
+    return NextResponse.json({ error: "No completed enrollments found for bulk certificate download." }, { status: 404 });
+  }
+
+  const managerName = access.user.name || "Programme Manager";
+  const tenantName = access.membership.organization.name;
+
+  const entries = enrollments.map((enrollment) => {
+    const learnerName = enrollment.user.name || enrollment.user.email;
+    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, "Signed digitally", false);
+    const programFolder = sanitizeFileName(enrollment.program.name || "Programme");
+    const learnerFile = sanitizeFileName(`${learnerName}-certificate.pdf`);
+    return { name: `${programFolder}/${learnerFile}`, data: pdf };
+  });
+
+  const zip = createZipBuffer(entries);
+  const filename = sanitizeFileName(`${tenantName}-${programId ? "programme" : "all"}-certificates.zip`);
+
+  return new Response(zip, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${filename}"`
+    }
+  });
+}
 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);

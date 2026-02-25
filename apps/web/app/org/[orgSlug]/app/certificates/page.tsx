@@ -30,6 +30,8 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
       latestEnrollmentByUser.set(enrollment.userId, { id: enrollment.id, programName: enrollment.program.name });
     }
   }
+  const programs = Array.from(new Map(completedEnrollments.map((enrollment) => [enrollment.programId, enrollment.program])).values());
+
 
   return (
     <div className="space-y-4">
@@ -45,6 +47,21 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           >
             View demo certificate
           </Link>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">Bulk download certificates (ZIP)</h2>
+        <p className="mt-1 text-sm text-slate-600">Generates clean PDFs using the same certificate engine and bundles them per programme folder.</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+          <a className="rounded border border-slate-300 px-3 py-1 text-slate-700" href={`/api/org/${params.orgSlug}/certificates/issue`}>
+            Download all completed certificates (ZIP)
+          </a>
+          {programs.map((program) => (
+            <a key={program.id} className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-700" href={`/api/org/${params.orgSlug}/certificates/issue?programId=${program.id}`}>
+              {program.name} (ZIP)
+            </a>
+          ))}
         </div>
       </div>
 
