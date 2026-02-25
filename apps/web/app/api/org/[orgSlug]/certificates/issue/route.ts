@@ -31,69 +31,65 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const safeProgramme = escapePdfText(programmeName);
   const safeManager = escapePdfText(managerName);
   const safeSignature = escapePdfText(signature);
+  const issueDate = new Date().toISOString().slice(0, 10);
 
   const headerText = `${safeTenant} PROGRAMME CERTIFICATION`;
   const titleText = "Certificate of Completion";
   const lineOneText = "This certifies that";
   const lineTwoText = "has successfully completed";
 
-  const headerSize = fitFontSize(headerText, 18, 14, 620, 0.5);
-  const titleSize = fitFontSize(titleText, 68, 48, 760, 0.5);
-  const learnerSize = fitFontSize(safeLearner, 56, 30, 720, 0.5);
-  const programmeSize = fitFontSize(safeProgramme, 52, 28, 700, 0.5);
-  const tenantStampSize = fitFontSize(safeTenant, 13, 10, 110, 0.53);
+  const headerSize = fitFontSize(headerText, 16, 14, 620, 0.5);
+  const titleSize = fitFontSize(titleText, 52, 42, 720, 0.5);
+  const learnerSize = fitFontSize(safeLearner, 48, 30, 700, 0.5);
+  const programmeSize = fitFontSize(safeProgramme, 32, 24, 640, 0.5);
+  const tenantStampSize = fitFontSize(safeTenant, 12, 9, 102, 0.53);
 
   const signatureLine = hasImageSignature
-    ? "BT /F1 10 Tf 98 84 Td (Image signature attached to this certificate record.) Tj ET"
+    ? "BT /F1 10 Tf 98 84 Td (Signed via uploaded image signature.) Tj ET"
     : `BT /F3 22 Tf 98 66 Td (${safeSignature}) Tj ET`;
 
   const stream = [
-    // smooth glass-blue/green background and classic borders
+    // background + subtle glass gradient approximation
     "0.95 0.97 0.96 rg 0 0 842 595 re f",
-    "0.84 0.79 0.65 RG 2 w 18 18 806 559 re S",
-    "0.45 0.62 0.55 RG 3 w 30 30 782 535 re S",
+    "0.93 0.97 0.95 rg 0 420 310 175 re f",
 
-    // subtle corner ornaments (small line motifs)
-    "0.84 0.79 0.65 RG 1 w 44 548 m 72 548 l S",
-    "0.84 0.79 0.65 RG 1 w 44 548 m 44 520 l S",
-    "0.84 0.79 0.65 RG 1 w 798 548 m 770 548 l S",
-    "0.84 0.79 0.65 RG 1 w 798 548 m 798 520 l S",
-    "0.84 0.79 0.65 RG 1 w 44 46 m 72 46 l S",
-    "0.84 0.79 0.65 RG 1 w 44 46 m 44 74 l S",
-    "0.84 0.79 0.65 RG 1 w 798 46 m 770 46 l S",
-    "0.84 0.79 0.65 RG 1 w 798 46 m 798 74 l S",
+    // double border
+    "0.79 0.70 0.49 RG 2 w 18 18 806 559 re S",
+    "0.18 0.44 0.34 RG 3 w 30 30 782 535 re S",
 
-    // header separators
-    "0.45 0.62 0.55 RG 1.1 w 96 524 m 746 524 l S",
-    "0.45 0.62 0.55 RG 1.1 w 96 500 m 746 500 l S",
+    // top divider
+    "0.18 0.44 0.34 RG 1.1 w 96 500 m 746 500 l S",
 
-    // heading/title (centered and fitted)
-    "0.17 0.32 0.50 rg",
-    `BT /F1 ${headerSize} Tf ${centerTextX(headerText, headerSize, 0.50)} 507 Td (${headerText}) Tj ET`,
-    "0.04 0.12 0.29 rg",
-    `BT /F2 ${titleSize} Tf ${centerTextX(titleText, titleSize, 0.49)} 418 Td (${titleText}) Tj ET`,
+    // zone 1: header
+    "0.23 0.36 0.31 rg",
+    `BT /F1 ${headerSize} Tf ${centerTextX(headerText, headerSize, 0.50)} 512 Td (${headerText}) Tj ET`,
 
-    // body copy (centered and fitted)
-    "0.16 0.24 0.38 rg",
-    `BT /F1 20 Tf ${centerTextX(lineOneText, 20, 0.50)} 332 Td (${lineOneText}) Tj ET`,
-    "0.02 0.48 0.40 rg",
-    `BT /F2 ${learnerSize} Tf ${centerTextX(safeLearner, learnerSize, 0.49)} 262 Td (${safeLearner}) Tj ET`,
-    "0.16 0.24 0.38 rg",
-    `BT /F1 20 Tf ${centerTextX(lineTwoText, 20, 0.50)} 202 Td (${lineTwoText}) Tj ET`,
-    "0.04 0.12 0.29 rg",
-    `BT /F2 ${programmeSize} Tf ${centerTextX(safeProgramme, programmeSize, 0.49)} 134 Td (${safeProgramme}) Tj ET`,
+    // zone 2: centered body
+    "0.12 0.18 0.23 rg",
+    `BT /F2 ${titleSize} Tf ${centerTextX(titleText, titleSize, 0.49)} 428 Td (${titleText}) Tj ET`,
+    "0.29 0.34 0.39 rg",
+    `BT /F1 20 Tf ${centerTextX(lineOneText, 20, 0.50)} 338 Td (${lineOneText}) Tj ET`,
+    "0.08 0.48 0.43 rg",
+    `BT /F2 ${learnerSize} Tf ${centerTextX(safeLearner, learnerSize, 0.49)} 264 Td (${safeLearner}) Tj ET`,
+    "0.29 0.34 0.39 rg",
+    `BT /F1 20 Tf ${centerTextX(lineTwoText, 20, 0.50)} 204 Td (${lineTwoText}) Tj ET`,
+    "0.12 0.16 0.22 rg",
+    `BT /F2 ${programmeSize} Tf ${centerTextX(safeProgramme, programmeSize, 0.49)} 144 Td (${safeProgramme}) Tj ET`,
+    `BT /F1 10 Tf ${centerTextX(`Completed on ${issueDate}`, 10, 0.5)} 122 Td (Completed on ${issueDate}) Tj ET`,
 
-    // authorisation block (kept safely below body)
+    // zone 3: left signature block
     "0.20 0.34 0.50 rg",
-    "BT /F1 14 Tf 98 118 Td (AUTHORISED BY) Tj ET",
+    "BT /F1 13 Tf 98 108 Td (AUTHORISED BY) Tj ET",
     "0.03 0.12 0.29 rg",
-    `BT /F2 17 Tf 98 96 Td (${safeManager}) Tj ET`,
-    "0.20 0.34 0.50 rg",
-    "BT /F1 12 Tf 98 80 Td (Typed signature:) Tj ET",
+    `BT /F2 16 Tf 98 88 Td (${safeManager}) Tj ET`,
+    "0.30 0.35 0.40 rg",
+    "BT /F1 12 Tf 98 72 Td (Programme Coordinator) Tj ET",
+    "BT /F1 11 Tf 98 58 Td (Signed digitally) Tj ET",
+    "0.16 0.20 0.28 RG 0.8 w 98 54 m 270 54 l S",
     "0.02 0.08 0.20 rg",
     signatureLine,
 
-    // circular stamp aligned bottom-right
+    // zone 3: right circular stamp
     "1.00 0.95 0.96 rg",
     "760 92 m 760 139.50 721.50 178 674 178 c 626.50 178 588 139.50 588 92 c 588 44.50 626.50 6 674 6 c 721.50 6 760 44.50 760 92 c f",
     "0.86 0.29 0.38 RG 5 w",
@@ -104,7 +100,14 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     `BT /F2 ${tenantStampSize} Tf ${centerTextX(safeTenant, tenantStampSize, 0.53) + 287} 106 Td (${safeTenant}) Tj ET`,
     "BT /F2 13 Tf 637 80 Td (OFFICIAL) Tj ET",
     "BT /F2 13 Tf 652 55 Td (STAMP) Tj ET",
-    "BT /F2 10 Tf 648 31 Td (Verified) Tj ET"
+    "BT /F2 10 Tf 648 31 Td (Verified) Tj ET",
+
+    // footer divider + metadata
+    "0.18 0.44 0.34 RG 0.9 w 86 40 m 756 40 l S",
+    "0.35 0.40 0.45 rg",
+    "BT /F1 10 Tf 96 26 Td (Certificate ID: IF-ISSUED) Tj ET",
+    "BT /F1 10 Tf 370 26 Td (INTERNFLOW) Tj ET",
+    `BT /F1 10 Tf 664 26 Td (Issue Date: ${issueDate}) Tj ET`
   ].join("\n");
 
   const contentLength = Buffer.byteLength(stream, "utf8");

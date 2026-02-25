@@ -23,6 +23,9 @@ export default function CertificatePreviewPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [issuedDocumentId, setIssuedDocumentId] = useState<string | null>(null);
 
+  const issueDate = new Date().toISOString().slice(0, 10);
+  const certificateId = useMemo(() => `IF-${(searchParams.get("enrollmentId") ?? "DEMO").slice(0, 8).toUpperCase()}`, [searchParams]);
+
   const downloadHref = useMemo(() => {
     if (!issuedDocumentId) return null;
     return `/api/org/${orgSlug}/certificates/${issuedDocumentId}/download`;
@@ -82,16 +85,23 @@ export default function CertificatePreviewPage() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h1 className="text-2xl font-semibold">Certificate preview (demo design)</h1>
-        <p className="text-sm text-slate-600">Edit signature details, save certificate PDF, then download.</p>
+      <style jsx>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-certificate { box-shadow: none !important; }
+        }
+      `}</style>
+
+      <div className="no-print rounded-2xl border border-slate-200 bg-white p-4">
+        <h1 className="text-2xl font-semibold">Certificate preview (corporate print design)</h1>
+        <p className="text-sm text-slate-600">Balanced A4-style layout with print-safe hierarchy and spacing.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-1">
+        <div className="no-print space-y-3 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-1">
           <h2 className="font-semibold">Sign certificate</h2>
           <label className="block text-sm text-slate-700">
-            Manager name
+            Coordinator name
             <input
               value={managerName}
               onChange={(event) => setManagerName(event.target.value)}
@@ -150,37 +160,67 @@ export default function CertificatePreviewPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border-4 border-emerald-200 bg-gradient-to-br from-white to-emerald-50 p-8 shadow lg:col-span-2">
-          <p className="text-center text-xs uppercase tracking-[0.25em] text-slate-500">{tenantName} Programme Certification</p>
-          <h2 className="mt-4 text-center text-4xl font-bold text-slate-900">Certificate of Completion</h2>
-          <p className="mt-10 text-center text-slate-700">This certifies that</p>
-          <p className="mt-2 text-center text-3xl font-semibold text-emerald-700">{learnerName}</p>
-          <p className="mt-4 text-center text-slate-700">has successfully completed</p>
-          <p className="mt-2 text-center text-xl font-semibold text-slate-900">{programmeName}</p>
+        <section
+          className="print-certificate relative overflow-hidden rounded-xl bg-[#f2f6f4] p-5 shadow lg:col-span-2"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 8% 8%, rgba(20,120,80,0.08), transparent 38%), linear-gradient(135deg, rgba(20,60,40,0.05), rgba(20,120,80,0.08))"
+          }}
+        >
+          <div className="relative mx-auto aspect-[1123/794] w-full border-2 border-[#C9B37E] p-4">
+            <div className="flex h-full flex-col border-[3px] border-[#2E6F57] px-16 py-14">
+              {/* Zone 1 */}
+              <header className="text-center">
+                <p className="text-[16px] uppercase tracking-[0.18em] text-[#3B5D4F]">{tenantName} Programme Certification</p>
+                <div className="mt-3 h-px bg-[#2E6F57]/50" />
+              </header>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase text-slate-500">Authorised by</p>
-              <p className="text-lg font-semibold text-slate-900">{managerName}</p>
-              <p className="text-sm text-slate-600">Typed signature:</p>
-              <p className="text-2xl text-slate-800" style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive' }}>{signature}</p>
-              {signatureImageBase64 ? (
-                <div className="mt-2 rounded border border-slate-200 bg-white p-2">
-                  <p className="text-xs text-slate-500">Image signature preview</p>
-                  <img src={signatureImageBase64} alt="Signature preview" className="mt-1 max-h-20 w-auto object-contain" />
+              {/* Zone 2 */}
+              <main className="grid flex-1 place-items-center py-8 text-center">
+                <div className="space-y-4">
+                  <h2 className="text-[52px] font-bold leading-tight text-[#1F2D3A]">Certificate of Completion</h2>
+                  <p className="text-[20px] text-[#4B5563]">This certifies that</p>
+                  <p className="text-[48px] font-bold leading-tight text-[#157A6E]">{learnerName}</p>
+                  <p className="text-[20px] text-[#4B5563]">has successfully completed</p>
+                  <p className="text-[32px] font-semibold text-[#1F2937]">{programmeName}</p>
+                  <p className="text-sm text-slate-500">Completed on {issueDate}</p>
                 </div>
-              ) : null}
-            </div>
-            <div className="flex items-center justify-end">
-              <div className="h-28 w-28 rounded-full border-4 border-rose-300 bg-rose-50/90 p-3 text-center text-xs font-semibold text-rose-700">
-                <p>{tenantName.toUpperCase()}</p>
-                <p className="mt-1">OFFICIAL</p>
-                <p className="mt-1">STAMP</p>
-                <p className="mt-2 text-[10px]">Verified</p>
+              </main>
+
+              {/* Zone 3 */}
+              <div className="mt-auto space-y-4">
+                <div className="grid items-end gap-4 md:grid-cols-2">
+                  <div className="text-left text-[#334155]">
+                    <div className="mb-3 h-px w-52 bg-[#2E6F57]/60" />
+                    <p className="text-base font-semibold">{managerName}</p>
+                    <p className="text-sm text-slate-600">Programme Coordinator</p>
+                    <p className="mt-1 text-sm text-slate-500">Signed digitally</p>
+                    <p className="text-3xl" style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive' }}>{signature}</p>
+                    {signatureImageBase64 ? <img src={signatureImageBase64} alt="Signature" className="mt-2 max-h-14 w-auto object-contain" /> : null}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <div className="grid h-40 w-40 place-items-center rounded-full border-4 border-rose-400/90 bg-rose-50/90 text-center text-rose-700 opacity-85">
+                      <div className="space-y-1 leading-tight">
+                        <p className="text-xl font-semibold">{tenantName.toUpperCase()}</p>
+                        <p className="text-lg font-semibold">OFFICIAL</p>
+                        <p className="text-lg font-semibold">STAMP</p>
+                        <p className="text-sm">Verified</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-px bg-[#2E6F57]/50" />
+                <footer className="grid grid-cols-3 items-center text-xs text-slate-600">
+                  <p>Certificate ID: {certificateId}</p>
+                  <p className="text-center font-semibold tracking-[0.08em]">INTERNFLOW</p>
+                  <p className="text-right">Issue Date: {issueDate}</p>
+                </footer>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
