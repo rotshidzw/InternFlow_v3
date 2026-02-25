@@ -1,75 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-
-type EnrollmentOption = {
-  id: string;
-  learnerName: string;
-  programmeName: string;
-};
 
 export default function CertificatePreviewPage() {
   const params = useParams<{ orgSlug: string }>();
   const searchParams = useSearchParams();
 
   const orgSlug = params.orgSlug;
-  const initialEnrollmentId = searchParams.get("enrollmentId") ?? "";
+  const enrollmentId = searchParams.get("enrollmentId") ?? "";
 
   const tenantName = searchParams.get("tenant") ?? "Tenant";
-  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState(initialEnrollmentId);
-  const [learnerName, setLearnerName] = useState(searchParams.get("learner") ?? "Learner Name");
-  const [programmeName, setProgrammeName] = useState(searchParams.get("programme") ?? "Programme Name");
+  const learnerName = searchParams.get("learner") ?? "Learner Name";
+  const programmeName = searchParams.get("programme") ?? "Programme Name";
 
   const [managerName, setManagerName] = useState(searchParams.get("manager") ?? "Programme Manager");
   const [signature, setSignature] = useState(searchParams.get("signature") ?? "Signed digitally");
   const [signatureImageBase64, setSignatureImageBase64] = useState<string | null>(null);
   const [signatureImageFile, setSignatureImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [issuedDocumentId, setIssuedDocumentId] = useState<string | null>(null);
-  const [enrollmentOptions, setEnrollmentOptions] = useState<EnrollmentOption[]>([]);
 
   const downloadHref = useMemo(() => {
     if (!issuedDocumentId) return null;
     return `/api/org/${orgSlug}/certificates/${issuedDocumentId}/download`;
   }, [issuedDocumentId, orgSlug]);
-
-  useEffect(() => {
-    if (initialEnrollmentId) return;
-
-    let ignore = false;
-    setLoadingEnrollments(true);
-
-    fetch(`/api/org/${orgSlug}/certificates/issue`)
-      .then((response) => response.json())
-      .then((payload: { enrollments?: EnrollmentOption[] }) => {
-        if (ignore) return;
-        const options = Array.isArray(payload?.enrollments) ? payload.enrollments : [];
-        setEnrollmentOptions(options);
-        if (!selectedEnrollmentId && options.length > 0) {
-          const first = options[0];
-          setSelectedEnrollmentId(first.id);
-          setLearnerName(first.learnerName);
-          setProgrammeName(first.programmeName);
-          setSaveError(null);
-        }
-      })
-      .catch(() => {
-        if (!ignore) {
-          setSaveError("Unable to load completed learner enrollments for saving. Please go back and try again.");
-        }
-      })
-      .finally(() => {
-        if (!ignore) setLoadingEnrollments(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, [initialEnrollmentId, orgSlug]);
 
   async function onSignatureImageSelected(file: File | null) {
     if (!file) {
@@ -90,8 +47,8 @@ export default function CertificatePreviewPage() {
   }
 
   async function saveSignedCertificate() {
-    if (!selectedEnrollmentId) {
-      setSaveError("Please select a learner enrollment to save and download this certificate.");
+    if (!enrollmentId) {
+      setSaveError("This preview is in demo mode. Open a learner row using View certificate on the certificates page, then save.");
       return;
     }
 
@@ -99,7 +56,7 @@ export default function CertificatePreviewPage() {
     setSaveError(null);
 
     const formData = new FormData();
-    formData.append("enrollmentId", selectedEnrollmentId);
+    formData.append("enrollmentId", enrollmentId);
     formData.append("managerName", managerName);
     formData.append("signature", signature);
     formData.append("tenantName", tenantName);
@@ -127,40 +84,12 @@ export default function CertificatePreviewPage() {
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <h1 className="text-2xl font-semibold">Certificate preview (demo design)</h1>
-        <p className="text-sm text-slate-600">Use typed signature font or upload signature image, then save and download.</p>
+        <p className="text-sm text-slate-600">Edit signature details, save certificate PDF, then download.</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-1">
           <h2 className="font-semibold">Sign certificate</h2>
-
-          {!initialEnrollmentId ? (
-            <label className="block text-sm text-slate-700">
-              Select learner enrollment
-              <select
-                value={selectedEnrollmentId}
-                onChange={(event) => {
-                  const nextId = event.target.value;
-                  setSelectedEnrollmentId(nextId);
-                  const option = enrollmentOptions.find((item) => item.id === nextId);
-                  if (option) {
-                    setLearnerName(option.learnerName);
-                    setProgrammeName(option.programmeName);
-                  }
-                }}
-                className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-                disabled={loadingEnrollments || enrollmentOptions.length === 0}
-              >
-                <option value="">{loadingEnrollments ? "Loading..." : "Choose learner"}</option>
-                {enrollmentOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.learnerName} · {option.programmeName}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
           <label className="block text-sm text-slate-700">
             Manager name
             <input
@@ -192,7 +121,7 @@ export default function CertificatePreviewPage() {
           <button
             type="button"
             onClick={saveSignedCertificate}
-            disabled={saving || !selectedEnrollmentId}
+            disabled={saving || !enrollmentId}
             className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save signed certificate"}
@@ -205,10 +134,10 @@ export default function CertificatePreviewPage() {
           ) : null}
 
           {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
-          {!initialEnrollmentId ? (
+          {!enrollmentId ? (
             <div className="text-xs text-amber-700">
               <p>
-                Opened from demo mode. Select a real learner above to save/download immediately.
+                Demo preview only. Save is disabled here. Open a learner row and click <strong>View certificate</strong> to edit and save.
               </p>
               <Link href={`/org/${orgSlug}/app/certificates`} className="mt-1 inline-block underline">
                 Go to certificates issue list

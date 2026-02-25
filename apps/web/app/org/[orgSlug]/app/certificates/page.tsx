@@ -5,11 +5,17 @@ import { requireTenantAccess } from "@/lib/tenant-portal";
 export default async function CertificatesPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
 
-  const [completedEnrollments, certificates] = await Promise.all([
+  const [completedEnrollments, allEnrollments, certificates] = await Promise.all([
     prisma.enrollment.findMany({
       where: { organizationId: access.membership.organizationId, status: "COMPLETED" },
       include: { user: true, program: true },
       take: 100
+    }),
+    prisma.enrollment.findMany({
+      where: { organizationId: access.membership.organizationId },
+      include: { user: true, program: true },
+      orderBy: { createdAt: "desc" },
+      take: 300
     }),
     prisma.document.findMany({
       where: { organizationId: access.membership.organizationId, type: "CERTIFICATE" },
@@ -18,10 +24,10 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
       take: 100
     })
   ]);
-  const latestCompletedEnrollmentByUser = new Map<string, { id: string; programName: string }>();
-  for (const enrollment of completedEnrollments) {
-    if (!latestCompletedEnrollmentByUser.has(enrollment.userId)) {
-      latestCompletedEnrollmentByUser.set(enrollment.userId, { id: enrollment.id, programName: enrollment.program.name });
+  const latestEnrollmentByUser = new Map<string, { id: string; programName: string }>();
+  for (const enrollment of allEnrollments) {
+    if (!latestEnrollmentByUser.has(enrollment.userId)) {
+      latestEnrollmentByUser.set(enrollment.userId, { id: enrollment.id, programName: enrollment.program.name });
     }
   }
 
@@ -70,7 +76,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
         <div className="mt-3 space-y-2 text-sm">
           {certificates.length === 0 ? <p className="text-slate-500">No certificates issued yet.</p> : certificates.map((doc) => {
             const learnerName = doc.user.name ?? doc.user.email;
-            const enrollmentLink = latestCompletedEnrollmentByUser.get(doc.userId);
+            const enrollmentLink = latestEnrollmentByUser.get(doc.userId);
             const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}${enrollmentLink ? `&enrollmentId=${enrollmentLink.id}` : ""}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollmentLink?.programName ?? "Completed Programme")}&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`;
             return (
               <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
