@@ -252,7 +252,7 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
 
   const entries = enrollments.map((enrollment) => {
     const learnerName = enrollment.user.name || enrollment.user.email;
-    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, "Signed digitally", false);
+    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, managerName, false);
     const programFolder = sanitizeFileName(enrollment.program.name || "Programme");
     const learnerFile = sanitizeFileName(`${learnerName}-certificate.pdf`);
     return { name: `${programFolder}/${learnerFile}`, data: pdf };
@@ -316,7 +316,7 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
   if (!enrollment) return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
 
   const managerName = managerNameInput.trim() || access.user.name || "Programme Manager";
-  const signature = signatureInput.trim() || "Signed digitally";
+  const signature = signatureInput.trim() || managerName;
   const tenantName = tenantNameInput.trim() || access.membership.organization.name;
   const learnerName = enrollment.user.name || enrollment.user.email;
   const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, signature, Boolean(signatureImageBytes));

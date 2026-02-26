@@ -16,7 +16,7 @@ export default function CertificatePreviewPage() {
   const programmeName = searchParams.get("programme") ?? "Programme Name";
 
   const [managerName, setManagerName] = useState(searchParams.get("manager") ?? "Programme Manager");
-  const [signature, setSignature] = useState(searchParams.get("signature") ?? "Signed digitally");
+  const [signature, setSignature] = useState(searchParams.get("signature") ?? searchParams.get("manager") ?? "Programme Manager");
   const [signatureImageBase64, setSignatureImageBase64] = useState<string | null>(null);
   const [signatureImageFile, setSignatureImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);

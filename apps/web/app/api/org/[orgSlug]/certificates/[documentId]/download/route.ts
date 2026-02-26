@@ -13,7 +13,13 @@ export async function GET(_: Request, { params }: { params: { orgSlug: string; d
   });
   if (!doc || !doc.versions[0]) return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
 
-  const bytes = await getStorageAdapter().getBuffer(doc.versions[0].storageKey);
+  let bytes: Uint8Array;
+  try {
+    bytes = await getStorageAdapter().getBuffer(doc.versions[0].storageKey);
+  } catch {
+    return NextResponse.json({ error: "Certificate file is unavailable" }, { status: 404 });
+  }
+
   const safeName = (doc.user.name ?? doc.user.email).replace(/[^a-zA-Z0-9._-]+/g, "_");
   return new NextResponse(bytes, {
     headers: {

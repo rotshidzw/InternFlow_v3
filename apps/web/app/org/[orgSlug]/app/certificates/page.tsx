@@ -43,7 +43,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           </div>
           <Link
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
-            href={`/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&learner=Demo%20Learner&programme=Demo%20Programme&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`}
+            href={`/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&learner=Demo%20Learner&programme=Demo%20Programme&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=${encodeURIComponent(access.user.name ?? "Programme Manager")}`}
           >
             View demo certificate
           </Link>
@@ -54,11 +54,11 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
         <h2 className="font-semibold">Bulk download certificates (ZIP)</h2>
         <p className="mt-1 text-sm text-slate-600">Generates clean PDFs using the same certificate engine and bundles them per programme folder.</p>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          <a className="rounded border border-slate-300 px-3 py-1 text-slate-700" href={`/api/org/${params.orgSlug}/certificates/issue`}>
+          <a className="rounded border border-slate-300 px-3 py-1 text-slate-700" href={`/api/org/${params.orgSlug}/certificates/issue`} download>
             Download all completed certificates (ZIP)
           </a>
           {programs.map((program) => (
-            <a key={program.id} className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-700" href={`/api/org/${params.orgSlug}/certificates/issue?programId=${program.id}`}>
+            <a key={program.id} className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-700" href={`/api/org/${params.orgSlug}/certificates/issue?programId=${program.id}`} download>
               {program.name} (ZIP)
             </a>
           ))}
@@ -71,13 +71,13 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           {completedEnrollments.length === 0 ? <p className="text-slate-500">No completed enrollments yet.</p> : completedEnrollments.map((enrollment) => {
             const learnerName = enrollment.user.name ?? enrollment.user.email;
             const managerDefault = access.user.name ?? "Programme Manager";
-            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=Signed%20digitally`;
+            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=${encodeURIComponent(managerDefault)}`;
             return (
               <form key={enrollment.id} action={`/api/org/${params.orgSlug}/certificates/issue`} method="post" encType="multipart/form-data" className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-7">
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <p className="md:col-span-2">{learnerName} · {enrollment.program.name}</p>
                 <input name="managerName" placeholder="Manager name" defaultValue={managerDefault} className="rounded border border-slate-300 px-2 py-1" />
-                <input name="signature" placeholder="Digital signature text" defaultValue="Signed digitally" className="rounded border border-slate-300 px-2 py-1" />
+                <input name="signature" placeholder="Digital signature text" defaultValue={managerDefault} className="rounded border border-slate-300 px-2 py-1" />
                 <input type="hidden" name="tenantName" value={access.membership.organization.name} />
                 <input type="file" name="signatureImage" accept="image/*" className="rounded border border-slate-300 px-2 py-1 text-xs" />
                 <a className="rounded border border-slate-300 px-3 py-1 text-center text-slate-700" href={previewHref}>View certificate</a>
@@ -94,13 +94,13 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
           {certificates.length === 0 ? <p className="text-slate-500">No certificates issued yet.</p> : certificates.map((doc) => {
             const learnerName = doc.user.name ?? doc.user.email;
             const enrollmentLink = latestEnrollmentByUser.get(doc.userId);
-            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}${enrollmentLink ? `&enrollmentId=${enrollmentLink.id}` : ""}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollmentLink?.programName ?? "Completed Programme")}&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=Signed%20digitally`;
+            const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}${enrollmentLink ? `&enrollmentId=${enrollmentLink.id}` : ""}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollmentLink?.programName ?? "Completed Programme")}&manager=${encodeURIComponent(access.user.name ?? "Programme Manager")}&signature=${encodeURIComponent(access.user.name ?? "Programme Manager")}`;
             return (
               <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
                 <p>{learnerName} · {doc.createdAt.toISOString().slice(0, 10)}</p>
                 <div className="flex gap-3">
                   <a className="text-slate-700" href={previewHref}>View certificate</a>
-                  <a className="text-blue-600" href={`/api/org/${params.orgSlug}/certificates/${doc.id}/download`}>Download certificate</a>
+                  <a className="text-blue-600" href={`/api/org/${params.orgSlug}/certificates/${doc.id}/download`} download>Download certificate</a>
                 </div>
               </div>
             );
