@@ -123,7 +123,7 @@ function fitFontSize(text: string, maxSize: number, minSize: number, maxWidth: n
   return size;
 }
 
-function certificatePdf(tenantName: string, learnerName: string, programmeName: string, managerName: string, signature: string, hasImageSignature: boolean) {
+function certificatePdf(tenantName: string, learnerName: string, programmeName: string, managerName: string, signature: string, _hasImageSignature: boolean) {
   const safeTenant = escapePdfText(tenantName.toUpperCase());
   const safeLearner = escapePdfText(learnerName);
   const safeProgramme = escapePdfText(programmeName);
@@ -140,11 +140,7 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
   const titleSize = fitFontSize(titleText, 44, 34, 720, 0.5);
   const learnerSize = fitFontSize(safeLearner, 48, 30, 700, 0.5);
   const programmeSize = fitFontSize(safeProgramme, 32, 24, 640, 0.5);
-  const tenantStampSize = fitFontSize(safeTenant, 12, 9, 102, 0.53);
-
-  const signatureLine = hasImageSignature
-    ? "BT /F3 12 Tf 98 56 Td (Signature on file) Tj ET"
-    : `BT /F3 20 Tf 98 56 Td (${safeSignature}) Tj ET`;
+  const signatureLine = `BT /F3 20 Tf 98 56 Td (${safeSignature}) Tj ET`;
 
   const stream = [
     // background + subtle glass gradient approximation
@@ -194,11 +190,9 @@ function certificatePdf(tenantName: string, learnerName: string, programmeName: 
     "0.86 0.29 0.38 RG 1 w",
     "782 130 m 782 164.23 754.23 192 720 192 c 685.77 192 658 164.23 658 130 c 658 95.77 685.77 68 720 68 c 754.23 68 782 95.77 782 130 c S",
     "0.82 0.08 0.19 rg",
-    `BT /F2 ${tenantStampSize} Tf ${centerTextAtX(safeTenant, tenantStampSize, 720, 0.53)} 150 Td (${safeTenant}) Tj ET`,
-    `BT /F2 12 Tf ${centerTextAtX("OFFICIAL", 12, 720, 0.53)} 124 Td (OFFICIAL) Tj ET`,
-    `BT /F2 12 Tf ${centerTextAtX("STAMP", 12, 720, 0.53)} 104 Td (STAMP) Tj ET`,
-    `BT /F2 16 Tf ${centerTextAtX("*", 16, 720, 0.53)} 88 Td (*) Tj ET`,
-    `BT /F2 10 Tf ${centerTextAtX("VERIFIED", 10, 720, 0.53)} 72 Td (VERIFIED) Tj ET`,
+    `BT /F2 12 Tf ${centerTextAtX("OFFICIAL", 12, 720, 0.53)} 128 Td (OFFICIAL) Tj ET`,
+    `BT /F2 12 Tf ${centerTextAtX("STAMP", 12, 720, 0.53)} 108 Td (STAMP) Tj ET`,
+    `BT /F2 20 Tf ${centerTextAtX("*", 20, 720, 0.53)} 84 Td (*) Tj ET`,
 
     // footer divider + metadata
     "0.18 0.44 0.34 RG 0.9 w 86 34 m 756 34 l S",
