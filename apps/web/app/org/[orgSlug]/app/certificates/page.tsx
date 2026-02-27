@@ -100,7 +100,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                 <p>{learnerName} · {doc.createdAt.toISOString().slice(0, 10)}</p>
                 <div className="flex gap-3">
                   <a className="text-slate-700" href={previewHref}>View certificate</a>
-                  <a className="text-blue-600" href={`/api/org/${params.orgSlug}/certificates/${doc.id}/download`} download>Download certificate</a>
+                  <a className="text-blue-600" href={enrollmentLink ? `/api/org/${params.orgSlug}/certificates/issue?enrollmentId=${enrollmentLink.id}` : `/api/org/${params.orgSlug}/certificates/${doc.id}/download`} download>Download certificate</a>
                 </div>
               </div>
             );

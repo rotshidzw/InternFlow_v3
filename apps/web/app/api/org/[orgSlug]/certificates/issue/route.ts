@@ -226,6 +226,31 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
 
   const url = new URL(req.url);
   const programId = (url.searchParams.get("programId") ?? "").trim();
+  const enrollmentId = (url.searchParams.get("enrollmentId") ?? "").trim();
+
+  const managerName = access.user.name || "Programme Manager";
+  const tenantName = access.membership.organization.name;
+
+  if (enrollmentId) {
+    const enrollment = await prisma.enrollment.findFirst({
+      where: { id: enrollmentId, organizationId: access.membership.organizationId, status: "COMPLETED" },
+      include: { user: true, program: true }
+    });
+    if (!enrollment) {
+      return NextResponse.json({ error: "Completed enrollment not found for certificate download." }, { status: 404 });
+    }
+
+    const learnerName = enrollment.user.name || enrollment.user.email;
+    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, managerName, false);
+    const fileName = sanitizeFileName(`${learnerName}-${enrollment.program.name}-certificate.pdf`);
+
+    return new Response(pdf, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${fileName}"`
+      }
+    });
+  }
 
   const enrollments = await prisma.enrollment.findMany({
     where: {
@@ -240,9 +265,6 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
   if (enrollments.length === 0) {
     return NextResponse.json({ error: "No completed enrollments found for bulk certificate download." }, { status: 404 });
   }
-
-  const managerName = access.user.name || "Programme Manager";
-  const tenantName = access.membership.organization.name;
 
   const entries = enrollments.map((enrollment) => {
     const learnerName = enrollment.user.name || enrollment.user.email;
