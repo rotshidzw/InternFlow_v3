@@ -2,6 +2,7 @@ import { prisma } from "@internflow/db/src";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { sendPlatformEmail } from "@/lib/mailer";
 
 const schema = z.object({
   fullName: z.string().min(2),
@@ -50,16 +51,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Unauthenticated" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
-  }
-
   const body = schema.safeParse(await req.json());
   if (!body.success) {
     return NextResponse.json(
       { ok: false, error: "Invalid profile data", details: body.error.flatten() },
       { status: 400 }
+    );
+  }
+
+  const normalizedEmail = email.toLowerCase();
+  let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  let userWasAutoCreated = false;
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        role: "STUDENT",
+        name: body.data.fullName,
+      }
+    });
+    userWasAutoCreated = true;
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "STUDENT_ACCOUNT_AUTO_CREATED",
+        metadata: {
+          source: "student_profile_post",
+          email: normalizedEmail
+        }
+      }
+    });
+
+    const loginLink = `${new URL(req.url).origin}/auth/login`;
+    await sendPlatformEmail(
+      normalizedEmail,
+      "Your InternFlow student account is ready",
+      `We created your student account from your onboarding profile. Confirm it is you by signing in here: ${loginLink}. For security, continue using OTP sign-in from the login page.`
     );
   }
 
@@ -154,5 +183,17 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ ok: true, profileId: profile.id, redirectTo: "/explore" });
+  const response = NextResponse.json({
+    ok: true,
+    profileId: profile.id,
+    redirectTo: "/explore",
+    autoCreatedUser: userWasAutoCreated,
+    requiresOtpLogin: userWasAutoCreated
+  });
+
+  if (userWasAutoCreated) {
+    response.cookies.set("if_user", "", { expires: new Date(0), path: "/" });
+  }
+
+  return response;
 }
