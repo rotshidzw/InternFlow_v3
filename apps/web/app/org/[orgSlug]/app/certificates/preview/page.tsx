@@ -8,10 +8,10 @@ export default function CertificatePreviewPage() {
   const params = useParams<{ orgSlug: string }>();
   const searchParams = useSearchParams();
 
-  const orgSlug = params.orgSlug;
+  const orgSlug = typeof params.orgSlug === "string" ? params.orgSlug : "";
   const enrollmentId = searchParams.get("enrollmentId") ?? "";
 
-  const tenantName = searchParams.get("tenant") ?? "Tenant";
+  const tenantName = String(searchParams.get("tenant") ?? "Tenant");
   const learnerName = searchParams.get("learner") ?? "Learner Name";
   const programmeName = searchParams.get("programme") ?? "Programme Name";
 
@@ -173,7 +173,7 @@ export default function CertificatePreviewPage() {
             </div>
             <div className="flex items-center justify-end">
               <div className="h-28 w-28 rounded-full border-4 border-rose-300 bg-rose-50/90 p-3 text-center text-xs font-semibold text-rose-700">
-                <p>{tenantName.toUpperCase()}</p>
+                <p>{tenantName.toUpperCase().slice(0, 16)}</p>
                 <p className="mt-1">OFFICIAL</p>
                 <p className="mt-1">STAMP</p>
                 <p className="mt-2 text-[10px]">Verified</p>
