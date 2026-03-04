@@ -14,6 +14,31 @@ export default async function LearnerPage({ params }: { params: { orgSlug: strin
     prisma.logbookEntry.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 12, include: { approvals: true } })
   ]);
 
+
+  const docIds = docs.map((doc) => doc.id);
+  const latestOcrEvents = docIds.length
+    ? await prisma.auditEvent.findMany({
+        where: {
+          tenantId: access.membership.organizationId,
+          entityType: "Document",
+          entityId: { in: docIds },
+          action: { in: ["OCR_SUCCESS", "OCR_FAILED"] }
+        },
+        orderBy: { createdAt: "desc" }
+      })
+    : [];
+
+  const ocrByDocumentId = new Map<string, { status: string; text: string; error: string }>();
+  for (const event of latestOcrEvents) {
+    if (ocrByDocumentId.has(event.entityId)) continue;
+    const metadata = (event.metadata ?? {}) as Record<string, unknown>;
+    ocrByDocumentId.set(event.entityId, {
+      status: String(metadata.ocrStatus ?? (event.action === "OCR_SUCCESS" ? "SUCCESS" : "FAILED")),
+      text: String(metadata.ocrText ?? ""),
+      error: String(metadata.ocrError ?? "")
+    });
+  }
+
   const missingDocs = docs.filter((d) => ["SCAN_FAILED", "REJECTED"].includes(d.status)).length;
   const compliance = docs.length ? Math.max(5, Math.round(((docs.length - missingDocs) / docs.length) * 100)) : 0;
   const docsByType = docs.reduce<Record<string, number>>((acc, doc) => {
@@ -56,6 +81,30 @@ export default async function LearnerPage({ params }: { params: { orgSlug: strin
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+
+      <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
+        <p className="font-medium">OCR extraction</p>
+        <div className="mt-2 space-y-2">
+          {docs.length === 0 ? <p className="text-slate-500">No documents for OCR yet.</p> : docs.slice(0, 8).map((doc) => {
+            const ocr = ocrByDocumentId.get(doc.id);
+            const status = ocr?.status ?? "NOT_RUN";
+            return (
+              <div key={doc.id} className="rounded-lg border border-slate-200 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium">{doc.type}</p>
+                  <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">OCR: {status}</span>
+                </div>
+                {ocr?.text ? <p className="mt-1 line-clamp-3 text-xs text-slate-600">{ocr.text}</p> : null}
+                {ocr?.error ? <p className="mt-1 text-xs text-red-600">{ocr.error}</p> : null}
+                <form method="post" action={`/api/org/${params.orgSlug}/documents/${doc.id}/ocr`} className="mt-2">
+                  <button className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700">Retry OCR</button>
+                </form>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
         <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
           <p className="font-medium">Per-learner documentation</p>
           <div className="mt-2 space-y-2">

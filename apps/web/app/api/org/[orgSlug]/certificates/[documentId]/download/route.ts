@@ -20,6 +20,20 @@ export async function GET(_: Request, { params }: { params: { orgSlug: string; d
     return NextResponse.json({ error: "Certificate file is unavailable" }, { status: 404 });
   }
 
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: access.membership.organizationId,
+      userId: access.user.id,
+      action: "DOCUMENT_DOWNLOADED",
+      entityType: "Document",
+      entityId: doc.id,
+      metadata: {
+        type: "CERTIFICATE",
+        storageKey: doc.versions[0].storageKey
+      }
+    }
+  });
+
   const safeName = (doc.user.name ?? doc.user.email).replace(/[^a-zA-Z0-9._-]+/g, "_");
   return new NextResponse(bytes, {
     headers: {

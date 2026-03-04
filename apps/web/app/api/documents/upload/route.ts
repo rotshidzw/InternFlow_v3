@@ -83,6 +83,22 @@ export async function POST(req: Request) {
 
     await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
 
+    await prisma.auditEvent.create({
+      data: {
+        userId: targetUserId,
+        tenantId: document.organizationId ?? undefined,
+        action: "DOCUMENT_UPLOADED",
+        entityType: "Document",
+        entityId: document.id,
+        metadata: {
+          type: parsed.data.type,
+          storageKey,
+          mimeType: parsed.data.mimeType,
+          sizeBytes: parsed.data.sizeBytes
+        }
+      }
+    });
+
     return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
   }
 
@@ -120,6 +136,22 @@ export async function POST(req: Request) {
   });
 
   await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+
+  await prisma.auditEvent.create({
+    data: {
+      userId: targetUserId,
+      tenantId: document.organizationId ?? undefined,
+      action: "DOCUMENT_UPLOADED",
+      entityType: "Document",
+      entityId: document.id,
+      metadata: {
+        type: parsed.data.type,
+        storageKey,
+        mimeType: parsed.data.mimeType,
+        sizeBytes: parsed.data.sizeBytes
+      }
+    }
+  });
 
   return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
 }

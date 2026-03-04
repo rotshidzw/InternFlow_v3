@@ -5,6 +5,7 @@ const SMTP_PORT = Number(process.env.SMTP_PORT ?? 1025);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const MAIL_FROM = process.env.MAIL_FROM ?? "no-reply@internflow.local";
+const ENABLE_CONSOLE_OTP = process.env.ENABLE_CONSOLE_OTP === "true";
 
 let dependencyWarningShown = false;
 
@@ -31,8 +32,8 @@ function getTransporter() {
 export async function sendOtpEmail(email: string, code: string): Promise<{ delivered: boolean; fallbackLogged: boolean }> {
   const transporter = getTransporter();
   if (!transporter) {
-    console.info(`[DEV OTP] email=${email} code=${code}`);
-    return { delivered: false, fallbackLogged: true };
+    if (ENABLE_CONSOLE_OTP) console.info(`[CONSOLE OTP] email=${email} code=${code}`);
+    return { delivered: false, fallbackLogged: ENABLE_CONSOLE_OTP };
   }
 
   try {
@@ -48,8 +49,8 @@ export async function sendOtpEmail(email: string, code: string): Promise<{ deliv
     return { delivered: true, fallbackLogged: false };
   } catch (error) {
     console.error(`[mailer] Failed to send OTP email to ${email}`, error);
-    console.info(`[DEV OTP] email=${email} code=${code}`);
-    return { delivered: false, fallbackLogged: true };
+    if (ENABLE_CONSOLE_OTP) console.info(`[CONSOLE OTP] email=${email} code=${code}`);
+    return { delivered: false, fallbackLogged: ENABLE_CONSOLE_OTP };
   }
 }
 
