@@ -51,6 +51,9 @@ export async function POST(req: Request) {
       })
     : [];
   const singleMembership = memberships.length === 1 ? memberships[0] : null;
+  const hasStudentProfile = user
+    ? Boolean(await prisma.studentProfile.findUnique({ where: { userId: user.id }, select: { id: true } }))
+    : false;
   const rememberedWorkspace = cookies().get("if_workspace")?.value;
   let rememberedMembership: (typeof memberships)[number] | null = null;
   if (rememberedWorkspace) {
@@ -61,21 +64,20 @@ export async function POST(req: Request) {
       }
     }
   }
-  const redirectTo = !user
-    ? "/onboarding/profile"
-    : platformMembership
-      ? "/hq/dashboard"
-      : memberships.length === 0
-        ? "/onboarding/profile"
-        : singleMembership
-          ? singleMembership.role === "STUDENT"
-            ? "/app/student"
-            : `/org/${singleMembership.organization.slug}/app`
-          : rememberedMembership
-            ? rememberedMembership.role === "STUDENT"
-              ? "/app/student"
-              : `/org/${rememberedMembership.organization.slug}/app`
-            : "/workspaces";
+  let redirectTo = "/onboarding/profile";
+  if (!user) {
+    redirectTo = "/onboarding/profile";
+  } else if (platformMembership) {
+    redirectTo = "/hq/dashboard";
+  } else if (memberships.length === 0) {
+    redirectTo = user.role === "STUDENT" && hasStudentProfile ? "/explore" : "/onboarding/profile";
+  } else if (singleMembership) {
+    redirectTo = singleMembership.role === "STUDENT" ? "/app/student" : `/org/${singleMembership.organization.slug}/app`;
+  } else if (rememberedMembership) {
+    redirectTo = rememberedMembership.role === "STUDENT" ? "/app/student" : `/org/${rememberedMembership.organization.slug}/app`;
+  } else {
+    redirectTo = "/workspaces";
+  }
 
   const response = NextResponse.json({
     ok: true,
