@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ComponentType, type PropsWithChildren } from "react";
+import {
+  useEffect,
+  useState,
+  type ComponentType,
+  type PropsWithChildren,
+} from "react";
 import { motion } from "framer-motion";
 import {
   BellRing,
@@ -18,7 +23,8 @@ import {
   Settings,
   ShieldCheck,
   Users,
-  UserSquare2
+  UserSquare2,
+  ArrowLeft,
 } from "lucide-react";
 
 type NavItem = {
@@ -36,17 +42,22 @@ const primaryItems: NavItem[] = [
   { href: "enrollments", label: "Enrollments", icon: ClipboardList },
   { href: "documents", label: "Documents", icon: FolderOpen },
   { href: "logbooks", label: "Logbooks", icon: FileText },
-  { href: "approvals", label: "Approvals", icon: FileCheck2 }
+  { href: "approvals", label: "Approvals", icon: FileCheck2 },
 ];
 
 const footerItems: NavItem[] = [
   { href: "reports", label: "Reports", icon: FileSpreadsheet },
   { href: "stipends", label: "Stipends", icon: HandCoins },
   { href: "staff", label: "Staff", icon: Users },
-  { href: "settings", label: "Settings", icon: Settings }
+  { href: "settings", label: "Settings", icon: Settings },
 ];
 
-export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {
+export function TenantShell({
+  children,
+  orgSlug,
+  orgName,
+  role,
+}: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useState<"soft" | "vivid">("soft");
 
@@ -70,13 +81,19 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
     "group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-200 hover:bg-white/80 hover:text-slate-900";
 
   return (
-    <div className={`min-h-screen ${shellBg} text-slate-900 transition-colors duration-300`}>
-      <div className={`grid min-h-screen ${collapsed ? "md:grid-cols-[92px_1fr]" : "md:grid-cols-[292px_1fr]"}`}>
+    <div
+      className={`min-h-screen ${shellBg} text-slate-900 transition-colors duration-300`}
+    >
+      <div
+        className={`grid min-h-screen ${collapsed ? "md:grid-cols-[92px_1fr]" : "md:grid-cols-[292px_1fr]"}`}
+      >
         <aside className="border-r border-white/70 bg-white/72 p-4 shadow-xl shadow-slate-200/35 backdrop-blur-2xl">
           <div className="mb-4 flex items-center justify-between gap-2">
             {!collapsed ? (
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">InternFlow</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                  InternFlow
+                </p>
                 <p className="text-base font-semibold">{orgName}</p>
               </div>
             ) : (
@@ -91,10 +108,17 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
             </button>
           </div>
 
-          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">Tenant portal</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">
+            Tenant portal
+          </p>
           <nav className="space-y-1.5">
             {primaryItems.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
+              <Link
+                key={href}
+                href={`/org/${orgSlug}/app/${href}`}
+                className={navClass}
+                title={label}
+              >
                 <Icon className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-blue-600" />
                 {!collapsed && <span>{label}</span>}
               </Link>
@@ -103,10 +127,17 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
 
           <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
 
-          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">Workspace</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">
+            Workspace
+          </p>
           <nav className="space-y-1.5">
             {footerItems.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
+              <Link
+                key={href}
+                href={`/org/${orgSlug}/app/${href}`}
+                className={navClass}
+                title={label}
+              >
                 <Icon className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-indigo-600" />
                 {!collapsed && <span>{label}</span>}
               </Link>
@@ -119,7 +150,9 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
                 <BellRing className="h-3.5 w-3.5 text-blue-600" />
                 Quick focus
               </div>
-              <p className="leading-relaxed">One click from navigation to applicants, approvals, and reports.</p>
+              <p className="leading-relaxed">
+                One click from navigation to applicants, approvals, and reports.
+              </p>
             </div>
           )}
         </aside>
@@ -128,7 +161,9 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
           <header className="sticky top-0 z-10 border-b border-white/70 bg-white/72 px-6 py-3 shadow-md shadow-slate-200/40 backdrop-blur-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-500">InternFlow</p>
+                <p className="text-xs uppercase tracking-widest text-slate-500">
+                  InternFlow
+                </p>
                 <p className="flex items-center gap-2 font-semibold">
                   {orgName}
                   <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -150,12 +185,34 @@ export function TenantShell({ children, orgSlug, orgName, role }: PropsWithChild
                   Theme: {theme === "soft" ? "Soft" : "Vivid"}
                 </button>
                 <form action="/api/auth/logout" method="post">
-                  <button className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs shadow-sm transition hover:bg-slate-50">Logout</button>
+                  <button className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs shadow-sm transition hover:bg-slate-50">
+                    Logout
+                  </button>
                 </form>
               </div>
             </div>
           </header>
-          <motion.main initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="p-6">
+          <motion.main
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="p-6"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  window.history.back();
+                  return;
+                }
+
+                window.location.href = `/org/${orgSlug}/app/dashboard`;
+              }}
+              className="mb-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:bg-slate-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
             {children}
           </motion.main>
         </div>
