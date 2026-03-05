@@ -209,16 +209,78 @@ export default async function StudentPortalPage({
               employability score {employabilityScore}%
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
-              {initials(user.name, user.email)}
+          <div className="w-full space-y-3 md:w-[370px]">
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
+                {initials(user.name, user.email)}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  {user.name ?? "Student"}
+                </p>
+                <p className="text-xs text-slate-500">{user.email}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {user.name ?? "Student"}
+            <section className="rounded-xl border border-slate-200 bg-white p-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Profile Actions (Quick Update)
+              </h2>
+              <p className="mt-1 text-xs text-slate-600">
+                Update profile items from here under your profile card.
               </p>
-              <p className="text-xs text-slate-500">{user.email}</p>
-            </div>
+              <form
+                action="/api/student/profile-quick"
+                method="post"
+                className="mt-3 space-y-2"
+              >
+                <input
+                  name="phone"
+                  defaultValue={profile?.phone ?? ""}
+                  placeholder="Verify contact details (phone)"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+                />
+                <input
+                  name="education"
+                  defaultValue={profile?.education ?? ""}
+                  placeholder="Add education history"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+                />
+                <input
+                  name="skills"
+                  defaultValue={studentProfile?.skills.join(", ") ?? ""}
+                  placeholder="Add skills (comma separated)"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+                />
+                <input
+                  name="emergencyContact"
+                  defaultValue={profile?.emergencyContact ?? ""}
+                  placeholder="Emergency contact"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+                />
+                <button className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+                  Save profile updates
+                </button>
+              </form>
+
+              <form
+                action="/api/student/upload-required"
+                method="post"
+                encType="multipart/form-data"
+                className="mt-3 space-y-2"
+              >
+                <p className="text-xs font-semibold text-slate-800">
+                  Upload CV
+                </p>
+                <input
+                  name="file"
+                  type="file"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
+                />
+                <button className="w-full rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">
+                  Upload CV
+                </button>
+              </form>
+            </section>
           </div>
         </div>
       </section>
@@ -322,71 +384,6 @@ export default async function StudentPortalPage({
           </div>
         </section>
       </div>
-
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Profile Actions (Quick Update)
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Update profile fields and upload CV here. If these are completed, you
-          can apply without uploading them again.
-        </p>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <form
-            action="/api/student/profile-quick"
-            method="post"
-            className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
-          >
-            <p className="text-sm font-semibold text-slate-800">
-              Edit profile details
-            </p>
-            <input
-              name="phone"
-              defaultValue={profile?.phone ?? ""}
-              placeholder="Verify contact details (phone)"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <input
-              name="education"
-              defaultValue={profile?.education ?? ""}
-              placeholder="Add education history"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <input
-              name="skills"
-              defaultValue={studentProfile?.skills.join(", ") ?? ""}
-              placeholder="Add skills (comma separated)"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <input
-              name="emergencyContact"
-              defaultValue={profile?.emergencyContact ?? ""}
-              placeholder="Emergency contact"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <button className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
-              Save profile updates
-            </button>
-          </form>
-
-          <form
-            action="/api/student/upload-required"
-            method="post"
-            encType="multipart/form-data"
-            className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
-          >
-            <p className="text-sm font-semibold text-slate-800">Upload CV</p>
-            <input
-              name="file"
-              type="file"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <button className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">
-              Upload CV
-            </button>
-          </form>
-        </div>
-      </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
