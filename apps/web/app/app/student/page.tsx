@@ -44,6 +44,7 @@ export default async function StudentPortalPage({
 
   const [
     profile,
+    studentProfile,
     docs,
     applications,
     opportunities,
@@ -52,6 +53,7 @@ export default async function StudentPortalPage({
     payslips,
   ] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
+    prisma.studentProfile.findUnique({ where: { userId: user.id } }),
     prisma.document.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -87,12 +89,14 @@ export default async function StudentPortalPage({
     prisma.document.count({ where: { userId: user.id, type: "PAYSLIP" } }),
   ]);
 
+  const hasCv = docs.some((doc) => doc.type === "CV");
+
   const profileSignals = [
     Boolean(user.name),
     Boolean(profile?.phone),
-    Boolean(profile?.education),
+    Boolean(profile?.education || studentProfile?.education),
     Boolean(profile?.emergencyContact),
-    docs.length > 0,
+    hasCv,
   ];
   const employabilityScore = Math.round(
     (profileSignals.filter(Boolean).length / profileSignals.length) * 100,
@@ -152,11 +156,17 @@ export default async function StudentPortalPage({
   const showApplied = searchParams?.applied === "1";
   const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
+  const showProfileUpdated = searchParams?.notice === "profile-updated";
+  const showCvUploaded = searchParams?.notice === "cv-uploaded";
+  const showMissingFile = searchParams?.error === "missing-file";
 
   const profileChecklist = [
-    { label: "Upload CV", done: docs.some((doc) => doc.type === "CV") },
-    { label: "Add education history", done: Boolean(profile?.education) },
-    { label: "Add skills", done: Boolean(profile?.skills) },
+    { label: "Upload CV", done: hasCv },
+    {
+      label: "Add education history",
+      done: Boolean(profile?.education || studentProfile?.education),
+    },
+    { label: "Add skills", done: Boolean(studentProfile?.skills.length) },
     { label: "Verify contact details", done: Boolean(profile?.phone) },
   ];
 
@@ -219,6 +229,21 @@ export default async function StudentPortalPage({
               You already have an active enrollment in another organization.
             </div>
           )}
+          {showProfileUpdated && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Profile updated successfully.
+            </div>
+          )}
+          {showCvUploaded && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              CV uploaded successfully.
+            </div>
+          )}
+          {showMissingFile && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              Please choose a CV file before uploading.
+            </div>
+          )}
         </div>
       )}
 
@@ -276,8 +301,81 @@ export default async function StudentPortalPage({
               Explore Marketplace <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/onboarding/profile"
+              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Edit Full Profile
+            </Link>
+          </div>
         </section>
       </div>
+
+      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        <h2 className="text-lg font-semibold text-slate-900">
+          Profile Actions (Quick Update)
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Update profile fields and upload CV here. If these are completed, you
+          can apply without uploading them again.
+        </p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <form
+            action="/api/student/profile-quick"
+            method="post"
+            className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
+          >
+            <p className="text-sm font-semibold text-slate-800">
+              Edit profile details
+            </p>
+            <input
+              name="phone"
+              defaultValue={profile?.phone ?? ""}
+              placeholder="Verify contact details (phone)"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+            <input
+              name="education"
+              defaultValue={profile?.education ?? ""}
+              placeholder="Add education history"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+            <input
+              name="skills"
+              defaultValue={studentProfile?.skills.join(", ") ?? ""}
+              placeholder="Add skills (comma separated)"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+            <input
+              name="emergencyContact"
+              defaultValue={profile?.emergencyContact ?? ""}
+              placeholder="Emergency contact"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+            <button className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+              Save profile updates
+            </button>
+          </form>
+
+          <form
+            action="/api/student/upload-required"
+            method="post"
+            encType="multipart/form-data"
+            className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
+          >
+            <p className="text-sm font-semibold text-slate-800">Upload CV</p>
+            <input
+              name="file"
+              type="file"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            />
+            <button className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">
+              Upload CV
+            </button>
+          </form>
+        </div>
+      </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
