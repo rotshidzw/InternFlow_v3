@@ -22,10 +22,22 @@ export default async function OpportunityDetail({
     ? await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
     : null;
 
+  const studentProfileDelegate = (
+    prisma as unknown as {
+      studentProfile?: {
+        findUnique: (args: { where: { userId: string } }) => Promise<{
+          skills: string[];
+          education: unknown;
+        } | null>;
+      };
+    }
+  ).studentProfile;
+
   const [profile, studentProfile, cvDoc] = user
     ? await Promise.all([
         prisma.profile.findUnique({ where: { userId: user.id } }),
-        prisma.studentProfile.findUnique({ where: { userId: user.id } }),
+        studentProfileDelegate?.findUnique({ where: { userId: user.id } }) ??
+          null,
         prisma.document.findFirst({ where: { userId: user.id, type: "CV" } }),
       ])
     : [null, null, null];

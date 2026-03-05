@@ -58,6 +58,26 @@ export async function POST(
     );
   }
 
+  const studentProfileDelegate = (
+    prisma as unknown as {
+      studentProfile?: {
+        findUnique: (args: {
+          where: { userId: string };
+        }) => Promise<{ skills: string[] } | null>;
+        upsert: (args: {
+          where: { userId: string };
+          update: { skills: string[] };
+          create: {
+            userId: string;
+            fullName: string;
+            phone: string | null;
+            skills: string[];
+          };
+        }) => Promise<unknown>;
+      };
+    }
+  ).studentProfile;
+
   const form = await req.formData();
   const file = form.get("file");
   const phone = String(form.get("phone") ?? "").trim();
@@ -82,11 +102,11 @@ export async function POST(
     });
   }
 
-  if (skills.length > 0) {
-    const studentProfile = await prisma.studentProfile.findUnique({
+  if (skills.length > 0 && studentProfileDelegate) {
+    const studentProfile = await studentProfileDelegate.findUnique({
       where: { userId: actor.id },
     });
-    await prisma.studentProfile.upsert({
+    await studentProfileDelegate.upsert({
       where: { userId: actor.id },
       update: {
         skills: Array.from(

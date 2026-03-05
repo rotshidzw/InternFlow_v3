@@ -42,6 +42,17 @@ export default async function StudentPortalPage({
 
   const context = await resolveStudentTenantContext(user.id);
 
+  const studentProfileDelegate = (
+    prisma as unknown as {
+      studentProfile?: {
+        findUnique: (args: { where: { userId: string } }) => Promise<{
+          skills: string[];
+          education: unknown;
+        } | null>;
+      };
+    }
+  ).studentProfile;
+
   const [
     profile,
     studentProfile,
@@ -53,7 +64,7 @@ export default async function StudentPortalPage({
     payslips,
   ] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
-    prisma.studentProfile.findUnique({ where: { userId: user.id } }),
+    studentProfileDelegate?.findUnique({ where: { userId: user.id } }) ?? null,
     prisma.document.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },

@@ -11,6 +11,26 @@ export async function POST(req: Request) {
   });
   if (!user) return NextResponse.redirect(new URL("/auth", req.url));
 
+  const studentProfileDelegate = (
+    prisma as unknown as {
+      studentProfile?: {
+        findUnique: (args: {
+          where: { userId: string };
+        }) => Promise<{ skills: string[] } | null>;
+        upsert: (args: {
+          where: { userId: string };
+          update: { skills: string[] };
+          create: {
+            userId: string;
+            fullName: string;
+            phone: string | null;
+            skills: string[];
+          };
+        }) => Promise<unknown>;
+      };
+    }
+  ).studentProfile;
+
   const form = await req.formData();
   const phone = String(form.get("phone") ?? "").trim();
   const education = String(form.get("education") ?? "").trim();
@@ -35,11 +55,11 @@ export async function POST(req: Request) {
     },
   });
 
-  if (skills.length > 0) {
-    const existing = await prisma.studentProfile.findUnique({
+  if (skills.length > 0 && studentProfileDelegate) {
+    const existing = await studentProfileDelegate.findUnique({
       where: { userId: user.id },
     });
-    await prisma.studentProfile.upsert({
+    await studentProfileDelegate.upsert({
       where: { userId: user.id },
       update: {
         skills: Array.from(new Set([...(existing?.skills ?? []), ...skills])),
