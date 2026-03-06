@@ -144,6 +144,73 @@ async function main() {
   }
 
 
+
+
+  const profileUsers = [demoStudent, ...students];
+  for (let i = 0; i < profileUsers.length; i++) {
+    const student = profileUsers[i];
+    await prisma.studentProfile.upsert({
+      where: { userId: student.id },
+      update: {
+        fullName: student.name ?? `Learner ${i + 1}`,
+        phone: `07${String(10000000 + i).slice(0, 8)}`,
+        location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
+        bio: "Learner in technical and workplace readiness programmes.",
+        skills: ["Work readiness", "Communication", "Digital literacy"],
+        education: {
+          personalDetails: {
+            idNumber: `90010${String(1000 + i)}`,
+            dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`,
+            gender: i % 2 === 0 ? "Female" : "Male",
+            citizenship: "South African"
+          },
+          highestQualification: "National Certificate",
+          institutionName: "Demo TVET College",
+          fieldOfStudy: "Business Administration",
+          addressDetails: { city: "Johannesburg", province: "Gauteng" }
+        },
+        experience: {
+          cvUrl: `https://demo.internflow.local/cv/${student.id}`,
+          employmentStatus: "Seeking placement",
+          preferredProgrammeType: i % 2 === 0 ? "Learnership" : "Internship",
+          emergencyContactName: "Demo Guardian",
+          emergencyContactPhone: `07${String(70000000 + i).slice(0, 8)}`,
+          references: ["Demo employer reference"]
+        },
+        isDiscoverable: true
+      },
+      create: {
+        userId: student.id,
+        fullName: student.name ?? `Learner ${i + 1}`,
+        phone: `07${String(10000000 + i).slice(0, 8)}`,
+        location: i % 2 === 0 ? "Johannesburg, Gauteng" : "Pretoria, Gauteng",
+        bio: "Learner in technical and workplace readiness programmes.",
+        skills: ["Work readiness", "Communication", "Digital literacy"],
+        education: {
+          personalDetails: {
+            idNumber: `90010${String(1000 + i)}`,
+            dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`,
+            gender: i % 2 === 0 ? "Female" : "Male",
+            citizenship: "South African"
+          },
+          highestQualification: "National Certificate",
+          institutionName: "Demo TVET College",
+          fieldOfStudy: "Business Administration",
+          addressDetails: { city: "Johannesburg", province: "Gauteng" }
+        },
+        experience: {
+          cvUrl: `https://demo.internflow.local/cv/${student.id}`,
+          employmentStatus: "Seeking placement",
+          preferredProgrammeType: i % 2 === 0 ? "Learnership" : "Internship",
+          emergencyContactName: "Demo Guardian",
+          emergencyContactPhone: `07${String(70000000 + i).slice(0, 8)}`,
+          references: ["Demo employer reference"]
+        },
+        isDiscoverable: true
+      }
+    });
+  }
+
   for (const tenant of tenants) {
     await prisma.exportTemplate.createMany({
       data: [

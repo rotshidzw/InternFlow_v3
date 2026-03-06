@@ -1,0 +1,44 @@
+import { prisma } from "@internflow/db/src";
+import { getStorageAdapter } from "@internflow/shared/src/storage";
+import { NextResponse } from "next/server";
+import { getOrgAccess } from "@/lib/org-access";
+
+export async function GET(_: Request, { params }: { params: { orgSlug: string; documentId: string } }) {
+  const access = await getOrgAccess(params.orgSlug);
+  if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const doc = await prisma.document.findFirst({
+    where: { id: params.documentId, organizationId: access.membership.organizationId, type: "CERTIFICATE" },
+    include: { versions: { orderBy: { createdAt: "desc" }, take: 1 }, user: true }
+  });
+  if (!doc || !doc.versions[0]) return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await getStorageAdapter().getBuffer(doc.versions[0].storageKey);
+  } catch {
+    return NextResponse.json({ error: "Certificate file is unavailable" }, { status: 404 });
+  }
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: access.membership.organizationId,
+      userId: access.user.id,
+      action: "DOCUMENT_DOWNLOADED",
+      entityType: "Document",
+      entityId: doc.id,
+      metadata: {
+        type: "CERTIFICATE",
+        storageKey: doc.versions[0].storageKey
+      }
+    }
+  });
+
+  const safeName = (doc.user.name ?? doc.user.email).replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return new NextResponse(bytes, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=\"${safeName}_Certificate.pdf\"`
+    }
+  });
+}

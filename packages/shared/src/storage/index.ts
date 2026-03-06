@@ -71,8 +71,8 @@ class ObsStorageAdapter implements StorageAdapter {
     region: process.env.OBS_REGION ?? "af-south-1",
     endpoint: process.env.OBS_ENDPOINT,
     credentials: {
-      accessKeyId: process.env.OBS_AK ?? "",
-      secretAccessKey: process.env.OBS_SK ?? ""
+      accessKeyId: process.env.OBS_ACCESS_KEY ?? process.env.OBS_AK ?? "",
+      secretAccessKey: process.env.OBS_SECRET_KEY ?? process.env.OBS_SK ?? ""
     },
     forcePathStyle: true
   });

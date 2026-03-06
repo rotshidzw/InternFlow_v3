@@ -4,6 +4,7 @@ import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
+import { cookies } from "next/headers";
 
 const expiryByType: Record<string, number | null> = {
   ID: 3650,
@@ -24,6 +25,14 @@ function computeExpiration(type: string) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
+async function resolveUserId(inputUserId: string | undefined) {
+  if (inputUserId) return inputUserId;
+  const email = cookies().get("if_user")?.value;
+  if (!email) return null;
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  return user?.id ?? null;
+}
+
 export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
   const storage = getStorageAdapter();
@@ -37,7 +46,7 @@ export async function POST(req: Request) {
     }
 
     const parsed = documentUploadSchema.safeParse({
-      userId: String(formData.get("userId") ?? ""),
+      userId: String(formData.get("userId") ?? "") || undefined,
       type: String(formData.get("type") ?? ""),
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
@@ -47,13 +56,16 @@ export async function POST(req: Request) {
 
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-    const storageKey = `uploads/${parsed.data.userId}/${Date.now()}-${parsed.data.fileName}`;
+    const targetUserId = await resolveUserId(parsed.data.userId);
+    if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
+
+    const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;
     const bytes = Buffer.from(await file.arrayBuffer());
     await storage.put(storageKey, bytes, parsed.data.mimeType);
 
     const document = await prisma.document.create({
       data: {
-        userId: parsed.data.userId,
+        userId: targetUserId,
         type: parsed.data.type,
         status: "SCAN_PENDING",
         expirationDate: computeExpiration(parsed.data.type),
@@ -71,6 +83,22 @@ export async function POST(req: Request) {
 
     await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
 
+    await prisma.auditEvent.create({
+      data: {
+        userId: targetUserId,
+        tenantId: document.organizationId ?? undefined,
+        action: "DOCUMENT_UPLOADED",
+        entityType: "Document",
+        entityId: document.id,
+        metadata: {
+          type: parsed.data.type,
+          storageKey,
+          mimeType: parsed.data.mimeType,
+          sizeBytes: parsed.data.sizeBytes
+        }
+      }
+    });
+
     return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
   }
 
@@ -83,12 +111,15 @@ export async function POST(req: Request) {
 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const storageKey = `uploads/${parsed.data.userId}/${Date.now()}-${parsed.data.fileName}`;
+  const targetUserId = await resolveUserId(parsed.data.userId);
+  if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
+
+  const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;
   await storage.put(storageKey, Buffer.from("InternFlow placeholder file"), parsed.data.mimeType);
 
   const document = await prisma.document.create({
     data: {
-      userId: parsed.data.userId,
+      userId: targetUserId,
       type: parsed.data.type,
       status: "SCAN_PENDING",
       expirationDate: computeExpiration(parsed.data.type),
@@ -105,6 +136,22 @@ export async function POST(req: Request) {
   });
 
   await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+
+  await prisma.auditEvent.create({
+    data: {
+      userId: targetUserId,
+      tenantId: document.organizationId ?? undefined,
+      action: "DOCUMENT_UPLOADED",
+      entityType: "Document",
+      entityId: document.id,
+      metadata: {
+        type: parsed.data.type,
+        storageKey,
+        mimeType: parsed.data.mimeType,
+        sizeBytes: parsed.data.sizeBytes
+      }
+    }
+  });
 
   return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
 }
