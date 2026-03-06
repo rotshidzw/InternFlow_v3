@@ -16,6 +16,7 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const applications = await prisma.application.findMany({ where: { userId: access.user.id, opportunity: { organizationId: access.membership.organizationId } }, include: { opportunity: true, checklist: { include: { items: true } } }, orderBy: { createdAt: "desc" } });
   const logbooks = await prisma.logbookEntry.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 8 });
   const docs = await prisma.document.findMany({ where: { userId: access.user.id }, take: 8, orderBy: { createdAt: "desc" } });
+  const notifications = await prisma.notification.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 5 });
   const checklist = applications[0]?.checklist;
   const nextTask = checklist?.items.find((i) => i.status !== "DONE");
   const overdue = checklist?.items.filter((i) => i.status !== "DONE" && i.dueDate && i.dueDate < new Date()).length ?? 0;
@@ -99,6 +100,26 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
               <span className={item.status === "DONE" ? "text-emerald-700" : "text-amber-700"}>{item.status}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold text-slate-900">Notifications</h2>
+          <a href="/app/whatsapp-sim" className="text-sm text-blue-600">Open messages</a>
+        </div>
+        <div className="mt-2 space-y-2 text-sm">
+          {notifications.length === 0 ? (
+            <p className="text-slate-600">No alerts right now. Keep your checklist up to date.</p>
+          ) : (
+            notifications.map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-3">
+                <p className="font-medium text-slate-900">{item.title}</p>
+                <p className="text-slate-700">{item.body}</p>
+                <p className="text-xs text-slate-500">{item.createdAt.toISOString().slice(0, 16).replace("T", " ")}</p>
+              </div>
+            ))
+          )}
         </div>
       </section>
 

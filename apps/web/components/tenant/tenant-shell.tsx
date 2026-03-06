@@ -43,6 +43,7 @@ const primaryItems: NavItem[] = [
   { href: "opportunities", label: "Opportunities", icon: Briefcase },
   { href: "applicants", label: "Applicants", icon: UserSquare2 },
   { href: "enrollments", label: "Enrollments", icon: ClipboardList },
+  { href: "intakes", label: "Intakes", icon: ClipboardList },
   { href: "documents", label: "Documents", icon: FolderOpen },
   { href: "logbooks", label: "Logbooks", icon: FileText },
   { href: "approvals", label: "Approvals", icon: FileCheck2 },
@@ -52,6 +53,9 @@ const operationsItems: NavItem[] = [
   { href: "reports", label: "Reports", icon: FileSpreadsheet },
   { href: "reports/exports", label: "Close-out Exports", icon: ScrollText },
   { href: "learner-chat", label: "Communication", icon: MessageSquare },
+  { href: "notifications", label: "Notifications", icon: BellRing },
+  { href: "registers", label: "Attendance Registers", icon: FileText },
+  { href: "progress", label: "Progress Tracker", icon: Gauge },
   { href: "stipends", label: "Stipends", icon: HandCoins },
   { href: "certificates", label: "Certificates", icon: Award },
 ];
