@@ -20,6 +20,10 @@ InternFlow is a multi-tenant platform with two experiences:
 6. `npm run db:seed`
 7. `npm run dev`
 
+## Deployment docs
+- Huawei cloud runbook: `docs/HUAWEI_CLOUD_SETUP.md`
+- Go-live checklist: `docs/GO_LIVE_CHECKLIST.md`
+
 ## URLs
 - App: http://localhost:3000
 - MailHog UI: http://localhost:8025
