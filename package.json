@@ -15,7 +15,8 @@
     "db:seed": "npm run db:seed --workspace @internflow/db",
     "format": "prettier --check .",
     "db:generate": "npm run db:generate --workspace @internflow/db",
-    "predev": "node scripts/ensure-deps.mjs"
+    "predev": "node scripts/ensure-deps.mjs",
+    "check:prod-env": "node scripts/validate-production-env.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
