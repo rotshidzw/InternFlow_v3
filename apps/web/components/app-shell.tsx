@@ -1,65 +1,95 @@
 import Link from "next/link";
 import { PropsWithChildren } from "react";
+import { BellRing, Building2, Compass, MessageSquare, ShieldCheck } from "lucide-react";
 
-const roleNav: Record<string, { href: string; label: string }[]> = {
+type NavItem = { href: string; label: string };
+
+const roleNav: Record<string, NavItem[]> = {
   STUDENT: [
-    { href: "student", label: "Dashboard" },
+    { href: "student", label: "Home" },
     { href: "student#applications", label: "Applications" },
     { href: "student#checklist", label: "Checklist" },
     { href: "student#documents", label: "Documents" },
-    { href: "student#growth", label: "Growth" }
+    { href: "student#growth", label: "Growth" },
   ],
   COORDINATOR: [
     { href: "coordinator", label: "Cohorts" },
     { href: "coordinator", label: "Compliance" },
-    { href: "coordinator", label: "Approvals" }
+    { href: "coordinator", label: "Approvals" },
   ],
   PROVIDER_ADMIN: [
-    { href: "provider-admin", label: "Org Profile" },
+    { href: "provider-admin", label: "Org profile" },
     { href: "provider-admin", label: "Opportunities" },
-    { href: "provider-admin", label: "People" }
+    { href: "provider-admin", label: "People" },
   ],
   SUPERVISOR: [
     { href: "supervisor", label: "Learners" },
-    { href: "supervisor", label: "Logbooks" }
-  ]
+    { href: "supervisor", label: "Logbooks" },
+  ],
 };
 
-export function AppShell({ children, orgSlug, role, orgName }: PropsWithChildren<{ orgSlug: string; role: string; orgName: string }>) {
+export function AppShell({
+  children,
+  orgSlug,
+  role,
+  orgName,
+}: PropsWithChildren<{ orgSlug: string; role: string; orgName: string }>) {
   const items = roleNav[role] ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#0f766e_0%,#0f172a_40%,#020617_100%)] text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe_0%,#f8fafc_38%,#f8fafc_100%)] text-slate-900">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <img src="/icon.svg" alt="InternFlow" className="h-8 w-8 rounded-lg" />
             <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">InternFlow learner portal</p>
               <p className="text-sm font-semibold">{orgName}</p>
-              <p className="text-xs text-emerald-300">Workspace · {role.replace("_", " ")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            {role === "SYSTEM_ADMIN" && <Link href="/hq/dashboard">HQ</Link>}
-            {role !== "SYSTEM_ADMIN" && <Link href="/app/whatsapp-sim">WhatsApp</Link>}
-            {role !== "STUDENT" && <Link href="/workspaces">Switch workspace</Link>}
-            <span className="rounded-full border border-white/20 px-3 py-1 text-xs">{orgSlug}</span>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              {role.replace("_", " ")}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{orgSlug}</span>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[240px_1fr]">
-        <aside className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-300">Navigation</p>
-          <nav className="space-y-2 text-sm">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[260px_1fr]">
+        <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-500">Student workspace</p>
+          <nav className="space-y-1.5 text-sm">
             {items.map((item) => (
-              <Link key={item.label} href={`/org/${orgSlug}/${item.href}`} className="block rounded-lg border border-white/10 px-3 py-2 hover:bg-white/10">
+              <Link
+                key={item.label}
+                href={`/org/${orgSlug}/${item.href}`}
+                className="block rounded-lg border border-transparent px-3 py-2 text-slate-700 transition hover:border-slate-200 hover:bg-slate-50"
+              >
                 {item.label}
               </Link>
             ))}
           </nav>
+
+          <div className="mt-4 space-y-2 rounded-xl border border-sky-100 bg-sky-50/80 p-3 text-xs text-slate-700">
+            <p className="flex items-center gap-1.5 font-semibold text-slate-800">
+              <Compass className="h-3.5 w-3.5 text-sky-600" />
+              Quick actions
+            </p>
+            <Link href="/app/student" className="flex items-center gap-1.5 hover:text-sky-700">
+              <Building2 className="h-3.5 w-3.5" /> Global student portal
+            </Link>
+            <Link href="/app/whatsapp-sim" className="flex items-center gap-1.5 hover:text-sky-700">
+              <MessageSquare className="h-3.5 w-3.5" /> Messages
+            </Link>
+            <p className="flex items-center gap-1.5 text-slate-600">
+              <BellRing className="h-3.5 w-3.5" /> Stay on checklist deadlines
+            </p>
+          </div>
         </aside>
-        <main className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">{children}</main>
+
+        <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">{children}</main>
       </div>
     </div>
   );

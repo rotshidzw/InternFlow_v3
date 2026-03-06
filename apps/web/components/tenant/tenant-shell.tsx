@@ -20,11 +20,14 @@ import {
   GraduationCap,
   HandCoins,
   LayoutTemplate,
+  MessageSquare,
+  ScrollText,
   Settings,
   ShieldCheck,
   Users,
   UserSquare2,
   ArrowLeft,
+  Award,
 } from "lucide-react";
 
 type NavItem = {
@@ -45,9 +48,15 @@ const primaryItems: NavItem[] = [
   { href: "approvals", label: "Approvals", icon: FileCheck2 },
 ];
 
-const footerItems: NavItem[] = [
+const operationsItems: NavItem[] = [
   { href: "reports", label: "Reports", icon: FileSpreadsheet },
+  { href: "reports/exports", label: "Close-out Exports", icon: ScrollText },
+  { href: "learner-chat", label: "Communication", icon: MessageSquare },
   { href: "stipends", label: "Stipends", icon: HandCoins },
+  { href: "certificates", label: "Certificates", icon: Award },
+];
+
+const adminItems: NavItem[] = [
   { href: "staff", label: "Staff", icon: Users },
   { href: "settings", label: "Settings", icon: Settings },
 ];
@@ -128,10 +137,29 @@ export function TenantShell({
           <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
 
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">
-            Workspace
+            Operations
           </p>
           <nav className="space-y-1.5">
-            {footerItems.map(({ href, label, icon: Icon }) => (
+            {operationsItems.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={`/org/${orgSlug}/app/${href}`}
+                className={navClass}
+                title={label}
+              >
+                <Icon className="h-4 w-4 shrink-0 text-slate-500 transition group-hover:text-indigo-600" />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+
+          <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">
+            Administration
+          </p>
+          <nav className="space-y-1.5">
+            {adminItems.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={`/org/${orgSlug}/app/${href}`}
