@@ -220,100 +220,64 @@ export default async function StudentPortalPage({
       <section className="rounded-2xl border border-indigo-100 bg-white/95 p-5 shadow-[0_10px_24px_rgba(30,41,59,0.10)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-sky-700">
-              Student Command Center
-            </p>
+            <p className="text-sm font-medium text-sky-700">Student Portal</p>
             <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
-              Welcome back, {user.name ?? "Student"} 👋
+              Welcome back, {user.name ?? "Student"}
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              Track your program journey, profile readiness, and active
-              discussions in one place.
+              A professional workspace for your profile, programme progress,
+              applications, documents, and support.
             </p>
             <p className="mt-2 text-xs text-slate-500">
-              Progress summary: profile {checklistProgress}% complete ·
-              employability score {employabilityScore}%
+              Profile completion {checklistProgress}% · Employability{" "}
+              {employabilityScore}%
+              {isEnrolled
+                ? ` · Enrolled in ${context.enrollment.programName}`
+                : ""}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-              <Link
-                href="/onboarding/profile"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
-              >
-                Profile
-              </Link>
-              <Link
-                href={programWorkspaceUrl ?? "/app/student"}
-                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700 hover:bg-indigo-100"
-              >
-                Program workspace
-              </Link>
-              <Link
-                href="/app/whatsapp-sim"
-                className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100"
-              >
-                Messages
-              </Link>
-            </div>
           </div>
-          <div className="w-full space-y-3 md:w-[370px]">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
-                {initials(user.name, user.email)}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {user.name ?? "Student"}
-                </p>
-                <p className="text-xs text-slate-500">{user.email}</p>
-              </div>
-            </div>
-            <section className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    Account snapshot
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-600">
-                    View your saved profile details and continue setup in guided
-                    sections.
-                  </p>
-                </div>
-                <Link
-                  href="/onboarding/profile"
-                  className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-                >
-                  Edit profile
-                </Link>
-              </div>
-
-              <dl className="mt-3 space-y-2 text-xs text-slate-600">
-                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <dt className="font-medium text-slate-700">Phone</dt>
-                  <dd>
-                    {profile?.phone || studentProfile?.phone || "Not set"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <dt className="font-medium text-slate-700">Education</dt>
-                  <dd className="max-w-[180px] truncate text-right">
-                    {(profile?.education as string) || "Not set"}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <dt className="font-medium text-slate-700">Skills</dt>
-                  <dd className="max-w-[180px] truncate text-right">
-                    {studentProfile?.skills.join(", ") || "Not set"}
-                  </dd>
-                </div>
-              </dl>
-
-              <p className="mt-3 text-xs text-slate-500">
-                CV upload and detailed profile updates are now done inside the
-                profile setup flow.
-              </p>
-            </section>
-          </div>
+          <Link
+            href="/onboarding/profile"
+            className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
+              {initials(user.name, user.email)}
+            </span>
+            <span>
+              <span className="block text-sm font-semibold text-slate-900">
+                {user.name ?? "Student"}
+              </span>
+              <span className="block text-xs text-slate-500">Open profile</span>
+            </span>
+          </Link>
         </div>
+
+        <nav className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+          <Link
+            href="#overview"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
+          >
+            Overview
+          </Link>
+          <Link
+            href="/onboarding/profile"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
+          >
+            Profile
+          </Link>
+          <Link
+            href={programWorkspaceUrl ?? "/app/student"}
+            className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700 hover:bg-indigo-100"
+          >
+            Program workspace
+          </Link>
+          <Link
+            href="/app/whatsapp-sim"
+            className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100"
+          >
+            Messages
+          </Link>
+        </nav>
       </section>
 
       {!hasStudentMembership && (

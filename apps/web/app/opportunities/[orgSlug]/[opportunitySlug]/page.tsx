@@ -3,8 +3,10 @@ import { cookies } from "next/headers";
 
 export default async function OpportunityDetail({
   params,
+  searchParams,
 }: {
   params: { orgSlug: string; opportunitySlug: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const opportunity = await prisma.opportunity.findFirst({
     where: {
@@ -45,8 +47,11 @@ export default async function OpportunityDetail({
   const hasCv = Boolean(cvDoc);
   const hasEducation = Boolean(profile?.education || studentProfile?.education);
   const hasSkills = Boolean(studentProfile?.skills?.length);
-  const hasContact = Boolean(profile?.phone);
+  const hasContact = Boolean(profile?.phone || studentProfile?.phone);
   const isReadyToApply = hasCv && hasEducation && hasSkills && hasContact;
+
+  const showApplyFailed = searchParams?.error === "apply-failed";
+  const showUploadFailed = searchParams?.warning === "cv-upload-failed";
 
   return (
     <div className="mx-auto mt-10 max-w-4xl rounded-3xl border border-white/20 bg-white/10 p-8 text-slate-100 backdrop-blur-xl">
@@ -55,6 +60,22 @@ export default async function OpportunityDetail({
         {opportunity.organization.name} · {opportunity.type}
       </p>
       <p className="mt-4 text-slate-100">{opportunity.description}</p>
+
+      {(showApplyFailed || showUploadFailed) && (
+        <div className="mb-4 grid gap-2">
+          {showApplyFailed && (
+            <p className="rounded-lg border border-rose-300/50 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+              Could not submit application right now. Please try again.
+            </p>
+          )}
+          {showUploadFailed && (
+            <p className="rounded-lg border border-amber-300/50 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+              Application was submitted, but CV upload failed. Please upload CV
+              from profile/documents.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 rounded-xl border border-white/20 bg-slate-900/30 p-4 text-sm">
         <p className="font-semibold">Application readiness</p>
@@ -114,7 +135,7 @@ export default async function OpportunityDetail({
             {!hasContact && (
               <input
                 name="phone"
-                defaultValue={profile?.phone ?? ""}
+                defaultValue={profile?.phone ?? studentProfile?.phone ?? ""}
                 placeholder="Verify contact details (phone number)"
                 className="w-full rounded-xl border border-white/20 bg-slate-950/40 px-3 py-2"
               />
