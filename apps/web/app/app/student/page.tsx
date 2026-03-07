@@ -8,6 +8,7 @@ import {
   FileText,
   FolderOpen,
   MessageSquare,
+  Settings,
   User,
   UserCircle2,
 } from "lucide-react";
@@ -40,7 +41,10 @@ export default async function StudentPortalPage({
   const user = await getCurrentUser();
   if (!user) redirect("/auth");
 
-  const memberships = await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } });
+  const memberships = await prisma.membership.findMany({
+    where: { userId: user.id },
+    include: { organization: true },
+  });
   const hasStudentMembership = memberships.some((m) => m.role === "STUDENT");
   const nonStudentMembership = memberships.find((m) => m.role !== "STUDENT");
   if (!hasStudentMembership && nonStudentMembership) {
@@ -177,6 +181,15 @@ export default async function StudentPortalPage({
   const showProfileUpdated = searchParams?.notice === "profile-updated";
   const showCvUploaded = searchParams?.notice === "cv-uploaded";
   const showMissingFile = searchParams?.error === "missing-file";
+  const showInviteJoined = searchParams?.notice === "invite-joined";
+  const showInviteTokenInvalid = searchParams?.error === "invalid-invite-token";
+  const showInviteNotFound = searchParams?.error === "invite-not-found";
+  const showInviteExpired = searchParams?.error === "invite-expired";
+  const showInviteMaxed = searchParams?.error === "invite-maxed";
+  const showInviteRoleUnsupported =
+    searchParams?.error === "invite-role-unsupported";
+  const showStaffMembershipConflict =
+    searchParams?.error === "staff-membership-conflict";
 
   const profileChecklist = [
     { label: "Upload CV", done: hasCv },
@@ -292,7 +305,91 @@ export default async function StudentPortalPage({
         </div>
       </section>
 
-      {(showApplied || showAlreadyApplied || showActiveEnrollmentError) && (
+      <section className="grid gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] lg:grid-cols-[1.2fr_0.8fr]">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Student workspace menu
+          </p>
+          <nav className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { label: "Overview", href: "#overview", icon: Briefcase },
+              {
+                label: "Profile",
+                href: "/onboarding/profile",
+                icon: UserCircle2,
+              },
+              {
+                label: "Program workspace",
+                href: programWorkspaceUrl ?? "/app/student",
+                icon: FolderOpen,
+              },
+              {
+                label: "Applications",
+                href: "#applications",
+                icon: CheckCircle2,
+              },
+              { label: "Documents", href: "#documents", icon: FileText },
+              {
+                label: "Messages",
+                href: "/app/whatsapp-sim",
+                icon: MessageSquare,
+              },
+              {
+                label: "Settings",
+                href: "/onboarding/profile",
+                icon: Settings,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
+          <p className="text-sm font-semibold text-indigo-900">
+            Join a program with invite token
+          </p>
+          <p className="mt-1 text-xs text-indigo-700">
+            Already logged in? Paste your invite token and join immediately.
+          </p>
+          <form
+            action="/api/auth/join"
+            method="post"
+            className="mt-3 space-y-2"
+          >
+            <input
+              name="token"
+              placeholder="Paste invite token"
+              required
+              className="w-full rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm text-slate-800"
+            />
+            <button className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+              Join program
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {(showApplied ||
+        showAlreadyApplied ||
+        showActiveEnrollmentError ||
+        showInviteJoined ||
+        showInviteTokenInvalid ||
+        showInviteNotFound ||
+        showInviteExpired ||
+        showInviteMaxed ||
+        showInviteRoleUnsupported ||
+        showStaffMembershipConflict) && (
         <div className="grid gap-2">
           {showApplied && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
@@ -324,10 +421,47 @@ export default async function StudentPortalPage({
               Please choose a CV file before uploading.
             </div>
           )}
+          {showInviteJoined && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Invite accepted. Open Program Workspace from the student menu.
+            </div>
+          )}
+          {showInviteTokenInvalid && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              Please paste a valid invite token.
+            </div>
+          )}
+          {showInviteNotFound && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              Invite token not found. Check the code and try again.
+            </div>
+          )}
+          {showInviteExpired && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              This invite token has expired. Request a new invite from the
+              program team.
+            </div>
+          )}
+          {showInviteMaxed && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Invite token has reached max usage. Request another token.
+            </div>
+          )}
+          {showInviteRoleUnsupported && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              This invite token is not configured for learner access.
+            </div>
+          )}
+          {showStaffMembershipConflict && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+              This account is linked to staff access in this workspace. Use
+              staff login flow.
+            </div>
+          )}
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div id="overview" className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">
@@ -392,7 +526,10 @@ export default async function StudentPortalPage({
         </section>
       </div>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section
+        id="applications"
+        className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      >
         <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <Briefcase className="h-4 w-4 text-sky-600" />
@@ -510,7 +647,10 @@ export default async function StudentPortalPage({
         </section>
       </div>
 
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+      <section
+        id="documents"
+        className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+      >
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-slate-900">
             Recommended Marketplace Opportunities

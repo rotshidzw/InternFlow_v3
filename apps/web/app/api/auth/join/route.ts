@@ -5,9 +5,39 @@ import { z } from "zod";
 
 const schema = z.object({ token: z.string().min(6) });
 
+function wantsJson(req: Request) {
+  const accept = req.headers.get("accept") ?? "";
+  const contentType = req.headers.get("content-type") ?? "";
+  return (
+    accept.includes("application/json") ||
+    contentType.includes("application/json")
+  );
+}
+
+function redirectResponse(status: "notice" | "error", value: string) {
+  const url = new URL(
+    "/app/student",
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  );
+  url.searchParams.set(status, value);
+  return NextResponse.redirect(url);
+}
+
 export async function POST(req: Request) {
-  const body = schema.safeParse(await req.json());
+  const contentType = req.headers.get("content-type") ?? "";
+
+  let tokenPayload: unknown;
+  if (contentType.includes("application/json")) {
+    tokenPayload = await req.json();
+  } else {
+    const form = await req.formData();
+    tokenPayload = { token: form.get("token") };
+  }
+
+  const body = schema.safeParse(tokenPayload);
   if (!body.success) {
+    if (!wantsJson(req))
+      return redirectResponse("error", "invalid-invite-token");
     return NextResponse.json(
       { ok: false, error: "Invalid token payload" },
       { status: 400 },
@@ -16,8 +46,13 @@ export async function POST(req: Request) {
 
   const email = cookies().get("if_user")?.value;
   if (!email) {
+    if (!wantsJson(req)) return redirectResponse("error", "login-required");
     return NextResponse.json(
-      { ok: false, error: "Login required, or complete profile onboarding with this invite token." },
+      {
+        ok: false,
+        error:
+          "Login required, or complete profile onboarding with this invite token.",
+      },
       { status: 401 },
     );
   }
@@ -26,6 +61,7 @@ export async function POST(req: Request) {
     where: { email: email.toLowerCase() },
   });
   if (!user) {
+    if (!wantsJson(req)) return redirectResponse("error", "account-not-found");
     return NextResponse.json(
       { ok: false, error: "Account not found" },
       { status: 404 },
@@ -47,6 +83,7 @@ export async function POST(req: Request) {
         metadata: { reason: "NOT_FOUND" },
       },
     });
+    if (!wantsJson(req)) return redirectResponse("error", "invite-not-found");
     return NextResponse.json(
       { ok: false, error: "Invite token not found" },
       { status: 404 },
@@ -64,15 +101,20 @@ export async function POST(req: Request) {
         metadata: { reason: "EXPIRED" },
       },
     });
+    if (!wantsJson(req)) return redirectResponse("error", "invite-expired");
     return NextResponse.json(
       { ok: false, error: "Invite token expired" },
       { status: 400 },
     );
   }
 
-
   if (inviteToken.role !== "LEARNER") {
-    return NextResponse.json({ ok: false, error: "Token role unsupported" }, { status: 400 });
+    if (!wantsJson(req))
+      return redirectResponse("error", "invite-role-unsupported");
+    return NextResponse.json(
+      { ok: false, error: "Token role unsupported" },
+      { status: 400 },
+    );
   }
 
   const existingMembership = await prisma.membership.findFirst({
@@ -80,8 +122,14 @@ export async function POST(req: Request) {
   });
 
   if (existingMembership && existingMembership.role !== "STUDENT") {
+    if (!wantsJson(req))
+      return redirectResponse("error", "staff-membership-conflict");
     return NextResponse.json(
-      { ok: false, error: "This token is for learners only. Use workspace login for staff roles." },
+      {
+        ok: false,
+        error:
+          "This token is for learners only. Use workspace login for staff roles.",
+      },
       { status: 409 },
     );
   }
@@ -97,6 +145,7 @@ export async function POST(req: Request) {
         metadata: { reason: "MAX_USES_REACHED" },
       },
     });
+    if (!wantsJson(req)) return redirectResponse("error", "invite-maxed");
     return NextResponse.json(
       { ok: false, error: "Invite token is no longer available" },
       { status: 400 },
@@ -157,7 +206,9 @@ export async function POST(req: Request) {
   });
 
   const redirectTo = `/org/${inviteToken.tenant.slug}/student`;
-  const res = NextResponse.json({ ok: true, redirectTo });
+  const res = wantsJson(req)
+    ? NextResponse.json({ ok: true, redirectTo })
+    : redirectResponse("notice", "invite-joined");
   res.cookies.set("if_workspace", inviteToken.tenant.slug, {
     sameSite: "lax",
     path: "/",
