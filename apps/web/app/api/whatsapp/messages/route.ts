@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import { createRedisClient } from "@/lib/redis-queue";
 
 const quickReplies: Record<string, string> = {
   status: "Status: onboarding in progress and application under review.",
@@ -13,7 +13,7 @@ const quickReplies: Record<string, string> = {
   support: "Support ticket opened. Our team will respond soon."
 };
 
-const redisConnection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
+const redisConnection = createRedisClient("api-whatsapp");
 const scanQueue = new Queue("document-scan", { connection: redisConnection });
 
 const expiryByType: Record<string, number | null> = {
@@ -90,7 +90,28 @@ export async function POST(req: Request) {
       }
     });
 
-    await scanQueue.add("scanDocument", { documentId: document.id, mimeType, sizeBytes: file.size, fileName });
+    try {
+      await scanQueue.add("scanDocument", { documentId: document.id, mimeType, sizeBytes: file.size, fileName });
+    } catch (error) {
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { status: "SUBMITTED", rejectionReason: "Scan queue unavailable; manual review required." },
+      });
+      await prisma.chatMessage.create({
+        data: {
+          threadId: thread.id,
+          role: "SYSTEM",
+          body: "⚠️ Scan queue is unavailable right now. Your upload is saved and queued for manual review.",
+        },
+      });
+      await prisma.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "WHATSAPP_SCAN_QUEUE_FAILED",
+          metadata: { documentId: document.id, error: error instanceof Error ? error.message : "Unknown queue error" },
+        },
+      });
+    }
 
     await prisma.chatMessage.create({
       data: {

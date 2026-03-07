@@ -1,32 +1,28 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireTenantApiActor } from "@/lib/tenant-api-auth";
 
-const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"]);
+const ALLOWED_ROLES = ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] as const;
 
 export async function POST(
   req: Request,
   { params }: { params: { orgSlug: string; documentId: string } },
 ) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (!user) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: params.orgSlug } },
-  });
-
-  if (!membership || !ALLOWED_ROLES.has(membership.role)) {
-    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
-  }
+  const actor = await requireTenantApiActor(params.orgSlug, [...ALLOWED_ROLES]);
+  if (!actor) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
   const form = await req.formData();
   const decision = String(form.get("decision") ?? "");
   const reason = String(form.get("reason") ?? "").trim();
 
-  const document = await prisma.document.findUnique({ where: { id: params.documentId } });
+  const tenantUserIds = await prisma.membership.findMany({
+    where: { organizationId: actor.membership.organizationId },
+    select: { userId: true },
+  });
+
+  const document = await prisma.document.findFirst({
+    where: { id: params.documentId, userId: { in: tenantUserIds.map((m) => m.userId) } },
+  });
   if (!document) {
     return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });
   }
@@ -58,8 +54,8 @@ export async function POST(
     }),
     prisma.auditEvent.create({
       data: {
-        tenantId: membership.organizationId,
-        userId: user.id,
+        tenantId: actor.membership.organizationId,
+        userId: actor.user.id,
         action: decision === "approve" ? "DOCUMENT_APPROVED" : "DOCUMENT_RETURNED",
         entityType: "Document",
         entityId: document.id,

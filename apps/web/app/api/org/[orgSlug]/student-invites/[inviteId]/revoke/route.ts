@@ -1,29 +1,18 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireTenantApiActor } from "@/lib/tenant-api-auth";
 
-const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
+const ALLOWED_ROLES = ["PROVIDER_ADMIN", "COORDINATOR"] as const;
 
 export async function POST(
   req: Request,
   { params }: { params: { orgSlug: string; inviteId: string } },
 ) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  if (!user) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: params.orgSlug } },
-  });
-
-  if (!membership || !ALLOWED_ROLES.has(membership.role)) {
-    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
-  }
+  const actor = await requireTenantApiActor(params.orgSlug, [...ALLOWED_ROLES]);
+  if (!actor) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
   const invite = await prisma.inviteToken.findFirst({
-    where: { id: params.inviteId, tenantId: membership.organizationId },
+    where: { id: params.inviteId, tenantId: actor.membership.organizationId },
   });
 
   if (!invite) {
@@ -37,8 +26,8 @@ export async function POST(
     }),
     prisma.auditEvent.create({
       data: {
-        tenantId: membership.organizationId,
-        userId: user.id,
+        tenantId: actor.membership.organizationId,
+        userId: actor.user.id,
         action: "INVITE_REVOKED",
         entityType: "InviteToken",
         entityId: invite.id,

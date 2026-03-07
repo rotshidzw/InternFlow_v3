@@ -70,6 +70,22 @@ export async function POST(req: Request) {
     );
   }
 
+
+  if (inviteToken.role !== "LEARNER") {
+    return NextResponse.json({ ok: false, error: "Token role unsupported" }, { status: 400 });
+  }
+
+  const existingMembership = await prisma.membership.findFirst({
+    where: { userId: user.id, organizationId: inviteToken.tenantId },
+  });
+
+  if (existingMembership && existingMembership.role !== "STUDENT") {
+    return NextResponse.json(
+      { ok: false, error: "This token is for learners only. Use workspace login for staff roles." },
+      { status: 409 },
+    );
+  }
+
   if (inviteToken.usedCount >= inviteToken.maxUses) {
     await prisma.auditEvent.create({
       data: {
@@ -88,20 +104,15 @@ export async function POST(req: Request) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.membership.upsert({
-      where: {
-        userId_organizationId: {
+    if (!existingMembership) {
+      await tx.membership.create({
+        data: {
           userId: user.id,
           organizationId: inviteToken.tenantId,
+          role: "STUDENT",
         },
-      },
-      update: { role: "STUDENT" },
-      create: {
-        userId: user.id,
-        organizationId: inviteToken.tenantId,
-        role: "STUDENT",
-      },
-    });
+      });
+    }
 
     if (inviteToken.programmeId) {
       const existingEnrollment = await tx.enrollment.findFirst({

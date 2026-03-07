@@ -1,9 +1,9 @@
 import { Worker } from "bullmq";
-import IORedis from "ioredis";
 import { prisma } from "@internflow/db/src";
 import { generateExportZip } from "./export-closeout";
+import { createRedisConnection } from "./redis";
 
-const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
+const connection = createRedisConnection("internflow-worker");
 
 const notificationWorker = new Worker(
   "notifications",
@@ -15,7 +15,7 @@ const notificationWorker = new Worker(
     }
     return { skipped: true };
   },
-  { connection }
+  { connection: connection as any }
 );
 
 const scanWorker = new Worker(
@@ -41,14 +41,14 @@ const scanWorker = new Worker(
       where: { id: documentId },
       data: {
         status,
-        rejectionReason: status === "SCAN_FAILED" ? note : null
-      }
+        rejectionReason: status === "SCAN_FAILED" ? note : null,
+      },
     });
 
     await prisma.auditLog.create({ data: { action: "DOCUMENT_SCANNED", metadata: { documentId, status, fileName, note } } });
     return { status, note };
   },
-  { connection }
+  { connection: connection as any }
 );
 
 const closeoutExportWorker = new Worker(
@@ -64,17 +64,18 @@ const closeoutExportWorker = new Worker(
       const message = error instanceof Error ? error.message : "Unknown export failure";
       await prisma.programmeExportJob.update({
         where: { id: jobId },
-        data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) }
+        data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) },
       });
       throw error;
     }
   },
-  { connection }
+  { connection: connection as any }
 );
 
 for (const worker of [notificationWorker, scanWorker, closeoutExportWorker]) {
   worker.on("completed", (job) => console.log("Worker completed", job.id));
   worker.on("failed", (job, error) => console.error("Worker failed", job?.id, error));
+  worker.on("error", (error) => console.error("Worker runtime error", error));
 }
 
 console.log("InternFlow workers started");

@@ -40,6 +40,13 @@ export default async function StudentPortalPage({
   const user = await getCurrentUser();
   if (!user) redirect("/auth");
 
+  const memberships = await prisma.membership.findMany({ where: { userId: user.id }, include: { organization: true } });
+  const hasStudentMembership = memberships.some((m) => m.role === "STUDENT");
+  const nonStudentMembership = memberships.find((m) => m.role !== "STUDENT");
+  if (!hasStudentMembership && nonStudentMembership) {
+    redirect(`/org/${nonStudentMembership.organization.slug}/app/dashboard`);
+  }
+
   const context = await resolveStudentTenantContext(user.id);
 
   const studentProfileDelegate = (
