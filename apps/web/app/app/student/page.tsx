@@ -115,7 +115,7 @@ export default async function StudentPortalPage({
 
   const profileSignals = [
     Boolean(user.name),
-    Boolean(profile?.phone),
+    Boolean(profile?.phone || studentProfile?.phone),
     Boolean(profile?.education || studentProfile?.education),
     Boolean(profile?.emergencyContact),
     hasCv,
@@ -200,7 +200,10 @@ export default async function StudentPortalPage({
       done: Boolean(profile?.education || studentProfile?.education),
     },
     { label: "Add skills", done: Boolean(studentProfile?.skills.length) },
-    { label: "Verify contact details", done: Boolean(profile?.phone) },
+    {
+      label: "Verify contact details",
+      done: Boolean(profile?.phone || studentProfile?.phone),
+    },
   ];
 
   const topNotifications = [
@@ -231,6 +234,26 @@ export default async function StudentPortalPage({
               Progress summary: profile {checklistProgress}% complete ·
               employability score {employabilityScore}%
             </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+              <Link
+                href="/onboarding/profile"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
+              >
+                Profile
+              </Link>
+              <Link
+                href={programWorkspaceUrl ?? "/app/student"}
+                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700 hover:bg-indigo-100"
+              >
+                Program workspace
+              </Link>
+              <Link
+                href="/app/whatsapp-sim"
+                className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100"
+              >
+                Messages
+              </Link>
+            </div>
           </div>
           <div className="w-full space-y-3 md:w-[370px]">
             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -248,7 +271,7 @@ export default async function StudentPortalPage({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">
-                    Student Profile
+                    Account snapshot
                   </h2>
                   <p className="mt-1 text-xs text-slate-600">
                     View your saved profile details and continue setup in guided
@@ -266,7 +289,9 @@ export default async function StudentPortalPage({
               <dl className="mt-3 space-y-2 text-xs text-slate-600">
                 <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                   <dt className="font-medium text-slate-700">Phone</dt>
-                  <dd>{profile?.phone || "Not set"}</dd>
+                  <dd>
+                    {profile?.phone || studentProfile?.phone || "Not set"}
+                  </dd>
                 </div>
                 <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                   <dt className="font-medium text-slate-700">Education</dt>
@@ -291,88 +316,13 @@ export default async function StudentPortalPage({
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.08)] lg:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <details className="group rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-800">
-              <span>☰ Menu</span>
-              <span className="text-xs text-slate-500 group-open:hidden">
-                Open
-              </span>
-              <span className="hidden text-xs text-slate-500 group-open:inline">
-                Close
-              </span>
-            </summary>
-            <nav className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { label: "Overview", href: "#overview", icon: Briefcase },
-                {
-                  label: "Profile",
-                  href: "/onboarding/profile",
-                  icon: UserCircle2,
-                },
-                {
-                  label: "Program workspace",
-                  href: programWorkspaceUrl ?? "/app/student",
-                  icon: FolderOpen,
-                },
-                {
-                  label: "Applications",
-                  href: "#applications",
-                  icon: CheckCircle2,
-                },
-                { label: "Documents", href: "#documents", icon: FileText },
-                {
-                  label: "Messages",
-                  href: "/app/whatsapp-sim",
-                  icon: MessageSquare,
-                },
-                {
-                  label: "Settings",
-                  href: "/onboarding/profile",
-                  icon: Settings,
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </details>
-
-          <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Profile setup sessions
-            </p>
-            <ol className="mt-2 space-y-1 text-sm text-slate-700">
-              <li>1. Personal details</li>
-              <li>2. Education details</li>
-              <li>3. Skills and experience</li>
-              <li>4. Documents (CV upload + AI CV autofill)</li>
-            </ol>
-            <Link
-              href="/onboarding/profile"
-              className="mt-3 inline-flex rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
-            >
-              Continue profile setup
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
+      {!hasStudentMembership && (
+        <section className="rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
           <p className="text-sm font-semibold text-indigo-900">
             Join a program with invite token
           </p>
           <p className="mt-1 text-xs text-indigo-700">
-            Already logged in? Paste your invite token and join immediately.
+            Paste your invite token to join your assigned programme.
           </p>
           <form
             action="/api/auth/join"
@@ -389,8 +339,8 @@ export default async function StudentPortalPage({
               Join program
             </button>
           </form>
-        </div>
-      </section>
+        </section>
+      )}
 
       {(showApplied ||
         showAlreadyApplied ||

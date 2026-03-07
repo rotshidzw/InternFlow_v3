@@ -47,11 +47,52 @@ const schema = z.object({
   isDiscoverable: z.boolean().default(false),
 });
 
+export async function GET() {
+  const cookieEmail = cookies().get("if_user")?.value?.toLowerCase();
+  if (!cookieEmail) {
+    return NextResponse.json(
+      { ok: false, error: "Login required." },
+      { status: 401 },
+    );
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: cookieEmail },
+    include: { profile: true, studentProfile: true },
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "User not found." },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    data: {
+      email: user.email,
+      fullName: user.studentProfile?.fullName ?? user.name ?? "",
+      phone: user.studentProfile?.phone ?? user.profile?.phone ?? "",
+      location: user.studentProfile?.location ?? "",
+      bio: user.studentProfile?.bio ?? "",
+      skills: user.studentProfile?.skills ?? [],
+      education: user.studentProfile?.education ?? null,
+      experience: user.studentProfile?.experience ?? null,
+      emergencyContact: user.profile?.emergencyContact ?? "",
+    },
+  });
+}
+
 export async function POST(req: Request) {
   const body = schema.safeParse(await req.json());
   if (!body.success) {
     return NextResponse.json(
-      { ok: false, error: "Invalid profile data", details: body.error.flatten() },
+      {
+        ok: false,
+        error: "Invalid profile data",
+        details: body.error.flatten(),
+      },
       { status: 400 },
     );
   }
@@ -85,19 +126,30 @@ export async function POST(req: Request) {
     });
 
     if (!inviteTokenRecord) {
-      return NextResponse.json({ ok: false, error: "Invite token not found." }, { status: 404 });
+      return NextResponse.json(
+        { ok: false, error: "Invite token not found." },
+        { status: 404 },
+      );
     }
 
     if (inviteTokenRecord.expiresAt < new Date()) {
-      return NextResponse.json({ ok: false, error: "Invite token expired." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Invite token expired." },
+        { status: 400 },
+      );
     }
 
     if (inviteTokenRecord.usedCount >= inviteTokenRecord.maxUses) {
-      return NextResponse.json({ ok: false, error: "Invite token max uses reached." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Invite token max uses reached." },
+        { status: 400 },
+      );
     }
   }
 
-  let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  let user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
   let userWasAutoCreated = false;
 
   if (!user) {
@@ -129,7 +181,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const existing = await prisma.studentProfile.findUnique({ where: { userId: user.id } });
+  const existing = await prisma.studentProfile.findUnique({
+    where: { userId: user.id },
+  });
 
   const personalDetails = {
     idNumber: body.data.idNumber,
@@ -158,7 +212,9 @@ export async function POST(req: Request) {
     languages: body.data.languages ?? [],
     ...personalDetails,
     addressDetails,
-    ...(typeof body.data.education === "object" && body.data.education ? body.data.education : {}),
+    ...(typeof body.data.education === "object" && body.data.education
+      ? body.data.education
+      : {}),
   };
 
   const experienceDetails = {
@@ -173,10 +229,14 @@ export async function POST(req: Request) {
     availability: body.data.availability,
     emergencyContactName: body.data.emergencyContactName,
     emergencyContactPhone: body.data.emergencyContactPhone,
-    ...(typeof body.data.experience === "object" && body.data.experience ? body.data.experience : {}),
+    ...(typeof body.data.experience === "object" && body.data.experience
+      ? body.data.experience
+      : {}),
   };
 
-  const location = body.data.location || [body.data.city, body.data.province].filter(Boolean).join(", ");
+  const location =
+    body.data.location ||
+    [body.data.city, body.data.province].filter(Boolean).join(", ");
 
   const profile = await prisma.studentProfile.upsert({
     where: { userId: user.id },
@@ -203,6 +263,37 @@ export async function POST(req: Request) {
     },
   });
 
+  await prisma.profile.upsert({
+    where: { userId: user.id },
+    update: {
+      phone: body.data.phone,
+      education:
+        typeof body.data.education === "string"
+          ? body.data.education
+          : body.data.highestQualification || body.data.institutionName || null,
+      emergencyContact:
+        body.data.emergencyContactName && body.data.emergencyContactPhone
+          ? `${body.data.emergencyContactName} (${body.data.emergencyContactPhone})`
+          : body.data.emergencyContactName ||
+            body.data.emergencyContactPhone ||
+            null,
+    },
+    create: {
+      userId: user.id,
+      phone: body.data.phone,
+      education:
+        typeof body.data.education === "string"
+          ? body.data.education
+          : body.data.highestQualification || body.data.institutionName || null,
+      emergencyContact:
+        body.data.emergencyContactName && body.data.emergencyContactPhone
+          ? `${body.data.emergencyContactName} (${body.data.emergencyContactPhone})`
+          : body.data.emergencyContactName ||
+            body.data.emergencyContactPhone ||
+            null,
+    },
+  });
+
   let redirectTo = "/explore";
   let workspaceSlug: string | undefined;
 
@@ -215,7 +306,8 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: "This invite is for students only. Use workspace login for staff access.",
+          error:
+            "This invite is for students only. Use workspace login for staff access.",
         },
         { status: 409 },
       );
@@ -224,7 +316,11 @@ export async function POST(req: Request) {
     await prisma.$transaction(async (tx) => {
       if (!existingMembership) {
         await tx.membership.create({
-          data: { userId: user.id, organizationId: inviteTokenRecord!.tenantId, role: "STUDENT" },
+          data: {
+            userId: user.id,
+            organizationId: inviteTokenRecord!.tenantId,
+            role: "STUDENT",
+          },
         });
       }
 
@@ -281,9 +377,15 @@ export async function POST(req: Request) {
         isDiscoverable: profile.isDiscoverable,
         consentToShareProfile: body.data.consentToShareProfile,
         skillsCount: profile.skills.length,
-        hasIdNumber: Boolean((profile.education as Record<string, unknown> | null)?.idNumber),
-        hasCvUrl: Boolean((profile.experience as Record<string, unknown> | null)?.cvUrl),
-        hasEmergencyContact: Boolean(body.data.emergencyContactName && body.data.emergencyContactPhone),
+        hasIdNumber: Boolean(
+          (profile.education as Record<string, unknown> | null)?.idNumber,
+        ),
+        hasCvUrl: Boolean(
+          (profile.experience as Record<string, unknown> | null)?.cvUrl,
+        ),
+        hasEmergencyContact: Boolean(
+          body.data.emergencyContactName && body.data.emergencyContactPhone,
+        ),
         joinedViaInvite: Boolean(inviteTokenRecord),
       },
     },
