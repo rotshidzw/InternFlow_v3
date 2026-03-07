@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const email = cookies().get("if_user")?.value;
   if (!email) {
     return NextResponse.json(
-      { ok: false, error: "Please login first" },
+      { ok: false, error: "Login required, or complete profile onboarding with this invite token." },
       { status: 401 },
     );
   }

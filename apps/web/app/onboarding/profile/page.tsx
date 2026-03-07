@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const DOC_TYPES = ["ID", "CV", "CERTIFICATE", "AFFIDAVIT", "PROOF_OF_ADDRESS", "PAYSLIP"] as const;
 
@@ -16,6 +17,10 @@ type CvExtractedFields = {
 };
 
 export default function StudentProfileOnboardingPage() {
+  const searchParams = useSearchParams();
+  const inviteTokenFromUrl = searchParams.get("inviteToken") ?? searchParams.get("token") ?? "";
+  const [email, setEmail] = useState("");
+  const [inviteToken, setInviteToken] = useState(inviteTokenFromUrl);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [alternatePhone, setAlternatePhone] = useState("");
@@ -177,6 +182,8 @@ export default function StudentProfileOnboardingPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        email: email.trim() || undefined,
+        inviteToken: inviteToken.trim() || undefined,
         fullName,
         phone,
         alternatePhone,
@@ -237,6 +244,50 @@ export default function StudentProfileOnboardingPage() {
         Fill in your profile once so training providers and employers can evaluate you for internships, learnerships, and skills programmes.
       </p>
 
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/20 dark:bg-slate-950/30">
+        <p className="text-sm font-semibold">Quick join if you already have a profile</p>
+        <p className="text-xs text-slate-500">Paste invite token and join your programme directly.</p>
+        <form
+          className="mt-3 flex flex-wrap gap-2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setError(null);
+            if (!inviteToken.trim()) {
+              setError("Paste your invite token first.");
+              return;
+            }
+            const response = await fetch("/api/auth/join", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: inviteToken.trim() }),
+            });
+
+            const payload = await response.json();
+            if (response.ok && payload.ok) {
+              window.location.href = payload.redirectTo;
+              return;
+            }
+
+            if (response.status === 401) {
+              setError("Complete your profile below with email + token, then you will be joined automatically.");
+              return;
+            }
+
+            setError(payload.error ?? "Could not join with invite token.");
+          }}
+        >
+          <input
+            value={inviteToken}
+            onChange={(e) => setInviteToken(e.target.value)}
+            placeholder="Paste invite token"
+            className="min-w-[260px] flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-white/20 dark:bg-slate-950/40"
+          />
+          <button className="rounded-xl border border-emerald-300/60 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-200">
+            Join programme
+          </button>
+        </form>
+      </div>
+
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/20 dark:bg-slate-950/30">
         <h2 className="text-sm font-semibold">AI CV autofill</h2>
         <p className="text-xs text-slate-500">Upload your CV or paste CV text to auto-populate important profile fields, then review and edit before saving.</p>
@@ -251,6 +302,8 @@ export default function StudentProfileOnboardingPage() {
       </div>
 
       <form onSubmit={submit} className="mt-6 grid gap-3 md:grid-cols-2">
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (required if not logged in)" className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40" />
+        <input value={inviteToken} onChange={(e) => setInviteToken(e.target.value)} placeholder="Invite token (optional)" className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40" />
         <input value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Full name" className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Primary phone" className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40" />
         <input value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} placeholder="Alternate phone" className="rounded-xl border border-slate-300 bg-white px-3 py-3 dark:border-white/20 dark:bg-slate-950/40" />

@@ -38,6 +38,10 @@ export default function SetupPage() {
     setBusy(false);
 
     if (!response.ok || !payload.ok) {
+      if (response.status === 401) {
+        window.location.href = `/onboarding/profile?inviteToken=${encodeURIComponent(token.trim())}`;
+        return;
+      }
       setError(payload.error ?? "Could not join tenant.");
       return;
     }

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { sendPlatformEmail } from "@/lib/mailer";
 
 const schema = z.object({
+  email: z.string().email().optional(),
+  inviteToken: z.string().min(6).optional(),
   fullName: z.string().min(2),
   phone: z.string().optional(),
   alternatePhone: z.string().optional(),
@@ -46,20 +48,55 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) {
-    return NextResponse.json({ ok: false, error: "Unauthenticated" }, { status: 401 });
-  }
-
   const body = schema.safeParse(await req.json());
   if (!body.success) {
     return NextResponse.json(
       { ok: false, error: "Invalid profile data", details: body.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const normalizedEmail = email.toLowerCase();
+  const cookieEmail = cookies().get("if_user")?.value;
+  const sourceEmail = cookieEmail ?? body.data.email;
+  if (!sourceEmail) {
+    return NextResponse.json(
+      { ok: false, error: "Email required. Add email to continue onboarding." },
+      { status: 400 },
+    );
+  }
+
+  const normalizedEmail = sourceEmail.toLowerCase();
+
+  let inviteTokenRecord: {
+    id: string;
+    token: string;
+    tenantId: string;
+    programmeId: string | null;
+    usedCount: number;
+    maxUses: number;
+    expiresAt: Date;
+    tenant: { slug: string };
+  } | null = null;
+
+  if (body.data.inviteToken) {
+    inviteTokenRecord = await prisma.inviteToken.findUnique({
+      where: { token: body.data.inviteToken },
+      include: { tenant: true },
+    });
+
+    if (!inviteTokenRecord) {
+      return NextResponse.json({ ok: false, error: "Invite token not found." }, { status: 404 });
+    }
+
+    if (inviteTokenRecord.expiresAt < new Date()) {
+      return NextResponse.json({ ok: false, error: "Invite token expired." }, { status: 400 });
+    }
+
+    if (inviteTokenRecord.usedCount >= inviteTokenRecord.maxUses) {
+      return NextResponse.json({ ok: false, error: "Invite token max uses reached." }, { status: 400 });
+    }
+  }
+
   let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   let userWasAutoCreated = false;
 
@@ -69,7 +106,7 @@ export async function POST(req: Request) {
         email: normalizedEmail,
         role: "STUDENT",
         name: body.data.fullName,
-      }
+      },
     });
     userWasAutoCreated = true;
 
@@ -79,16 +116,16 @@ export async function POST(req: Request) {
         action: "STUDENT_ACCOUNT_AUTO_CREATED",
         metadata: {
           source: "student_profile_post",
-          email: normalizedEmail
-        }
-      }
+          email: normalizedEmail,
+        },
+      },
     });
 
     const loginLink = `${new URL(req.url).origin}/auth/login`;
     await sendPlatformEmail(
       normalizedEmail,
       "Your InternFlow student account is ready",
-      `We created your student account from your onboarding profile. Confirm it is you by signing in here: ${loginLink}. For security, continue using OTP sign-in from the login page.`
+      `We created your student account from your onboarding profile. Sign in here anytime: ${loginLink}.`,
     );
   }
 
@@ -166,6 +203,74 @@ export async function POST(req: Request) {
     },
   });
 
+  let redirectTo = "/explore";
+  let workspaceSlug: string | undefined;
+
+  if (inviteTokenRecord) {
+    const existingMembership = await prisma.membership.findFirst({
+      where: { userId: user.id, organizationId: inviteTokenRecord.tenantId },
+    });
+
+    if (existingMembership && existingMembership.role !== "STUDENT") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "This invite is for students only. Use workspace login for staff access.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (!existingMembership) {
+        await tx.membership.create({
+          data: { userId: user.id, organizationId: inviteTokenRecord!.tenantId, role: "STUDENT" },
+        });
+      }
+
+      if (inviteTokenRecord?.programmeId) {
+        const enrollment = await tx.enrollment.findFirst({
+          where: { userId: user.id, programId: inviteTokenRecord.programmeId },
+        });
+
+        if (enrollment) {
+          await tx.enrollment.update({
+            where: { id: enrollment.id },
+            data: { organizationId: inviteTokenRecord.tenantId },
+          });
+        } else {
+          await tx.enrollment.create({
+            data: {
+              userId: user.id,
+              organizationId: inviteTokenRecord.tenantId,
+              programId: inviteTokenRecord.programmeId,
+              status: "PENDING",
+            },
+          });
+        }
+      }
+
+      await tx.inviteToken.update({
+        where: { id: inviteTokenRecord!.id },
+        data: { usedCount: { increment: 1 } },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          tenantId: inviteTokenRecord!.tenantId,
+          userId: user.id,
+          action: "INVITE_JOIN_SUCCESS",
+          entityType: "InviteToken",
+          entityId: inviteTokenRecord!.id,
+          metadata: { source: "profile_onboarding" },
+        },
+      });
+    });
+
+    workspaceSlug = inviteTokenRecord.tenant.slug;
+    redirectTo = `/org/${inviteTokenRecord.tenant.slug}/student`;
+  }
+
   await prisma.auditEvent.create({
     data: {
       userId: user.id,
@@ -179,6 +284,7 @@ export async function POST(req: Request) {
         hasIdNumber: Boolean((profile.education as Record<string, unknown> | null)?.idNumber),
         hasCvUrl: Boolean((profile.experience as Record<string, unknown> | null)?.cvUrl),
         hasEmergencyContact: Boolean(body.data.emergencyContactName && body.data.emergencyContactPhone),
+        joinedViaInvite: Boolean(inviteTokenRecord),
       },
     },
   });
@@ -186,13 +292,21 @@ export async function POST(req: Request) {
   const response = NextResponse.json({
     ok: true,
     profileId: profile.id,
-    redirectTo: "/explore",
+    redirectTo,
     autoCreatedUser: userWasAutoCreated,
-    requiresOtpLogin: userWasAutoCreated
+    joinedViaInvite: Boolean(inviteTokenRecord),
   });
 
-  if (userWasAutoCreated) {
-    response.cookies.set("if_user", "", { expires: new Date(0), path: "/" });
+  response.cookies.set("if_user", normalizedEmail, {
+    sameSite: "lax",
+    path: "/",
+  });
+
+  if (workspaceSlug) {
+    response.cookies.set("if_workspace", workspaceSlug, {
+      sameSite: "lax",
+      path: "/",
+    });
   }
 
   return response;
