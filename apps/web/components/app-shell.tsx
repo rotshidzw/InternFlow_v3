@@ -1,16 +1,22 @@
 import Link from "next/link";
 import { PropsWithChildren } from "react";
-import { BellRing, Building2, Compass, MessageSquare, ShieldCheck } from "lucide-react";
+import {
+  BellRing,
+  Building2,
+  Compass,
+  MessageSquare,
+  ShieldCheck,
+} from "lucide-react";
 
 type NavItem = { href: string; label: string };
 
 const roleNav: Record<string, NavItem[]> = {
   STUDENT: [
-    { href: "student", label: "Home" },
+    { href: "student", label: "Dashboard" },
+    { href: "student/profile", label: "Profile" },
+    { href: "student/profile/edit", label: "Edit profile" },
+    { href: "student#overview", label: "Overview" },
     { href: "student#applications", label: "Applications" },
-    { href: "student#checklist", label: "Checklist" },
-    { href: "student#documents", label: "Documents" },
-    { href: "student#growth", label: "Growth" },
   ],
   COORDINATOR: [
     { href: "coordinator", label: "Cohorts" },
@@ -41,9 +47,15 @@ export function AppShell({
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
-            <img src="/icon.svg" alt="InternFlow" className="h-8 w-8 rounded-lg" />
+            <img
+              src="/icon.svg"
+              alt="InternFlow"
+              className="h-8 w-8 rounded-lg"
+            />
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">InternFlow learner portal</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                InternFlow learner portal
+              </p>
               <p className="text-sm font-semibold">{orgName}</p>
             </div>
           </div>
@@ -52,14 +64,18 @@ export function AppShell({
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
               {role.replace("_", " ")}
             </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{orgSlug}</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
+              {orgSlug}
+            </span>
           </div>
         </div>
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[260px_1fr]">
         <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-500">Student workspace</p>
+          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-500">
+            Student workspace
+          </p>
           <nav className="space-y-1.5 text-sm">
             {items.map((item) => (
               <Link
@@ -77,10 +93,16 @@ export function AppShell({
               <Compass className="h-3.5 w-3.5 text-sky-600" />
               Quick actions
             </p>
-            <Link href="/app/student" className="flex items-center gap-1.5 hover:text-sky-700">
+            <Link
+              href="/app/student"
+              className="flex items-center gap-1.5 hover:text-sky-700"
+            >
               <Building2 className="h-3.5 w-3.5" /> Global student portal
             </Link>
-            <Link href="/app/whatsapp-sim" className="flex items-center gap-1.5 hover:text-sky-700">
+            <Link
+              href="/app/whatsapp-sim"
+              className="flex items-center gap-1.5 hover:text-sky-700"
+            >
               <MessageSquare className="h-3.5 w-3.5" /> Messages
             </Link>
             <p className="flex items-center gap-1.5 text-slate-600">
@@ -89,7 +111,9 @@ export function AppShell({
           </div>
         </aside>
 
-        <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">{children}</main>
+        <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          {children}
+        </main>
       </div>
     </div>
   );

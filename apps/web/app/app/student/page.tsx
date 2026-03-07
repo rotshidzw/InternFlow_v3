@@ -3,33 +3,15 @@ import {
   Bell,
   Briefcase,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   FileText,
-  FolderOpen,
   MessageSquare,
-  Settings,
-  User,
   UserCircle2,
 } from "lucide-react";
 import { prisma } from "@internflow/db/src";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
-
-function pct(value: number, total: number) {
-  return total === 0 ? 0 : Math.round((value / total) * 100);
-}
-
-function initials(name: string | null, email: string) {
-  if (!name) return email.slice(0, 2).toUpperCase();
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 type StudentPortalProps = {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -52,11 +34,12 @@ export default async function StudentPortalPage({
   }
 
   const context = await resolveStudentTenantContext(user.id);
-
   const studentProfileDelegate = (
     prisma as unknown as {
       studentProfile?: {
         findUnique: (args: { where: { userId: string } }) => Promise<{
+          fullName: string;
+          phone: string | null;
           skills: string[];
           education: unknown;
         } | null>;
@@ -67,73 +50,52 @@ export default async function StudentPortalPage({
   const [
     profile,
     studentProfile,
-    docs,
+    docsCount,
     applications,
-    opportunities,
-    logbooks,
-    threads,
+    notifications,
+    threadCount,
+    recentThreads,
     payslips,
+    checklist,
   ] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
     studentProfileDelegate?.findUnique({ where: { userId: user.id } }) ?? null,
-    prisma.document.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
+    prisma.document.count({ where: { userId: user.id } }),
     prisma.application.findMany({
       where: { userId: user.id },
-      include: {
-        opportunity: { include: { organization: true } },
-        checklist: { include: { items: true } },
-      },
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
-    prisma.opportunity.findMany({
-      where: { status: "PUBLISHED" },
-      include: { organization: true },
-      orderBy: { id: "desc" },
-      take: 8,
-    }),
-    prisma.logbookEntry.findMany({
+    prisma.notification.findMany({
       where: { userId: user.id },
-      include: { approvals: { orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
-      take: 12,
+      take: 5,
     }),
+    prisma.chatThread.count({ where: { userId: user.id } }),
     prisma.chatThread.findMany({
       where: { userId: user.id },
-      include: { messages: { orderBy: { createdAt: "desc" }, take: 3 } },
+      include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
-      take: 2,
+      take: 3,
     }),
     prisma.document.count({ where: { userId: user.id, type: "PAYSLIP" } }),
+    prisma.checklistInstance.findFirst({
+      where: { application: { userId: user.id } },
+      orderBy: { id: "desc" },
+    }),
   ]);
 
-  const hasCv = docs.some((doc) => doc.type === "CV");
+  const isEnrolled = context.type === "ENROLLED";
+  const programWorkspaceUrl =
+    context.type === "ENROLLED"
+      ? `/org/${context.enrollment.organizationSlug}/student`
+      : context.type === "APPLICATION"
+        ? `/org/${context.application.organizationSlug}/student`
+        : null;
 
-  const profileSignals = [
-    Boolean(user.name),
-    Boolean(profile?.phone || studentProfile?.phone),
-    Boolean(profile?.education || studentProfile?.education),
-    Boolean(profile?.emergencyContact),
-    hasCv,
-  ];
-  const employabilityScore = Math.round(
-    (profileSignals.filter(Boolean).length / profileSignals.length) * 100,
-  );
-
-  const now = new Date();
-  const expiringSoon = docs.filter(
-    (d) =>
-      d.expirationDate &&
-      d.expirationDate > now &&
-      d.expirationDate.getTime() - now.getTime() <= 90 * 24 * 60 * 60 * 1000,
-  ).length;
-  const expired = docs.filter(
-    (d) => d.expirationDate && d.expirationDate < now,
-  ).length;
+  const showApplied = searchParams?.applied === "1";
+  const showAlreadyApplied = searchParams?.notice === "already-applied";
+  const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
 
   const submitted = applications.filter((a) =>
     ["APPLIED", "SUBMITTED", "DRAFT", "REVIEW"].includes(a.status),
@@ -143,183 +105,92 @@ export default async function StudentPortalPage({
   ).length;
   const accepted = applications.filter((a) => a.status === "ACCEPTED").length;
 
-  const latestChecklist = applications.find((app) => app.checklist)?.checklist;
-  const checklistItems = latestChecklist?.items ?? [];
-  const checklistDone = checklistItems.filter(
-    (item) => item.status === "DONE",
-  ).length;
-  const checklistProgress =
-    latestChecklist?.progress ?? pct(checklistDone, checklistItems.length);
-  const nextActions = checklistItems
-    .filter((item) => item.status !== "DONE")
-    .slice(0, 4);
-  const dueSoonItems = checklistItems.filter(
-    (item) =>
-      item.dueDate &&
-      item.status !== "DONE" &&
-      item.dueDate.getTime() - now.getTime() <= 5 * 24 * 60 * 60 * 1000,
-  ).length;
-
-  const approvedLogs = logbooks.filter(
-    (entry) => entry.approvals[0]?.status === "APPROVED",
-  ).length;
-
-  const isEnrolled = context.type === "ENROLLED";
-
-  const programWorkspaceUrl =
-    context.type === "ENROLLED"
-      ? `/org/${context.enrollment.organizationSlug}/student`
-      : context.type === "APPLICATION"
-        ? `/org/${context.application.organizationSlug}/student`
-        : null;
-
-  const recentMessages = threads
-    .flatMap((thread) => thread.messages)
-    .slice(0, 3);
-
-  const showApplied = searchParams?.applied === "1";
-  const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
-  const showAlreadyApplied = searchParams?.notice === "already-applied";
-  const showProfileUpdated = searchParams?.notice === "profile-updated";
-  const showCvUploaded = searchParams?.notice === "cv-uploaded";
-  const showMissingFile = searchParams?.error === "missing-file";
-  const showInviteJoined = searchParams?.notice === "invite-joined";
-  const showInviteTokenInvalid = searchParams?.error === "invalid-invite-token";
-  const showInviteNotFound = searchParams?.error === "invite-not-found";
-  const showInviteExpired = searchParams?.error === "invite-expired";
-  const showInviteMaxed = searchParams?.error === "invite-maxed";
-  const showInviteRoleUnsupported =
-    searchParams?.error === "invite-role-unsupported";
-  const showStaffMembershipConflict =
-    searchParams?.error === "staff-membership-conflict";
-
-  const profileChecklist = [
-    { label: "Upload CV", done: hasCv },
-    {
-      label: "Add education history",
-      done: Boolean(profile?.education || studentProfile?.education),
-    },
-    { label: "Add skills", done: Boolean(studentProfile?.skills.length) },
-    {
-      label: "Verify contact details",
-      done: Boolean(profile?.phone || studentProfile?.phone),
-    },
+  const profileChecks = [
+    Boolean(studentProfile?.fullName || user.name),
+    Boolean(profile?.phone || studentProfile?.phone),
+    Boolean(profile?.education || studentProfile?.education),
+    Boolean(studentProfile?.skills.length),
   ];
-
-  const topNotifications = [
-    recentMessages[0]
-      ? "New message from Program Manager"
-      : "No new messages yet",
-    dueSoonItems > 0
-      ? `Application deadline items due in ${Math.min(5, dueSoonItems)} day(s)`
-      : "No urgent checklist deadlines",
-  ];
+  const profileCompletion = Math.round(
+    (profileChecks.filter(Boolean).length / profileChecks.length) * 100,
+  );
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-indigo-100 bg-gradient-to-b from-slate-50 via-indigo-50/40 to-sky-50/40 p-4 shadow-[0_20px_55px_rgba(15,23,42,0.10)] md:p-6">
-      <section className="rounded-2xl border border-indigo-100 bg-white/95 p-5 shadow-[0_10px_24px_rgba(30,41,59,0.10)]">
+    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-sky-700">Student Portal</p>
-            <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
-              Welcome back, {user.name ?? "Student"}
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              A professional workspace for your profile, programme progress,
-              applications, documents, and support.
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Student Workspace
             </p>
-            <p className="mt-2 text-xs text-slate-500">
-              Profile completion {checklistProgress}% · Employability{" "}
-              {employabilityScore}%
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+              Welcome, {user.name ?? "Student"}
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">
               {isEnrolled
-                ? ` · Enrolled in ${context.enrollment.programName}`
-                : ""}
+                ? `You are currently in ${context.enrollment.programName}.`
+                : "Complete your profile and track your student operations from one place."}
             </p>
           </div>
-          <Link
-            href="/onboarding/profile"
-            className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
-              {initials(user.name, user.email)}
-            </span>
-            <span>
-              <span className="block text-sm font-semibold text-slate-900">
-                {user.name ?? "Student"}
-              </span>
-              <span className="block text-xs text-slate-500">Open profile</span>
-            </span>
-          </Link>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/app/student/profile"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <UserCircle2 className="h-4 w-4" />
+              Profile
+            </Link>
+            <Link
+              href="/app/student/profile/edit"
+              className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+            >
+              Edit profile
+            </Link>
+            <Link
+              href={programWorkspaceUrl ?? "/app/student"}
+              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+            >
+              Program page
+            </Link>
+            <Link
+              href="/app/whatsapp-sim"
+              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
+            >
+              Messages
+            </Link>
+          </div>
         </div>
 
-        <nav className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-          <Link
-            href="#overview"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
-          >
-            Overview
-          </Link>
-          <Link
-            href="/onboarding/profile"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
-          >
-            Profile
-          </Link>
-          <Link
-            href={programWorkspaceUrl ?? "/app/student"}
-            className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700 hover:bg-indigo-100"
-          >
-            Program workspace
-          </Link>
-          <Link
-            href="/app/whatsapp-sim"
-            className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100"
-          >
-            Messages
-          </Link>
-        </nav>
+        {!hasStudentMembership && (
+          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+            <p className="text-sm font-semibold text-indigo-900">
+              Join with invite token
+            </p>
+            <form
+              action="/api/auth/join"
+              method="post"
+              className="mt-2 flex flex-wrap gap-2"
+            >
+              <input
+                name="token"
+                required
+                placeholder="Paste invite token"
+                className="min-w-[260px] flex-1 rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm"
+              />
+              <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                Join programme
+              </button>
+            </form>
+          </div>
+        )}
       </section>
 
-      {!hasStudentMembership && (
-        <section className="rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
-          <p className="text-sm font-semibold text-indigo-900">
-            Join a program with invite token
-          </p>
-          <p className="mt-1 text-xs text-indigo-700">
-            Paste your invite token to join your assigned programme.
-          </p>
-          <form
-            action="/api/auth/join"
-            method="post"
-            className="mt-3 space-y-2"
-          >
-            <input
-              name="token"
-              placeholder="Paste invite token"
-              required
-              className="w-full rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm text-slate-800"
-            />
-            <button className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-              Join program
-            </button>
-          </form>
-        </section>
-      )}
-
-      {(showApplied ||
-        showAlreadyApplied ||
-        showActiveEnrollmentError ||
-        showInviteJoined ||
-        showInviteTokenInvalid ||
-        showInviteNotFound ||
-        showInviteExpired ||
-        showInviteMaxed ||
-        showInviteRoleUnsupported ||
-        showStaffMembershipConflict) && (
+      {(showApplied || showAlreadyApplied || showActiveEnrollmentError) && (
         <div className="grid gap-2">
           {showApplied && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Application submitted. Track progress below.
+              Application submitted successfully.
             </div>
           )}
           {showAlreadyApplied && (
@@ -332,402 +203,137 @@ export default async function StudentPortalPage({
               You already have an active enrollment in another organization.
             </div>
           )}
-          {showProfileUpdated && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Profile updated successfully.
-            </div>
-          )}
-          {showCvUploaded && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              CV uploaded successfully.
-            </div>
-          )}
-          {showMissingFile && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              Please choose a CV file before uploading.
-            </div>
-          )}
-          {showInviteJoined && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Invite accepted. Open Program Workspace from the student menu.
-            </div>
-          )}
-          {showInviteTokenInvalid && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              Please paste a valid invite token.
-            </div>
-          )}
-          {showInviteNotFound && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              Invite token not found. Check the code and try again.
-            </div>
-          )}
-          {showInviteExpired && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              This invite token has expired. Request a new invite from the
-              program team.
-            </div>
-          )}
-          {showInviteMaxed && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Invite token has reached max usage. Request another token.
-            </div>
-          )}
-          {showInviteRoleUnsupported && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              This invite token is not configured for learner access.
-            </div>
-          )}
-          {showStaffMembershipConflict && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              This account is linked to staff access in this workspace. Use
-              staff login flow.
-            </div>
-          )}
         </div>
       )}
 
-      <div id="overview" className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Profile Completion – {checklistProgress}%
-            </h2>
-            <UserCircle2 className="h-5 w-5 text-slate-400" />
-          </div>
-          <div className="mt-3 h-2 rounded-full bg-slate-100">
-            <div
-              className="h-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500"
-              style={{ width: `${Math.min(100, checklistProgress)}%` }}
-            />
-          </div>
-          <div className="mt-4 space-y-2">
-            {profileChecklist.map((item) => (
-              <p
-                key={item.label}
-                className="flex items-center gap-2 text-sm text-slate-700"
-              >
-                <span
-                  className={`inline-block h-2.5 w-2.5 rounded-full ${item.done ? "bg-emerald-500" : "bg-amber-400"}`}
-                />
-                {item.label}
-              </p>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Your Next Steps
-          </h2>
-          <div className="mt-3 space-y-2 text-sm text-slate-700">
-            <p>✔ Complete profile</p>
-            <p>
-              {isEnrolled ? "✔" : applications.length > 0 ? "✔" : "⬜"}{" "}
-              {isEnrolled
-                ? "In active programme"
-                : "Apply for first opportunity"}
-            </p>
-            <p>{docs.length > 0 ? "✔" : "⬜"} Upload documents</p>
-          </div>
-          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-              Primary action
-            </p>
-            <p className="mt-1 text-sm text-indigo-900">
-              {isEnrolled
-                ? "Open your programme workspace to track learning progress, documents, and support."
-                : "Find opportunities that match your profile and interests."}
-            </p>
-            <Link
-              href={
-                isEnrolled
-                  ? (programWorkspaceUrl ?? "/app/student")
-                  : "/opportunities"
-              }
-              className="mt-3 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-            >
-              {isEnrolled ? "Open Programme" : "Explore Marketplace"}{" "}
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/onboarding/profile"
-              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Edit Full Profile
-            </Link>
-          </div>
-        </section>
-      </div>
-
       <section
-        id="applications"
-        className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+        id="overview"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <Briefcase className="h-4 w-4 text-sky-600" />
             Applications
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-2 text-3xl font-semibold text-slate-900">
             {applications.length}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-amber-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <Clock3 className="h-4 w-4 text-amber-600" />
-            In Pipeline
+            Pipeline
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-2 text-3xl font-semibold text-slate-900">
             {submitted + shortlisted}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-emerald-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             Accepted
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-2 text-3xl font-semibold text-slate-900">
             {accepted}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <MessageSquare className="h-4 w-4 text-violet-600" />
-            Messages
+            Discussions
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {recentMessages.length}
+          <p className="mt-2 text-3xl font-semibold text-slate-900">
+            {threadCount}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <FolderOpen className="h-4 w-4 text-violet-600" />
-            Documents
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {docs.length}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <FileText className="h-4 w-4 text-violet-600" />
-            Concerns / Payslips
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {payslips}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-amber-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <Clock3 className="h-4 w-4 text-amber-600" />
-            Due Soon Actions
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {dueSoonItems}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <User className="h-4 w-4 text-sky-600" />
-            Logbook Approvals
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {approvedLogs}/{logbooks.length}
-          </p>
-        </div>
+        </article>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">
-            Application Journey
+            Profile & compliance
           </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            {[
-              "Apply for opportunity",
-              "Application screening",
-              "Acceptance",
-              "Enrollment activated",
-            ].map((step, index) => (
-              <div
-                key={step}
-                className="rounded-xl border border-indigo-100 bg-gradient-to-br from-slate-50 to-indigo-50 p-3 text-sm text-slate-700"
-              >
-                <p className="text-xs font-semibold text-indigo-600">
-                  Step {index + 1}
-                </p>
-                <p className="mt-1">{step}</p>
-              </div>
-            ))}
+          <p className="mt-2 text-sm text-slate-600">
+            Keep your profile and required documents complete.
+          </p>
+          <div className="mt-4 grid gap-2 text-sm text-slate-700">
+            <p>Profile completion: {profileCompletion}%</p>
+            <p>Documents uploaded: {docsCount}</p>
+            <p>Payslips available: {payslips}</p>
+            <p>Checklist progress: {checklist?.progress ?? 0}%</p>
           </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
-            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <MessageSquare className="h-5 w-5 text-violet-500" />
-              Recent Discussions
-            </h2>
-            <div className="mt-3 space-y-2 text-sm">
-              {threads.length === 0 && (
-                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
-                  No discussions yet. Start one from Messages.
-                </p>
-              )}
-              {threads.map((thread) => {
-                const lastMessage = thread.messages[0];
-                return (
-                  <div
-                    key={thread.id}
-                    className="rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
-                      {thread.title || "Student support thread"}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-700">
-                      {lastMessage?.body?.slice(0, 90) || "No messages yet"}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
-            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <Bell className="h-5 w-5 text-amber-500" />
-              Notifications
-            </h2>
-            <div className="mt-3 space-y-2 text-sm">
-              {topNotifications.map((note) => (
-                <p
-                  key={note}
-                  className="rounded-lg border border-amber-100 bg-amber-50/70 px-3 py-2 text-slate-700"
-                >
-                  {note}
-                </p>
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {!isEnrolled && (
-        <section
-          id="documents"
-          className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
-        >
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Recommended Marketplace Opportunities
-            </h2>
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href="/opportunities"
-              className="text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+              href="/app/student/profile"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
-              View all
+              View profile
+            </Link>
+            <Link
+              href="/app/student/profile/edit"
+              className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+            >
+              Complete sections
             </Link>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {opportunities.slice(0, 6).map((opp) => (
-              <article
-                key={opp.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <h3 className="font-semibold text-slate-900">{opp.title}</h3>
-                <p className="mt-1 text-xs text-slate-600">
-                  {opp.type === "INTERNSHIP" ? "Internship" : "Skills Program"}{" "}
-                  · {opp.organization.name}
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {opp.description.slice(0, 110)}
-                  {opp.description.length > 110 ? "…" : ""}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  Location: {opp.organization.name}
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Link
-                    href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    View Details
-                  </Link>
-                  <Link
-                    href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                    className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-400"
-                  >
-                    Apply
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
-      )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Checklist Actions
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <Bell className="h-5 w-5 text-amber-500" />
+            Notifications
           </h2>
-          <div className="mt-3 space-y-2">
-            {nextActions.map((item) => (
-              <form
-                key={item.id}
-                action={`/api/checklist/items/${item.id}/complete`}
-                method="post"
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-              >
-                <span className="text-slate-700">
-                  {item.label} · {item.status}
-                </span>
-                <button className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-xs font-medium text-emerald-700">
-                  Complete
-                </button>
-              </form>
-            ))}
-            {nextActions.length === 0 && (
-              <p className="text-sm text-slate-500">
-                No pending checklist actions.
+          <div className="mt-3 space-y-2 text-sm">
+            {notifications.length === 0 && (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
+                No notifications yet.
               </p>
             )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">Quick Access</h2>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
-            <Link
-              href="/app/whatsapp-sim"
-              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700"
-            >
-              Messages
-            </Link>
-            <Link
-              href="/app/whatsapp-sim"
-              className="rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-2 text-fuchsia-700"
-            >
-              Concerns
-            </Link>
-            {programWorkspaceUrl && (
-              <Link
-                href={programWorkspaceUrl}
-                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700"
+            {notifications.map((n) => (
+              <p
+                key={n.id}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700"
               >
-                Program Workspace
-              </Link>
-            )}
+                {n.title}: {n.body}
+              </p>
+            ))}
           </div>
-          <p className="mt-3 text-sm text-slate-600">
-            Compliance alerts: {expiringSoon + expired} · Active applications:{" "}
-            {applications.length}
-          </p>
         </section>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Recent discussions
+          </h2>
+          <Link
+            href="/app/whatsapp-sim"
+            className="text-xs font-semibold text-violet-700 hover:text-violet-800"
+          >
+            Open messages
+          </Link>
+        </div>
+        <div className="mt-3 grid gap-2">
+          {recentThreads.length === 0 && (
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              No discussion history yet.
+            </p>
+          )}
+          {recentThreads.map((thread) => (
+            <div
+              key={thread.id}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {thread.title}
+              </p>
+              <p className="mt-1 text-sm text-slate-700">
+                {thread.messages[0]?.body ?? "No messages in this thread yet."}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
