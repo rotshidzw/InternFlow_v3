@@ -4,10 +4,9 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 
 const actions = [
-  { value: "status", label: "Check status" },
-  { value: "upload", label: "Upload document" },
+  { value: "status", label: "Check program status" },
   { value: "payslip", label: "Request payslip" },
-  { value: "certificate", label: "Request certificate" },
+  { value: "certificate", label: "Unlock certificate" },
   { value: "support", label: "Open support ticket" },
 ];
 
@@ -59,8 +58,8 @@ export default async function WhatsAppSimPage() {
             Student Discussions & Support
           </h1>
           <p className="text-xs text-cyan-100">
-            Track conversation history, upload compliance docs, and send support
-            requests in one feed.
+            Track conversation history, upload required documents, check
+            programme status, and raise support requests in one feed.
           </p>
         </div>
         <Link
@@ -122,7 +121,7 @@ export default async function WhatsAppSimPage() {
             ))}
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {actions.map((action) => (
               <form
                 key={action.value}
@@ -163,7 +162,7 @@ export default async function WhatsAppSimPage() {
               className="rounded-xl border border-white/30 bg-slate-950/70 px-2 py-2 text-sm md:col-span-2"
             />
             <button className="rounded-xl bg-emerald-600 px-3 py-2 font-semibold text-white">
-              Upload + OCR scan
+              Upload selected document
             </button>
           </form>
 

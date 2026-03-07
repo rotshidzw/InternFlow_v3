@@ -164,6 +164,8 @@ export default async function StudentPortalPage({
     (entry) => entry.approvals[0]?.status === "APPROVED",
   ).length;
 
+  const isEnrolled = context.type === "ENROLLED";
+
   const programWorkspaceUrl =
     context.type === "ENROLLED"
       ? `/org/${context.enrollment.organizationSlug}/student`
@@ -243,64 +245,47 @@ export default async function StudentPortalPage({
               </div>
             </div>
             <section className="rounded-xl border border-slate-200 bg-white p-3">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Profile Actions (Quick Update)
-              </h2>
-              <p className="mt-1 text-xs text-slate-600">
-                Update profile items from here under your profile card.
-              </p>
-              <form
-                action="/api/student/profile-quick"
-                method="post"
-                className="mt-3 space-y-2"
-              >
-                <input
-                  name="phone"
-                  defaultValue={profile?.phone ?? ""}
-                  placeholder="Verify contact details (phone)"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="education"
-                  defaultValue={profile?.education ?? ""}
-                  placeholder="Add education history"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="skills"
-                  defaultValue={studentProfile?.skills.join(", ") ?? ""}
-                  placeholder="Add skills (comma separated)"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="emergencyContact"
-                  defaultValue={profile?.emergencyContact ?? ""}
-                  placeholder="Emergency contact"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <button className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
-                  Save profile updates
-                </button>
-              </form>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Student Profile
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-600">
+                    View your saved profile details and continue setup in guided
+                    sections.
+                  </p>
+                </div>
+                <Link
+                  href="/onboarding/profile"
+                  className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                >
+                  Edit profile
+                </Link>
+              </div>
 
-              <form
-                action="/api/student/upload-required"
-                method="post"
-                encType="multipart/form-data"
-                className="mt-3 space-y-2"
-              >
-                <p className="text-xs font-semibold text-slate-800">
-                  Upload CV
-                </p>
-                <input
-                  name="file"
-                  type="file"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <button className="w-full rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">
-                  Upload CV
-                </button>
-              </form>
+              <dl className="mt-3 space-y-2 text-xs text-slate-600">
+                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <dt className="font-medium text-slate-700">Phone</dt>
+                  <dd>{profile?.phone || "Not set"}</dd>
+                </div>
+                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <dt className="font-medium text-slate-700">Education</dt>
+                  <dd className="max-w-[180px] truncate text-right">
+                    {(profile?.education as string) || "Not set"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <dt className="font-medium text-slate-700">Skills</dt>
+                  <dd className="max-w-[180px] truncate text-right">
+                    {studentProfile?.skills.join(", ") || "Not set"}
+                  </dd>
+                </div>
+              </dl>
+
+              <p className="mt-3 text-xs text-slate-500">
+                CV upload and detailed profile updates are now done inside the
+                profile setup flow.
+              </p>
             </section>
           </div>
         </div>
@@ -308,52 +293,78 @@ export default async function StudentPortalPage({
 
       <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.08)] lg:grid-cols-[1.2fr_0.8fr]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Student workspace menu
-          </p>
-          <nav className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { label: "Overview", href: "#overview", icon: Briefcase },
-              {
-                label: "Profile",
-                href: "/onboarding/profile",
-                icon: UserCircle2,
-              },
-              {
-                label: "Program workspace",
-                href: programWorkspaceUrl ?? "/app/student",
-                icon: FolderOpen,
-              },
-              {
-                label: "Applications",
-                href: "#applications",
-                icon: CheckCircle2,
-              },
-              { label: "Documents", href: "#documents", icon: FileText },
-              {
-                label: "Messages",
-                href: "/app/whatsapp-sim",
-                icon: MessageSquare,
-              },
-              {
-                label: "Settings",
-                href: "/onboarding/profile",
-                icon: Settings,
-              },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <details className="group rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-800">
+              <span>☰ Menu</span>
+              <span className="text-xs text-slate-500 group-open:hidden">
+                Open
+              </span>
+              <span className="hidden text-xs text-slate-500 group-open:inline">
+                Close
+              </span>
+            </summary>
+            <nav className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { label: "Overview", href: "#overview", icon: Briefcase },
+                {
+                  label: "Profile",
+                  href: "/onboarding/profile",
+                  icon: UserCircle2,
+                },
+                {
+                  label: "Program workspace",
+                  href: programWorkspaceUrl ?? "/app/student",
+                  icon: FolderOpen,
+                },
+                {
+                  label: "Applications",
+                  href: "#applications",
+                  icon: CheckCircle2,
+                },
+                { label: "Documents", href: "#documents", icon: FileText },
+                {
+                  label: "Messages",
+                  href: "/app/whatsapp-sim",
+                  icon: MessageSquare,
+                },
+                {
+                  label: "Settings",
+                  href: "/onboarding/profile",
+                  icon: Settings,
+                },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </details>
+
+          <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Profile setup sessions
+            </p>
+            <ol className="mt-2 space-y-1 text-sm text-slate-700">
+              <li>1. Personal details</li>
+              <li>2. Education details</li>
+              <li>3. Skills and experience</li>
+              <li>4. Documents (CV upload + AI CV autofill)</li>
+            </ol>
+            <Link
+              href="/onboarding/profile"
+              className="mt-3 inline-flex rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+            >
+              Continue profile setup
+            </Link>
+          </div>
         </div>
 
         <div className="rounded-xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
@@ -498,7 +509,10 @@ export default async function StudentPortalPage({
           <div className="mt-3 space-y-2 text-sm text-slate-700">
             <p>✔ Complete profile</p>
             <p>
-              {applications.length > 0 ? "✔" : "⬜"} Apply for first opportunity
+              {isEnrolled ? "✔" : applications.length > 0 ? "✔" : "⬜"}{" "}
+              {isEnrolled
+                ? "In active programme"
+                : "Apply for first opportunity"}
             </p>
             <p>{docs.length > 0 ? "✔" : "⬜"} Upload documents</p>
           </div>
@@ -507,13 +521,20 @@ export default async function StudentPortalPage({
               Primary action
             </p>
             <p className="mt-1 text-sm text-indigo-900">
-              Find opportunities that match your profile and interests.
+              {isEnrolled
+                ? "Open your programme workspace to track learning progress, documents, and support."
+                : "Find opportunities that match your profile and interests."}
             </p>
             <Link
-              href="/opportunities"
+              href={
+                isEnrolled
+                  ? (programWorkspaceUrl ?? "/app/student")
+                  : "/opportunities"
+              }
               className="mt-3 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
             >
-              Explore Marketplace <ChevronRight className="h-4 w-4" />
+              {isEnrolled ? "Open Programme" : "Explore Marketplace"}{" "}
+              <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -680,57 +701,59 @@ export default async function StudentPortalPage({
         </section>
       </div>
 
-      <section
-        id="documents"
-        className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
-      >
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recommended Marketplace Opportunities
-          </h2>
-          <Link
-            href="/opportunities"
-            className="text-xs font-semibold text-indigo-700 hover:text-indigo-800"
-          >
-            View all
-          </Link>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {opportunities.slice(0, 6).map((opp) => (
-            <article
-              key={opp.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-md"
+      {!isEnrolled && (
+        <section
+          id="documents"
+          className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Recommended Marketplace Opportunities
+            </h2>
+            <Link
+              href="/opportunities"
+              className="text-xs font-semibold text-indigo-700 hover:text-indigo-800"
             >
-              <h3 className="font-semibold text-slate-900">{opp.title}</h3>
-              <p className="mt-1 text-xs text-slate-600">
-                {opp.type === "INTERNSHIP" ? "Internship" : "Skills Program"} ·{" "}
-                {opp.organization.name}
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                {opp.description.slice(0, 110)}
-                {opp.description.length > 110 ? "…" : ""}
-              </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Location: {opp.organization.name}
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Link
-                  href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  View Details
-                </Link>
-                <Link
-                  href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                  className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-400"
-                >
-                  Apply
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+              View all
+            </Link>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {opportunities.slice(0, 6).map((opp) => (
+              <article
+                key={opp.id}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <h3 className="font-semibold text-slate-900">{opp.title}</h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  {opp.type === "INTERNSHIP" ? "Internship" : "Skills Program"}{" "}
+                  · {opp.organization.name}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {opp.description.slice(0, 110)}
+                  {opp.description.length > 110 ? "…" : ""}
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Location: {opp.organization.name}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    View Details
+                  </Link>
+                  <Link
+                    href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
+                    className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-400"
+                  >
+                    Apply
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
