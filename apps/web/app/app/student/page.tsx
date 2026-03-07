@@ -211,18 +211,19 @@ export default async function StudentPortalPage({
   ];
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200/80 bg-slate-50 p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)] md:p-6">
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-indigo-100 bg-gradient-to-b from-slate-50 via-indigo-50/40 to-sky-50/40 p-4 shadow-[0_20px_55px_rgba(15,23,42,0.10)] md:p-6">
+      <section className="rounded-2xl border border-indigo-100 bg-white/95 p-5 shadow-[0_10px_24px_rgba(30,41,59,0.10)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-sky-700">
-              Student Portal Dashboard
+              Student Command Center
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
               Welcome back, {user.name ?? "Student"} 👋
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              Here’s an overview of your applications and progress.
+              Track your program journey, profile readiness, and active
+              discussions in one place.
             </p>
             <p className="mt-2 text-xs text-slate-500">
               Progress summary: profile {checklistProgress}% complete ·
@@ -305,7 +306,7 @@ export default async function StudentPortalPage({
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)] lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.08)] lg:grid-cols-[1.2fr_0.8fr]">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Student workspace menu
@@ -355,7 +356,7 @@ export default async function StudentPortalPage({
           </nav>
         </div>
 
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
+        <div className="rounded-xl border border-indigo-300 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
           <p className="text-sm font-semibold text-indigo-900">
             Join a program with invite token
           </p>
@@ -605,7 +606,7 @@ export default async function StudentPortalPage({
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
           <h2 className="text-lg font-semibold text-slate-900">
             Application Journey
           </h2>
@@ -618,7 +619,7 @@ export default async function StudentPortalPage({
             ].map((step, index) => (
               <div
                 key={step}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                className="rounded-xl border border-indigo-100 bg-gradient-to-br from-slate-50 to-indigo-50 p-3 text-sm text-slate-700"
               >
                 <p className="text-xs font-semibold text-indigo-600">
                   Step {index + 1}
@@ -629,20 +630,52 @@ export default async function StudentPortalPage({
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <Bell className="h-5 w-5 text-amber-500" />
-            Notifications
-          </h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {topNotifications.map((note) => (
-              <p
-                key={note}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700"
-              >
-                {note}
-              </p>
-            ))}
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
+            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <MessageSquare className="h-5 w-5 text-violet-500" />
+              Recent Discussions
+            </h2>
+            <div className="mt-3 space-y-2 text-sm">
+              {threads.length === 0 && (
+                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
+                  No discussions yet. Start one from Messages.
+                </p>
+              )}
+              {threads.map((thread) => {
+                const lastMessage = thread.messages[0];
+                return (
+                  <div
+                    key={thread.id}
+                    className="rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
+                      {thread.title || "Student support thread"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {lastMessage?.body?.slice(0, 90) || "No messages yet"}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
+            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <Bell className="h-5 w-5 text-amber-500" />
+              Notifications
+            </h2>
+            <div className="mt-3 space-y-2 text-sm">
+              {topNotifications.map((note) => (
+                <p
+                  key={note}
+                  className="rounded-lg border border-amber-100 bg-amber-50/70 px-3 py-2 text-slate-700"
+                >
+                  {note}
+                </p>
+              ))}
+            </div>
           </div>
         </section>
       </div>
