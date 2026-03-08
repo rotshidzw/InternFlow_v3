@@ -5,6 +5,16 @@ import { createRedisConnection } from "./redis";
 
 const connection = createRedisConnection("internflow-worker");
 
+
+function isTransientConnectionError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes("ECONNRESET") ||
+    error.message.includes("ECONNABORTED") ||
+    error.message.includes("EPIPE")
+  );
+}
+
 const notificationWorker = new Worker(
   "notifications",
   async (job) => {
@@ -75,7 +85,14 @@ const closeoutExportWorker = new Worker(
 for (const worker of [notificationWorker, scanWorker, closeoutExportWorker]) {
   worker.on("completed", (job) => console.log("Worker completed", job.id));
   worker.on("failed", (job, error) => console.error("Worker failed", job?.id, error));
-  worker.on("error", (error) => console.error("Worker runtime error", error));
+  worker.on("error", (error) => {
+    if (isTransientConnectionError(error)) {
+      console.warn("Worker runtime transient connection issue", (error as Error).message);
+      return;
+    }
+
+    console.error("Worker runtime error", error);
+  });
 }
 
 console.log("InternFlow workers started");

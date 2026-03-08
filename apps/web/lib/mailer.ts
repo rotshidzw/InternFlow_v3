@@ -9,6 +9,17 @@ const ENABLE_CONSOLE_OTP = process.env.ENABLE_CONSOLE_OTP === "true";
 
 let dependencyWarningShown = false;
 
+
+function isExpectedSmtpConnectionError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes("ECONNRESET") ||
+    error.message.includes("ECONNABORTED") ||
+    error.message.includes("EPIPE") ||
+    error.message.includes("Unexpected socket close")
+  );
+}
+
 function getTransporter() {
   try {
     return nodemailer.createTransport({
@@ -48,7 +59,11 @@ export async function sendOtpEmail(email: string, code: string): Promise<{ deliv
     console.info(`[mailer] OTP email sent to ${email} messageId=${info.messageId}`);
     return { delivered: true, fallbackLogged: false };
   } catch (error) {
-    console.error(`[mailer] Failed to send OTP email to ${email}`, error);
+    if (isExpectedSmtpConnectionError(error)) {
+      console.warn(`[mailer] SMTP connection issue while sending OTP to ${email}: ${(error as Error).message}`);
+    } else {
+      console.error(`[mailer] Failed to send OTP email to ${email}`, error);
+    }
     if (ENABLE_CONSOLE_OTP) console.info(`[CONSOLE OTP] email=${email} code=${code}`);
     return { delivered: false, fallbackLogged: ENABLE_CONSOLE_OTP };
   }
@@ -71,7 +86,11 @@ export async function sendPlatformEmail(to: string, subject: string, message: st
     });
     return { delivered: true };
   } catch (error) {
-    console.error(`[mailer] Failed platform email to ${to}`, error);
+    if (isExpectedSmtpConnectionError(error)) {
+      console.warn(`[mailer] SMTP connection issue while sending platform email to ${to}: ${(error as Error).message}`);
+    } else {
+      console.error(`[mailer] Failed platform email to ${to}`, error);
+    }
     console.info(`[DEV MAIL] to=${to} subject=${subject} message=${message}`);
     return { delivered: false };
   }
@@ -98,7 +117,11 @@ export async function sendPlatformEmailMany(to: string[], subject: string, messa
     });
     return { delivered: true };
   } catch (error) {
-    console.error(`[mailer] Failed bulk platform email to ${recipients.join(",")}`, error);
+    if (isExpectedSmtpConnectionError(error)) {
+      console.warn(`[mailer] SMTP connection issue while sending bulk platform email: ${(error as Error).message}`);
+    } else {
+      console.error(`[mailer] Failed bulk platform email to ${recipients.join(",")}`, error);
+    }
     console.info(`[DEV MAIL] to=${recipients.join(",")} subject=${subject} message=${message}`);
     return { delivered: false };
   }
