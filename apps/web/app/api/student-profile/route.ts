@@ -294,7 +294,7 @@ export async function POST(req: Request) {
     },
   });
 
-  let redirectTo = "/explore";
+  let redirectTo = "/app/student/profile";
   let workspaceSlug: string | undefined;
 
   if (inviteTokenRecord) {

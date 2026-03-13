@@ -392,7 +392,7 @@ export default function StudentProfileOnboardingPage() {
       return;
     }
 
-    window.location.href = payload.redirectTo ?? "/explore";
+    window.location.href = payload.redirectTo ?? "/app/student/profile";
   }
 
   return (
