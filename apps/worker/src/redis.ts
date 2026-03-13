@@ -14,6 +14,21 @@ function retryStrategy(times: number) {
   return Math.min(times * 250, 5_000);
 }
 
+function isExpectedConnectionError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as Error & { code?: string };
+  const code = maybeError.code ?? "";
+  const message = maybeError.message ?? "";
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ECONNRESET" ||
+    code === "ECONNABORTED" ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ECONNRESET") ||
+    message.includes("ECONNABORTED")
+  );
+}
+
 export function createRedisConnection(name: string) {
   const connection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -24,9 +39,17 @@ export function createRedisConnection(name: string) {
     retryStrategy,
     reconnectOnError: () => true,
     connectionName: name,
+    family: 4,
   });
 
   connection.on("error", (error) => {
+    if (isExpectedConnectionError(error)) {
+      console.warn(
+        `[redis:${name}] connection unavailable (${(error as Error).message}). Ensure Redis is running or set REDIS_URL to your reachable instance.`,
+      );
+      return;
+    }
+
     console.error(`[redis:${name}]`, error?.message ?? error);
   });
 
