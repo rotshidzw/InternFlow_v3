@@ -36,6 +36,8 @@ const required = [
   "SMTP_HOST",
   "SMTP_PORT",
   "MAIL_FROM",
+  "ENABLE_AI_ENRICHMENT",
+  "OPENROUTER_MODEL",
 ];
 
 const missing = [];
@@ -48,6 +50,10 @@ if (parsed.STORAGE_PROVIDER === "obs") {
   const hasObsSecret = Boolean(parsed.OBS_SECRET_KEY || parsed.OBS_SK);
   if (!hasObsAccess) missing.push("OBS_ACCESS_KEY or OBS_AK");
   if (!hasObsSecret) missing.push("OBS_SECRET_KEY or OBS_SK");
+}
+
+if (parsed.ENABLE_AI_ENRICHMENT === "true" && !parsed.OPENROUTER_API_KEY) {
+  missing.push("OPENROUTER_API_KEY");
 }
 
 if (parsed.ENABLE_OCR === "true") {

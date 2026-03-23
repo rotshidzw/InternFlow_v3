@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { Queue } from "bullmq";
 import { createRedisClient } from "@/lib/redis-queue";
+import { generateChatbotAssistance } from "@/lib/openrouter-ai";
 
 type Intent =
   | "status"
@@ -270,6 +271,28 @@ export async function POST(req: Request) {
     if (intent === "upload") {
       autoReply =
         "Select the exact document type and attach the file below to upload.";
+    }
+
+
+    if (intent === "unknown" && body) {
+      const recentHistory = await prisma.chatMessage.findMany({
+        where: { threadId: thread.id },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      });
+
+      const aiReply = await generateChatbotAssistance({
+        userId: user.id,
+        message: body,
+        history: recentHistory
+          .reverse()
+          .map((msg) => ({
+            role: msg.role === "USER" ? "user" : "assistant",
+            content: msg.body,
+          })),
+      });
+
+      autoReply = aiReply.reply;
     }
 
     await prisma.chatMessage.create({

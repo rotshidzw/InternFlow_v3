@@ -30,6 +30,8 @@ const required = [
   "REDIS_URL",
   "SMTP_HOST",
   "SMTP_PORT",
+  "ENABLE_AI_ENRICHMENT",
+  "OPENROUTER_MODEL",
 ];
 
 const missing = required.filter((key) => !parsed[key]);
@@ -50,6 +52,14 @@ if ((parsed.STORAGE_PROVIDER ?? "minio") === "obs") {
   console.warn(
     "⚠️ STORAGE_PROVIDER is obs. For local mode, set STORAGE_PROVIDER=minio (or keep LOCAL_DEV_MODE=true).",
   );
+}
+
+if ((parsed.OPENROUTER_MODEL ?? "").trim() === "") {
+  console.warn("⚠️ OPENROUTER_MODEL missing. Defaulting to openrouter/free.");
+}
+
+if (parsed.ENABLE_AI_ENRICHMENT === "true" && !parsed.OPENROUTER_API_KEY) {
+  console.warn("⚠️ ENABLE_AI_ENRICHMENT=true but OPENROUTER_API_KEY is missing. AI will fallback.");
 }
 
 console.log("✅ .env.local validation passed.");

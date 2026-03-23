@@ -17,13 +17,15 @@
     "db:generate": "npm run db:generate --workspace @internflow/db",
     "predev": "node scripts/ensure-deps.mjs",
     "check:prod-env": "node scripts/validate-production-env.mjs",
-    "check:local-env": "node scripts/validate-local-env.mjs"
+    "check:local-env": "node scripts/validate-local-env.mjs",
+    "test:ai": "vitest run apps/web/lib/openrouter-ai.test.ts"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
     "prettier": "^3.3.3",
     "turbo": "^2.1.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "nodemailer": "^7.0.13"

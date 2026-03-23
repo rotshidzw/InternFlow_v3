@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendPlatformEmail } from "@/lib/mailer";
+import { runProfileAiEnrichment } from "@/lib/openrouter-ai";
 
 const schema = z.object({
   email: z.string().email().optional(),
@@ -389,6 +390,33 @@ export async function POST(req: Request) {
         joinedViaInvite: Boolean(inviteTokenRecord),
       },
     },
+  });
+
+  const enrichmentInput = [
+    body.data.fullName,
+    body.data.bio,
+    body.data.skills.join(", "),
+    body.data.highestQualification,
+    body.data.institutionName,
+    body.data.fieldOfStudy,
+    body.data.employmentStatus,
+    body.data.currentEmployer,
+    body.data.jobTitle,
+    body.data.cvUrl,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  void runProfileAiEnrichment({
+    userId: user.id,
+    studentProfileId: profile.id,
+    cvText: enrichmentInput,
+  }).catch((error) => {
+    console.error("[ai] failed AI enrichment", {
+      feature: "student_profile_save",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    console.warn("[ai] fallback used", { feature: "student_profile_save" });
   });
 
   const response = NextResponse.json({
