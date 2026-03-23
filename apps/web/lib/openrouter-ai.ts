@@ -5,7 +5,7 @@ import path from "node:path";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "openrouter/free";
-const REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
 const MAX_RETRIES = 2;
 const ENV_FILE_CANDIDATES = Array.from(
   new Set([
@@ -49,6 +49,14 @@ function resolveModel() {
 
 function resolveApiKey() {
   return readAiEnv("OPENROUTER_API_KEY").value;
+}
+
+function resolveTimeoutMs() {
+  const raw = readAiEnv("OPENROUTER_TIMEOUT_MS").value;
+  if (!raw) return DEFAULT_REQUEST_TIMEOUT_MS;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 5_000) return DEFAULT_REQUEST_TIMEOUT_MS;
+  return Math.floor(parsed);
 }
 
 function parseEnvFile(filePath: string) {
@@ -106,10 +114,12 @@ function logResolvedAiConfig() {
   const enabled = enabledVar.value === "true";
   const model = modelVar.value || DEFAULT_MODEL;
   const apiKey = apiKeyVar.value;
+  const timeoutMs = resolveTimeoutMs();
 
   console.info("[ai] config loaded", {
     enabled,
     model,
+    timeoutMs,
     hasApiKey: Boolean(apiKey),
     sources: {
       flag: enabledVar.source,
@@ -131,6 +141,8 @@ function logResolvedAiConfig() {
 function isTransientError(error: unknown) {
   if (!(error instanceof Error)) return false;
   return (
+    error.name === "AbortError" ||
+    error.message.includes("aborted") ||
     error.message.includes("timeout") ||
     error.message.includes("ECONNRESET") ||
     error.message.includes("429") ||
@@ -165,6 +177,7 @@ async function callOpenRouter(messages: Array<{ role: "system" | "user" | "assis
   }
 
   const model = resolveModel();
+  const timeoutMs = resolveTimeoutMs();
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${apiKey}`,
@@ -175,10 +188,10 @@ async function callOpenRouter(messages: Array<{ role: "system" | "user" | "assis
 
   while (attempt <= MAX_RETRIES) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      console.info("[ai] OpenRouter request started", { model, attempt: attempt + 1 });
+      console.info("[ai] OpenRouter request started", { model, attempt: attempt + 1, timeoutMs });
       const response = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
         headers,
