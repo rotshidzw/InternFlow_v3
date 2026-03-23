@@ -3,8 +3,8 @@ import { documentUploadSchema } from "@internflow/shared/src/schemas";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
 import { cookies } from "next/headers";
+import { createRedisClient } from "@/lib/redis-queue";
 
 const expiryByType: Record<string, number | null> = {
   ID: 3650,
@@ -13,10 +13,10 @@ const expiryByType: Record<string, number | null> = {
   AFFIDAVIT: 90,
   PROOF_OF_ADDRESS: 90,
   PAYSLIP: 30,
-  APPLICATION_SUPPORTING_DOC: null
+  APPLICATION_SUPPORTING_DOC: null,
 };
 
-const redisConnection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
+const redisConnection = createRedisClient("api-doc-upload");
 const scanQueue = new Queue("document-scan", { connection: redisConnection });
 
 function computeExpiration(type: string) {
@@ -31,6 +31,41 @@ async function resolveUserId(inputUserId: string | undefined) {
   if (!email) return null;
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   return user?.id ?? null;
+}
+
+async function enqueueScanOrFallback(args: {
+  documentId: string;
+  mimeType: string;
+  sizeBytes: number;
+  fileName: string;
+  userId: string;
+  tenantId?: string | null;
+}) {
+  try {
+    await scanQueue.add("scanDocument", {
+      documentId: args.documentId,
+      mimeType: args.mimeType,
+      sizeBytes: args.sizeBytes,
+      fileName: args.fileName,
+    });
+    return;
+  } catch (error) {
+    await prisma.document.update({
+      where: { id: args.documentId },
+      data: { status: "SUBMITTED", rejectionReason: "Scan queue unavailable; manual review required." },
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: args.userId,
+        tenantId: args.tenantId ?? undefined,
+        action: "DOCUMENT_SCAN_QUEUE_FAILED",
+        entityType: "Document",
+        entityId: args.documentId,
+        metadata: { error: error instanceof Error ? error.message : "Unknown queue error" },
+      },
+    });
+  }
 }
 
 export async function POST(req: Request) {
@@ -51,7 +86,7 @@ export async function POST(req: Request) {
       fileName: file.name,
       mimeType: file.type || "application/octet-stream",
       sizeBytes: file.size,
-      selfCertified: formData.get("selfCertified") === "true"
+      selfCertified: formData.get("selfCertified") === "true",
     });
 
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -74,14 +109,21 @@ export async function POST(req: Request) {
           create: {
             storageKey,
             mimeType: parsed.data.mimeType,
-            sizeBytes: parsed.data.sizeBytes
-          }
-        }
+            sizeBytes: parsed.data.sizeBytes,
+          },
+        },
       },
-      include: { versions: true }
+      include: { versions: true },
     });
 
-    await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+    await enqueueScanOrFallback({
+      documentId: document.id,
+      mimeType: parsed.data.mimeType,
+      sizeBytes: parsed.data.sizeBytes,
+      fileName: parsed.data.fileName,
+      userId: targetUserId,
+      tenantId: document.organizationId,
+    });
 
     await prisma.auditEvent.create({
       data: {
@@ -94,19 +136,19 @@ export async function POST(req: Request) {
           type: parsed.data.type,
           storageKey,
           mimeType: parsed.data.mimeType,
-          sizeBytes: parsed.data.sizeBytes
-        }
-      }
+          sizeBytes: parsed.data.sizeBytes,
+        },
+      },
     });
 
-    return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
+    return NextResponse.json({ ok: true, verification: document.status, expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
   }
 
   const payload = await req.json();
   const parsed = documentUploadSchema.safeParse({
     ...payload,
     sizeBytes: Number(payload.sizeBytes ?? 1024),
-    selfCertified: payload.selfCertified === true || payload.selfCertified === "true"
+    selfCertified: payload.selfCertified === true || payload.selfCertified === "true",
   });
 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -128,14 +170,21 @@ export async function POST(req: Request) {
         create: {
           storageKey,
           mimeType: parsed.data.mimeType,
-          sizeBytes: parsed.data.sizeBytes
-        }
-      }
+          sizeBytes: parsed.data.sizeBytes,
+        },
+      },
     },
-    include: { versions: true }
+    include: { versions: true },
   });
 
-  await scanQueue.add("scanDocument", { documentId: document.id, mimeType: parsed.data.mimeType, sizeBytes: parsed.data.sizeBytes, fileName: parsed.data.fileName });
+  await enqueueScanOrFallback({
+    documentId: document.id,
+    mimeType: parsed.data.mimeType,
+    sizeBytes: parsed.data.sizeBytes,
+    fileName: parsed.data.fileName,
+    userId: targetUserId,
+    tenantId: document.organizationId,
+  });
 
   await prisma.auditEvent.create({
     data: {
@@ -148,10 +197,10 @@ export async function POST(req: Request) {
         type: parsed.data.type,
         storageKey,
         mimeType: parsed.data.mimeType,
-        sizeBytes: parsed.data.sizeBytes
-      }
-    }
+        sizeBytes: parsed.data.sizeBytes,
+      },
+    },
   });
 
-  return NextResponse.json({ ok: true, verification: "SCAN_PENDING", expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
+  return NextResponse.json({ ok: true, verification: document.status, expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
 }

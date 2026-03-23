@@ -40,12 +40,20 @@ export default async function ExplorePage() {
             joining a tenant.
           </p>
         </div>
-        <Link
-          href="/onboarding/profile"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
-        >
-          Edit profile
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/app/student/profile"
+            className="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-300/40 dark:text-emerald-200 dark:hover:bg-emerald-500/10"
+          >
+            Open profile
+          </Link>
+          <Link
+            href="/onboarding/profile"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
+          >
+            Edit profile
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
