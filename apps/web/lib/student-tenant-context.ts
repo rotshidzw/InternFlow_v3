@@ -25,30 +25,42 @@ export type StudentTenantContext =
     }
   | { type: "NONE" };
 
-export async function resolveStudentTenantContext(userId: string): Promise<StudentTenantContext> {
+export async function resolveStudentTenantContext(
+  userId: string,
+): Promise<StudentTenantContext> {
   const activeEnrollment = await prisma.enrollment.findFirst({
     where: { userId, status: "ACTIVE" },
-    include: { organization: true, program: true }
+    include: { organization: true, program: true },
   });
 
-  if (activeEnrollment) {
+  const pendingOrCompletedEnrollment = activeEnrollment
+    ? null
+    : await prisma.enrollment.findFirst({
+        where: { userId, status: { in: ["PENDING", "COMPLETED"] } },
+        include: { organization: true, program: true },
+        orderBy: [{ status: "asc" }, { id: "desc" }],
+      });
+
+  const enrollment = activeEnrollment ?? pendingOrCompletedEnrollment;
+
+  if (enrollment) {
     return {
       type: "ENROLLED",
       enrollment: {
-        id: activeEnrollment.id,
-        organizationId: activeEnrollment.organizationId,
-        organizationName: activeEnrollment.organization.name,
-        organizationSlug: activeEnrollment.organization.slug,
-        programName: activeEnrollment.program.name,
-        status: activeEnrollment.status
-      }
+        id: enrollment.id,
+        organizationId: enrollment.organizationId,
+        organizationName: enrollment.organization.name,
+        organizationSlug: enrollment.organization.slug,
+        programName: enrollment.program.name,
+        status: enrollment.status,
+      },
     };
   }
 
   const latestApplication = await prisma.application.findFirst({
     where: { userId },
     include: { opportunity: { include: { organization: true } } },
-    orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }]
+    orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }],
   });
 
   if (latestApplication) {
@@ -60,8 +72,8 @@ export async function resolveStudentTenantContext(userId: string): Promise<Stude
         organizationName: latestApplication.opportunity.organization.name,
         organizationSlug: latestApplication.opportunity.organization.slug,
         opportunityTitle: latestApplication.opportunity.title,
-        status: latestApplication.status
-      }
+        status: latestApplication.status,
+      },
     };
   }
 

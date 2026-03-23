@@ -3,8 +3,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendPlatformEmail } from "@/lib/mailer";
+import { runProfileAiEnrichment } from "@/lib/openrouter-ai";
 
 const schema = z.object({
+  email: z.string().email().optional(),
+  inviteToken: z.string().min(6).optional(),
   fullName: z.string().min(2),
   phone: z.string().optional(),
   alternatePhone: z.string().optional(),
@@ -45,22 +48,109 @@ const schema = z.object({
   isDiscoverable: z.boolean().default(false),
 });
 
-export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) {
-    return NextResponse.json({ ok: false, error: "Unauthenticated" }, { status: 401 });
-  }
-
-  const body = schema.safeParse(await req.json());
-  if (!body.success) {
+export async function GET() {
+  const cookieEmail = cookies().get("if_user")?.value?.toLowerCase();
+  if (!cookieEmail) {
     return NextResponse.json(
-      { ok: false, error: "Invalid profile data", details: body.error.flatten() },
-      { status: 400 }
+      { ok: false, error: "Login required." },
+      { status: 401 },
     );
   }
 
-  const normalizedEmail = email.toLowerCase();
-  let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  const user = await prisma.user.findUnique({
+    where: { email: cookieEmail },
+    include: { profile: true, studentProfile: true },
+  });
+
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, error: "User not found." },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    data: {
+      email: user.email,
+      fullName: user.studentProfile?.fullName ?? user.name ?? "",
+      phone: user.studentProfile?.phone ?? user.profile?.phone ?? "",
+      location: user.studentProfile?.location ?? "",
+      bio: user.studentProfile?.bio ?? "",
+      skills: user.studentProfile?.skills ?? [],
+      education: user.studentProfile?.education ?? null,
+      experience: user.studentProfile?.experience ?? null,
+      emergencyContact: user.profile?.emergencyContact ?? "",
+    },
+  });
+}
+
+export async function POST(req: Request) {
+  const body = schema.safeParse(await req.json());
+  if (!body.success) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Invalid profile data",
+        details: body.error.flatten(),
+      },
+      { status: 400 },
+    );
+  }
+
+  const cookieEmail = cookies().get("if_user")?.value;
+  const sourceEmail = cookieEmail ?? body.data.email;
+  if (!sourceEmail) {
+    return NextResponse.json(
+      { ok: false, error: "Email required. Add email to continue onboarding." },
+      { status: 400 },
+    );
+  }
+
+  const normalizedEmail = sourceEmail.toLowerCase();
+
+  let inviteTokenRecord: {
+    id: string;
+    token: string;
+    tenantId: string;
+    programmeId: string | null;
+    usedCount: number;
+    maxUses: number;
+    expiresAt: Date;
+    tenant: { slug: string };
+  } | null = null;
+
+  if (body.data.inviteToken) {
+    inviteTokenRecord = await prisma.inviteToken.findUnique({
+      where: { token: body.data.inviteToken },
+      include: { tenant: true },
+    });
+
+    if (!inviteTokenRecord) {
+      return NextResponse.json(
+        { ok: false, error: "Invite token not found." },
+        { status: 404 },
+      );
+    }
+
+    if (inviteTokenRecord.expiresAt < new Date()) {
+      return NextResponse.json(
+        { ok: false, error: "Invite token expired." },
+        { status: 400 },
+      );
+    }
+
+    if (inviteTokenRecord.usedCount >= inviteTokenRecord.maxUses) {
+      return NextResponse.json(
+        { ok: false, error: "Invite token max uses reached." },
+        { status: 400 },
+      );
+    }
+  }
+
+  let user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
   let userWasAutoCreated = false;
 
   if (!user) {
@@ -69,7 +159,7 @@ export async function POST(req: Request) {
         email: normalizedEmail,
         role: "STUDENT",
         name: body.data.fullName,
-      }
+      },
     });
     userWasAutoCreated = true;
 
@@ -79,20 +169,22 @@ export async function POST(req: Request) {
         action: "STUDENT_ACCOUNT_AUTO_CREATED",
         metadata: {
           source: "student_profile_post",
-          email: normalizedEmail
-        }
-      }
+          email: normalizedEmail,
+        },
+      },
     });
 
     const loginLink = `${new URL(req.url).origin}/auth/login`;
     await sendPlatformEmail(
       normalizedEmail,
       "Your InternFlow student account is ready",
-      `We created your student account from your onboarding profile. Confirm it is you by signing in here: ${loginLink}. For security, continue using OTP sign-in from the login page.`
+      `We created your student account from your onboarding profile. Sign in here anytime: ${loginLink}.`,
     );
   }
 
-  const existing = await prisma.studentProfile.findUnique({ where: { userId: user.id } });
+  const existing = await prisma.studentProfile.findUnique({
+    where: { userId: user.id },
+  });
 
   const personalDetails = {
     idNumber: body.data.idNumber,
@@ -121,7 +213,9 @@ export async function POST(req: Request) {
     languages: body.data.languages ?? [],
     ...personalDetails,
     addressDetails,
-    ...(typeof body.data.education === "object" && body.data.education ? body.data.education : {}),
+    ...(typeof body.data.education === "object" && body.data.education
+      ? body.data.education
+      : {}),
   };
 
   const experienceDetails = {
@@ -136,10 +230,14 @@ export async function POST(req: Request) {
     availability: body.data.availability,
     emergencyContactName: body.data.emergencyContactName,
     emergencyContactPhone: body.data.emergencyContactPhone,
-    ...(typeof body.data.experience === "object" && body.data.experience ? body.data.experience : {}),
+    ...(typeof body.data.experience === "object" && body.data.experience
+      ? body.data.experience
+      : {}),
   };
 
-  const location = body.data.location || [body.data.city, body.data.province].filter(Boolean).join(", ");
+  const location =
+    body.data.location ||
+    [body.data.city, body.data.province].filter(Boolean).join(", ");
 
   const profile = await prisma.studentProfile.upsert({
     where: { userId: user.id },
@@ -166,6 +264,110 @@ export async function POST(req: Request) {
     },
   });
 
+  await prisma.profile.upsert({
+    where: { userId: user.id },
+    update: {
+      phone: body.data.phone,
+      education:
+        typeof body.data.education === "string"
+          ? body.data.education
+          : body.data.highestQualification || body.data.institutionName || null,
+      emergencyContact:
+        body.data.emergencyContactName && body.data.emergencyContactPhone
+          ? `${body.data.emergencyContactName} (${body.data.emergencyContactPhone})`
+          : body.data.emergencyContactName ||
+            body.data.emergencyContactPhone ||
+            null,
+    },
+    create: {
+      userId: user.id,
+      phone: body.data.phone,
+      education:
+        typeof body.data.education === "string"
+          ? body.data.education
+          : body.data.highestQualification || body.data.institutionName || null,
+      emergencyContact:
+        body.data.emergencyContactName && body.data.emergencyContactPhone
+          ? `${body.data.emergencyContactName} (${body.data.emergencyContactPhone})`
+          : body.data.emergencyContactName ||
+            body.data.emergencyContactPhone ||
+            null,
+    },
+  });
+
+  let redirectTo = "/app/student/profile";
+  let workspaceSlug: string | undefined;
+
+  if (inviteTokenRecord) {
+    const existingMembership = await prisma.membership.findFirst({
+      where: { userId: user.id, organizationId: inviteTokenRecord.tenantId },
+    });
+
+    if (existingMembership && existingMembership.role !== "STUDENT") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "This invite is for students only. Use workspace login for staff access.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (!existingMembership) {
+        await tx.membership.create({
+          data: {
+            userId: user.id,
+            organizationId: inviteTokenRecord!.tenantId,
+            role: "STUDENT",
+          },
+        });
+      }
+
+      if (inviteTokenRecord?.programmeId) {
+        const enrollment = await tx.enrollment.findFirst({
+          where: { userId: user.id, programId: inviteTokenRecord.programmeId },
+        });
+
+        if (enrollment) {
+          await tx.enrollment.update({
+            where: { id: enrollment.id },
+            data: { organizationId: inviteTokenRecord.tenantId },
+          });
+        } else {
+          await tx.enrollment.create({
+            data: {
+              userId: user.id,
+              organizationId: inviteTokenRecord.tenantId,
+              programId: inviteTokenRecord.programmeId,
+              status: "PENDING",
+            },
+          });
+        }
+      }
+
+      await tx.inviteToken.update({
+        where: { id: inviteTokenRecord!.id },
+        data: { usedCount: { increment: 1 } },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          tenantId: inviteTokenRecord!.tenantId,
+          userId: user.id,
+          action: "INVITE_JOIN_SUCCESS",
+          entityType: "InviteToken",
+          entityId: inviteTokenRecord!.id,
+          metadata: { source: "profile_onboarding" },
+        },
+      });
+    });
+
+    workspaceSlug = inviteTokenRecord.tenant.slug;
+    redirectTo = `/org/${inviteTokenRecord.tenant.slug}/student`;
+  }
+
   await prisma.auditEvent.create({
     data: {
       userId: user.id,
@@ -176,23 +378,65 @@ export async function POST(req: Request) {
         isDiscoverable: profile.isDiscoverable,
         consentToShareProfile: body.data.consentToShareProfile,
         skillsCount: profile.skills.length,
-        hasIdNumber: Boolean((profile.education as Record<string, unknown> | null)?.idNumber),
-        hasCvUrl: Boolean((profile.experience as Record<string, unknown> | null)?.cvUrl),
-        hasEmergencyContact: Boolean(body.data.emergencyContactName && body.data.emergencyContactPhone),
+        hasIdNumber: Boolean(
+          (profile.education as Record<string, unknown> | null)?.idNumber,
+        ),
+        hasCvUrl: Boolean(
+          (profile.experience as Record<string, unknown> | null)?.cvUrl,
+        ),
+        hasEmergencyContact: Boolean(
+          body.data.emergencyContactName && body.data.emergencyContactPhone,
+        ),
+        joinedViaInvite: Boolean(inviteTokenRecord),
       },
     },
+  });
+
+  const enrichmentInput = [
+    body.data.fullName,
+    body.data.bio,
+    body.data.skills.join(", "),
+    body.data.highestQualification,
+    body.data.institutionName,
+    body.data.fieldOfStudy,
+    body.data.employmentStatus,
+    body.data.currentEmployer,
+    body.data.jobTitle,
+    body.data.cvUrl,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  void runProfileAiEnrichment({
+    userId: user.id,
+    studentProfileId: profile.id,
+    cvText: enrichmentInput,
+  }).catch((error) => {
+    console.error("[ai] failed AI enrichment", {
+      feature: "student_profile_save",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    console.warn("[ai] fallback used", { feature: "student_profile_save" });
   });
 
   const response = NextResponse.json({
     ok: true,
     profileId: profile.id,
-    redirectTo: "/explore",
+    redirectTo,
     autoCreatedUser: userWasAutoCreated,
-    requiresOtpLogin: userWasAutoCreated
+    joinedViaInvite: Boolean(inviteTokenRecord),
   });
 
-  if (userWasAutoCreated) {
-    response.cookies.set("if_user", "", { expires: new Date(0), path: "/" });
+  response.cookies.set("if_user", normalizedEmail, {
+    sameSite: "lax",
+    path: "/",
+  });
+
+  if (workspaceSlug) {
+    response.cookies.set("if_workspace", workspaceSlug, {
+      sameSite: "lax",
+      path: "/",
+    });
   }
 
   return response;

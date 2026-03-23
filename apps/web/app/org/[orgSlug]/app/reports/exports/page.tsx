@@ -33,6 +33,14 @@ export default async function ExportsPage({ params }: { params: { orgSlug: strin
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Programme Close-Out Exports</h1>
+      <a
+        href={`/api/org/${params.orgSlug}/exports/foundation`}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+      >
+        Open export foundation summary (JSON)
+      </a>
       <CloseoutExportsPanel orgSlug={params.orgSlug} programmes={safeProgrammes} templates={templates} initialJobs={safeJobs} />
     </div>
   );
