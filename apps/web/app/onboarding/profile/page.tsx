@@ -418,7 +418,7 @@ export default function StudentProfileOnboardingPage() {
           Quick join if you already have a profile
         </p>
         <p className="text-xs text-slate-500">
-          Paste invite token and join your programme directly.
+          Paste invite token to join directly, or continue below to register without a token.
         </p>
         <form
           className="mt-3 flex flex-wrap gap-2"

@@ -104,7 +104,11 @@ let adapter: StorageAdapter | null = null;
 
 export function getStorageAdapter(): StorageAdapter {
   if (!adapter) {
-    adapter = process.env.STORAGE_PROVIDER === "obs" ? new ObsStorageAdapter() : new MinioStorageAdapter();
+    const localDevMode = process.env.LOCAL_DEV_MODE === "true";
+    adapter =
+      !localDevMode && process.env.STORAGE_PROVIDER === "obs"
+        ? new ObsStorageAdapter()
+        : new MinioStorageAdapter();
   }
 
   return adapter;

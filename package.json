@@ -16,7 +16,8 @@
     "format": "prettier --check .",
     "db:generate": "npm run db:generate --workspace @internflow/db",
     "predev": "node scripts/ensure-deps.mjs",
-    "check:prod-env": "node scripts/validate-production-env.mjs"
+    "check:prod-env": "node scripts/validate-production-env.mjs",
+    "check:local-env": "node scripts/validate-local-env.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
