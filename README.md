@@ -99,11 +99,13 @@ Rules:
 ### Run locally
 1. `docker compose up -d`
 2. `npm install`
-3. `cp .env.example .env` (Windows: `copy .env.example .env`)
+3. `cp .env.example .env.local` (Windows: `copy .env.example .env.local`)
 4. `npm run db:generate`
 5. `npm run db:push`
 6. `npm run db:seed`
 7. `npm run dev`
+
+> Local env resolution: backend APIs read env from `process.env`, then fallback to `.env.local` / `.env` in repo root and `apps/web/.env.local` / `apps/web/.env`. For OpenRouter in local development, set `ENABLE_AI_ENRICHMENT=true` and `OPENROUTER_API_KEY` in one of those files, then restart `npm run dev`.
 
 ### Local URLs
 - App: `http://localhost:3000`

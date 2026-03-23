@@ -1,10 +1,21 @@
 import { z } from "zod";
 import { prisma } from "@internflow/db/src";
+import fs from "node:fs";
+import path from "node:path";
 
 const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "openrouter/free";
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
+const ENV_FILE_CANDIDATES = [
+  path.join(process.cwd(), ".env.local"),
+  path.join(process.cwd(), ".env"),
+  path.join(process.cwd(), "apps/web/.env.local"),
+  path.join(process.cwd(), "apps/web/.env"),
+];
+
+let cachedEnvFallback: Record<string, string> | null = null;
+let didLogAiConfig = false;
 
 const cvExtractionSchema = z.object({
   fullName: z.string().nullable().default(null),
@@ -21,15 +32,75 @@ const cvExtractionSchema = z.object({
 export type CvExtractionResult = z.infer<typeof cvExtractionSchema>;
 
 function aiEnabled() {
-  return process.env.ENABLE_AI_ENRICHMENT === "true";
+  const value = readAiEnv("ENABLE_AI_ENRICHMENT");
+  return value === "true";
 }
 
 function resolveModel() {
-  return process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
+  return readAiEnv("OPENROUTER_MODEL") || DEFAULT_MODEL;
 }
 
 function resolveApiKey() {
-  return process.env.OPENROUTER_API_KEY?.trim();
+  return readAiEnv("OPENROUTER_API_KEY");
+}
+
+function parseEnvFile(filePath: string) {
+  if (!fs.existsSync(filePath)) return {};
+  const raw = fs.readFileSync(filePath, "utf8");
+  const parsed: Record<string, string> = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const idx = trimmed.indexOf("=");
+    const key = trimmed.slice(0, idx).trim();
+    const value = trimmed.slice(idx + 1).trim();
+    if (key) parsed[key] = value;
+  }
+  return parsed;
+}
+
+function getFallbackEnv() {
+  if (cachedEnvFallback) return cachedEnvFallback;
+  const merged: Record<string, string> = {};
+  for (const filePath of ENV_FILE_CANDIDATES) {
+    const parsed = parseEnvFile(filePath);
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!(key in merged)) merged[key] = value;
+    }
+  }
+  cachedEnvFallback = merged;
+  return merged;
+}
+
+function readAiEnv(name: string) {
+  const processValue = process.env[name]?.trim();
+  if (processValue) return processValue;
+  const fallback = getFallbackEnv()[name]?.trim();
+  return fallback || undefined;
+}
+
+function logResolvedAiConfig() {
+  if (didLogAiConfig) return;
+  didLogAiConfig = true;
+
+  const enabled = aiEnabled();
+  const model = resolveModel();
+  const apiKey = resolveApiKey();
+
+  console.info("[ai] config loaded", {
+    enabled,
+    model,
+    hasApiKey: Boolean(apiKey),
+  });
+
+  if (!enabled) {
+    console.info("[ai] AI disabled by flag");
+    return;
+  }
+
+  if (!apiKey) {
+    console.warn("[ai] missing API key; fallback will be used");
+  }
 }
 
 function isTransientError(error: unknown) {
@@ -57,6 +128,8 @@ function extractJsonObject(raw: string) {
 }
 
 async function callOpenRouter(messages: Array<{ role: "system" | "user" | "assistant"; content: string }>) {
+  logResolvedAiConfig();
+
   if (!aiEnabled()) {
     throw new Error("AI enrichment disabled");
   }
@@ -80,6 +153,7 @@ async function callOpenRouter(messages: Array<{ role: "system" | "user" | "assis
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
+      console.info("[ai] OpenRouter request started", { model, attempt: attempt + 1 });
       const response = await fetch(OPENROUTER_ENDPOINT, {
         method: "POST",
         headers,
@@ -100,9 +174,15 @@ async function callOpenRouter(messages: Array<{ role: "system" | "user" | "assis
       };
       const text = payload.choices?.[0]?.message?.content?.trim();
       if (!text) throw new Error("OpenRouter response missing content");
+      console.info("[ai] OpenRouter request succeeded", { model, attempt: attempt + 1 });
       return text;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Unknown OpenRouter error");
+      console.error("[ai] OpenRouter request failed", {
+        model,
+        attempt: attempt + 1,
+        error: lastError.message,
+      });
       if (!isTransientError(lastError) || attempt >= MAX_RETRIES) {
         break;
       }
