@@ -9,9 +9,12 @@ import { createRedisClient } from "@/lib/redis-queue";
 const expiryByType: Record<string, number | null> = {
   ID: 3650,
   CV: null,
+  QUALIFICATION: null,
   CERTIFICATE: 90,
   AFFIDAVIT: 90,
   PROOF_OF_ADDRESS: 90,
+  BANK_CONFIRMATION: 90,
+  SIGNED_CONSENT: 3650,
   PAYSLIP: 30,
   APPLICATION_SUPPORTING_DOC: null,
 };
@@ -75,6 +78,7 @@ export async function POST(req: Request) {
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const file = formData.get("file");
+    const redirectTo = String(formData.get("redirectTo") ?? "").trim();
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
@@ -140,6 +144,13 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    if (redirectTo.startsWith("/")) {
+      const url = new URL(redirectTo, req.url);
+      url.searchParams.set("uploaded", parsed.data.type);
+      url.searchParams.set("status", document.status);
+      return NextResponse.redirect(url);
+    }
 
     return NextResponse.json({ ok: true, verification: document.status, expiryDays: expiryByType[parsed.data.type], documentId: document.id, storageKey });
   }

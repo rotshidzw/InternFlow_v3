@@ -166,7 +166,10 @@ export async function POST(req: Request) {
         data: {
           threadId: thread.id,
           role: "SYSTEM",
-          body: `✅ ${docType} received. OCR + scan queue started (doc: ${document.id.slice(0, 8)}...). We will update your status once checks pass.`,
+          body:
+            docType === "CV"
+              ? `Your CV was uploaded successfully. We are reading your CV now. Next step: parsing and verification review.`
+              : `Your ${docType} was uploaded successfully. OCR/scan started. Next step: parsing and verification review.`,
         },
       });
 
@@ -270,7 +273,7 @@ export async function POST(req: Request) {
 
     if (intent === "upload") {
       autoReply =
-        "Select the exact document type and attach the file below to upload.";
+        "Please use the Documents page to upload files. It shows required documents, processing status, and any re-upload actions clearly.";
     }
 
 

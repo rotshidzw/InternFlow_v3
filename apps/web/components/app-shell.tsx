@@ -105,6 +105,12 @@ export function AppShell({
             >
               <MessageSquare className="h-3.5 w-3.5" /> Messages
             </Link>
+            <Link
+              href="/app/student/documents"
+              className="flex items-center gap-1.5 hover:text-sky-700"
+            >
+              <Building2 className="h-3.5 w-3.5" /> Upload documents
+            </Link>
             <p className="flex items-center gap-1.5 text-slate-600">
               <BellRing className="h-3.5 w-3.5" /> Stay on checklist deadlines
             </p>
