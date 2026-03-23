@@ -7,14 +7,21 @@ const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = "openrouter/free";
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
-const ENV_FILE_CANDIDATES = [
-  path.join(process.cwd(), ".env.local"),
-  path.join(process.cwd(), ".env"),
-  path.join(process.cwd(), "apps/web/.env.local"),
-  path.join(process.cwd(), "apps/web/.env"),
-];
+const ENV_FILE_CANDIDATES = Array.from(
+  new Set([
+    path.resolve(process.cwd(), ".env.local"),
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "..", ".env.local"),
+    path.resolve(process.cwd(), "..", ".env"),
+    path.resolve(process.cwd(), "..", "..", ".env.local"),
+    path.resolve(process.cwd(), "..", "..", ".env"),
+    path.resolve(process.cwd(), "apps/web/.env.local"),
+    path.resolve(process.cwd(), "apps/web/.env"),
+  ]),
+);
 
 let cachedEnvFallback: Record<string, string> | null = null;
+let cachedEnvSource: Record<string, string> | null = null;
 let didLogAiConfig = false;
 
 const cvExtractionSchema = z.object({
@@ -32,16 +39,16 @@ const cvExtractionSchema = z.object({
 export type CvExtractionResult = z.infer<typeof cvExtractionSchema>;
 
 function aiEnabled() {
-  const value = readAiEnv("ENABLE_AI_ENRICHMENT");
+  const value = readAiEnv("ENABLE_AI_ENRICHMENT").value;
   return value === "true";
 }
 
 function resolveModel() {
-  return readAiEnv("OPENROUTER_MODEL") || DEFAULT_MODEL;
+  return readAiEnv("OPENROUTER_MODEL").value || DEFAULT_MODEL;
 }
 
 function resolveApiKey() {
-  return readAiEnv("OPENROUTER_API_KEY");
+  return readAiEnv("OPENROUTER_API_KEY").value;
 }
 
 function parseEnvFile(filePath: string) {
@@ -60,37 +67,55 @@ function parseEnvFile(filePath: string) {
 }
 
 function getFallbackEnv() {
-  if (cachedEnvFallback) return cachedEnvFallback;
+  if (cachedEnvFallback && cachedEnvSource) {
+    return { values: cachedEnvFallback, sources: cachedEnvSource };
+  }
   const merged: Record<string, string> = {};
+  const sources: Record<string, string> = {};
   for (const filePath of ENV_FILE_CANDIDATES) {
     const parsed = parseEnvFile(filePath);
     for (const [key, value] of Object.entries(parsed)) {
-      if (!(key in merged)) merged[key] = value;
+      if (!(key in merged)) {
+        merged[key] = value;
+        sources[key] = filePath;
+      }
     }
   }
   cachedEnvFallback = merged;
-  return merged;
+  cachedEnvSource = sources;
+  return { values: merged, sources };
 }
 
 function readAiEnv(name: string) {
   const processValue = process.env[name]?.trim();
-  if (processValue) return processValue;
-  const fallback = getFallbackEnv()[name]?.trim();
-  return fallback || undefined;
+  if (processValue) return { value: processValue, source: "process.env" };
+
+  const fallbackEnv = getFallbackEnv();
+  const fallback = fallbackEnv.values[name]?.trim();
+  if (!fallback) return { value: undefined, source: null };
+  return { value: fallback, source: fallbackEnv.sources[name] ?? "env-fallback-cache" };
 }
 
 function logResolvedAiConfig() {
   if (didLogAiConfig) return;
   didLogAiConfig = true;
 
-  const enabled = aiEnabled();
-  const model = resolveModel();
-  const apiKey = resolveApiKey();
+  const enabledVar = readAiEnv("ENABLE_AI_ENRICHMENT");
+  const modelVar = readAiEnv("OPENROUTER_MODEL");
+  const apiKeyVar = readAiEnv("OPENROUTER_API_KEY");
+  const enabled = enabledVar.value === "true";
+  const model = modelVar.value || DEFAULT_MODEL;
+  const apiKey = apiKeyVar.value;
 
   console.info("[ai] config loaded", {
     enabled,
     model,
     hasApiKey: Boolean(apiKey),
+    sources: {
+      flag: enabledVar.source,
+      model: modelVar.source,
+      apiKey: apiKeyVar.source,
+    },
   });
 
   if (!enabled) {
