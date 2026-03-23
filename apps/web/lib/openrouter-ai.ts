@@ -20,9 +20,23 @@ const ENV_FILE_CANDIDATES = Array.from(
   ]),
 );
 
-let cachedEnvFallback: Record<string, string> | null = null;
-let cachedEnvSource: Record<string, string> | null = null;
-let didLogAiConfig = false;
+type AiRuntimeState = {
+  cachedEnvFallback: Record<string, string> | null;
+  cachedEnvSource: Record<string, string> | null;
+  didLogAiConfig: boolean;
+};
+
+const aiRuntimeState: AiRuntimeState = (
+  globalThis as typeof globalThis & { __internflowAiRuntimeState?: AiRuntimeState }
+).__internflowAiRuntimeState ?? {
+  cachedEnvFallback: null,
+  cachedEnvSource: null,
+  didLogAiConfig: false,
+};
+
+(
+  globalThis as typeof globalThis & { __internflowAiRuntimeState?: AiRuntimeState }
+).__internflowAiRuntimeState = aiRuntimeState;
 
 const cvExtractionSchema = z.object({
   fullName: z.string().nullable().default(null),
@@ -75,8 +89,11 @@ function parseEnvFile(filePath: string) {
 }
 
 function getFallbackEnv() {
-  if (cachedEnvFallback && cachedEnvSource) {
-    return { values: cachedEnvFallback, sources: cachedEnvSource };
+  if (aiRuntimeState.cachedEnvFallback && aiRuntimeState.cachedEnvSource) {
+    return {
+      values: aiRuntimeState.cachedEnvFallback,
+      sources: aiRuntimeState.cachedEnvSource,
+    };
   }
   const merged: Record<string, string> = {};
   const sources: Record<string, string> = {};
@@ -89,8 +106,8 @@ function getFallbackEnv() {
       }
     }
   }
-  cachedEnvFallback = merged;
-  cachedEnvSource = sources;
+  aiRuntimeState.cachedEnvFallback = merged;
+  aiRuntimeState.cachedEnvSource = sources;
   return { values: merged, sources };
 }
 
@@ -105,8 +122,8 @@ function readAiEnv(name: string) {
 }
 
 function logResolvedAiConfig() {
-  if (didLogAiConfig) return;
-  didLogAiConfig = true;
+  if (aiRuntimeState.didLogAiConfig) return;
+  aiRuntimeState.didLogAiConfig = true;
 
   const enabledVar = readAiEnv("ENABLE_AI_ENRICHMENT");
   const modelVar = readAiEnv("OPENROUTER_MODEL");
