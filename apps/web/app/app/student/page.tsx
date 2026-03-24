@@ -7,6 +7,7 @@ import {
   getDocumentDisplayName,
   resolveProgrammeDocumentPlan,
 } from "@/lib/student-document-requirements";
+import { deriveStudentLifecycle } from "@/lib/student-lifecycle";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
 
 type StudentPortalProps = {
@@ -55,6 +56,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         : null;
   const docPlan = resolveProgrammeDocumentPlan(programmeName);
   const isEnrolled = context.type === "ENROLLED";
+  const enrollmentStatus = context.type === "ENROLLED" ? context.enrollment.enrollmentStatus : null;
   const programWorkspaceUrl =
     context.type === "ENROLLED"
       ? `/org/${context.enrollment.organizationSlug}/student`
@@ -114,6 +116,21 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const profileCompletion = Math.round(
     (profileChecks.filter(Boolean).length / profileChecks.length) * 100,
   );
+  const lifecycle = deriveStudentLifecycle({
+    hasUser: true,
+    hasProfileCore: profileCompletion >= 100,
+    docs: documents.map((d) => ({ status: d.status })),
+    latestApplicationStatus: latestApplication?.status ?? null,
+    enrollmentStatus,
+  });
+  const documentsReady = requiredDone === docPlan.required.length && docPlan.required.length > 0;
+  const shouldShowApplyNow = ["not_started", "draft"].includes(lifecycle.applicationStatus);
+  const placementLabel =
+    lifecycle.placementStatus === "unassigned"
+      ? "Placement not assigned"
+      : lifecycle.placementStatus === "assigned" || lifecycle.placementStatus === "active"
+        ? programmeName ?? "Assigned provider"
+        : lifecycle.placementStatus;
 
   return (
     <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
@@ -134,6 +151,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <form action="/api/auth/logout" method="post">
+              <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Log out
+              </button>
+            </form>
             <Link
               href="/app/student/documents"
               className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
@@ -209,9 +231,48 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           <p className="mt-2 text-3xl font-semibold text-slate-900">{payslips}</p>
           <p className="text-xs text-slate-500">Visible when relevant</p>
         </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-slate-600">Application</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">
+            {lifecycle.applicationStatus.replace("_", " ")}
+          </p>
+          {documentsReady && shouldShowApplyNow && (
+            <p className="mt-1 text-xs text-emerald-700">Documents ready · application not submitted</p>
+          )}
+        </article>
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900">Lifecycle status</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Application: {lifecycle.applicationStatus}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Placement: {placementLabel}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
+          </div>
+          {shouldShowApplyNow && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              <span>{documentsReady ? "Documents ready. Submit your application to continue." : "Complete required documents, then submit your application."}</span>
+              <Link href="/app/opportunities" className="rounded bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800">
+                Submit application
+              </Link>
+            </div>
+          )}
+          {lifecycle.applicationStatus === "under_review" && (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Application under review. You can still update documents if requested.
+            </p>
+          )}
+          {lifecycle.applicationStatus === "accepted" && (
+            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              Application accepted. Placement/provider details appear when assignment is finalized.
+            </p>
+          )}
+        </section>
+
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Required document checklist</h2>
@@ -322,7 +383,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           >
             Edit profile
           </Link>
-          {latestApplication?.status === "ACCEPTED" && (
+          {(lifecycle.programmeStatus === "completed" || payslips > 0) && (
             <Link
               href="/app/whatsapp-sim"
               className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"

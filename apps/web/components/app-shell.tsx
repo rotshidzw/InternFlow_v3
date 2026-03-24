@@ -67,6 +67,11 @@ export function AppShell({
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
               {orgSlug}
             </span>
+            <form action="/api/auth/logout" method="post">
+              <button className="rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-50">
+                Log out
+              </button>
+            </form>
           </div>
         </div>
       </header>

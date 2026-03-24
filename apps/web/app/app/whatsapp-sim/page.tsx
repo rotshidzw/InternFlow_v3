@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@internflow/db/src";
 import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
 
 const actions = [
   { value: "status", label: "Check program status" },
@@ -34,6 +35,12 @@ export default async function WhatsAppSimPage() {
   if (!tenantMembership) {
     redirect("/workspaces");
   }
+  const context = await resolveStudentTenantContext(user.id);
+  const placementLabel =
+    context.type === "ENROLLED" &&
+    ["PENDING", "ACTIVE", "COMPLETED"].includes(context.enrollment.enrollmentStatus)
+      ? context.enrollment.organizationName
+      : "Placement not assigned";
 
   let thread = await prisma.chatThread.findFirst({
     where: { userId: user.id },
@@ -72,6 +79,11 @@ export default async function WhatsAppSimPage() {
         >
           ← Back to Student Portal
         </Link>
+        <form action="/api/auth/logout" method="post">
+          <button className="inline-flex rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/20">
+            Log out
+          </button>
+        </form>
       </div>
 
       <div className="grid h-[78vh] grid-cols-1 gap-3 md:grid-cols-[300px_1fr]">
@@ -87,8 +99,8 @@ export default async function WhatsAppSimPage() {
               <span className="text-slate-300">Email:</span> {user.email}
             </p>
             <p>
-              <span className="text-slate-300">Tenant:</span>{" "}
-              {tenantMembership.organization.name}
+              <span className="text-slate-300">Provider/Placement:</span>{" "}
+              {placementLabel}
             </p>
             <p>
               <span className="text-slate-300">Role:</span>{" "}
