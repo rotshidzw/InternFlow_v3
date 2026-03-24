@@ -38,7 +38,7 @@ export default async function WhatsAppSimPage() {
   const context = await resolveStudentTenantContext(user.id);
   const placementLabel =
     context.type === "ENROLLED" &&
-    ["PENDING", "ACTIVE", "COMPLETED"].includes(context.enrollment.enrollmentStatus)
+    ["PENDING", "ACTIVE", "COMPLETED"].includes(context.enrollment.status)
       ? context.enrollment.organizationName
       : "Placement not assigned";
 

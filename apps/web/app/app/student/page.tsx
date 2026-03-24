@@ -56,7 +56,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         : null;
   const docPlan = resolveProgrammeDocumentPlan(programmeName);
   const isEnrolled = context.type === "ENROLLED";
-  const enrollmentStatus = context.type === "ENROLLED" ? context.enrollment.enrollmentStatus : null;
+  const enrollmentStatus = context.type === "ENROLLED" ? context.enrollment.status : null;
   const programWorkspaceUrl =
     context.type === "ENROLLED"
       ? `/org/${context.enrollment.organizationSlug}/student`
