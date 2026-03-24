@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 
 function growthSummary(summaries: string[]) {
   const keywords = ["team", "debug", "api", "client", "compliance", "support"];
-  const counts = keywords.map((k) => ({ k, count: summaries.filter((s) => s.toLowerCase().includes(k)).length }));
+  const counts = keywords.map((k) => ({
+    k,
+    count: summaries.filter((s) => String(s ?? "").toLowerCase().includes(k)).length,
+  }));
   return counts.sort((a, b) => b.count - a.count).slice(0, 3).map((x) => `${x.k}(${x.count})`).join(", ");
 }
 
@@ -19,8 +22,9 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const docs = await prisma.document.findMany({ where: { userId: access.user.id }, take: 8, orderBy: { createdAt: "desc" } });
   const notifications = await prisma.notification.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 5 });
   const checklist = applications[0]?.checklist;
-  const nextTask = checklist?.items.find((i) => i.status !== "DONE");
-  const overdue = checklist?.items.filter((i) => i.status !== "DONE" && i.dueDate && i.dueDate < new Date()).length ?? 0;
+  const checklistItems = checklist?.items ?? [];
+  const nextTask = checklistItems.find((i) => i.status !== "DONE");
+  const overdue = checklistItems.filter((i) => i.status !== "DONE" && i.dueDate && i.dueDate < new Date()).length;
 
   const currentWeekStart = new Date();
   currentWeekStart.setHours(0, 0, 0, 0);
@@ -28,10 +32,10 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const currentWeekEnd = new Date(currentWeekStart);
   currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
-  const weeklyGoals = checklist?.items.filter((item) => {
+  const weeklyGoals = checklistItems.filter((item) => {
     if (!item.dueDate) return true;
     return item.dueDate >= currentWeekStart && item.dueDate <= currentWeekEnd;
-  }) ?? [];
+  });
   const weeklyCompleted = weeklyGoals.filter((item) => item.status === "DONE").length;
 
   return (
@@ -82,12 +86,15 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
       <section id="checklist" className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="font-semibold text-slate-900">Checklist actions</h2>
         <div className="mt-2 space-y-2">
-          {checklist?.items.map((item) => (
+          {checklistItems.map((item) => (
             <form key={item.id} action={`/api/checklist/items/${item.id}/complete`} method="post" className="flex items-center justify-between rounded-lg border border-slate-200 p-2 text-sm">
               <span className="text-slate-700">{item.label} · {item.status}</span>
               <button disabled={item.status === "DONE"} className="rounded bg-emerald-500 px-3 py-1 text-slate-950 disabled:opacity-50">Complete</button>
             </form>
           ))}
+          {checklistItems.length === 0 && (
+            <p className="text-sm text-slate-500">No checklist items available yet for this programme.</p>
+          )}
         </div>
       </section>
 
