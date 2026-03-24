@@ -256,7 +256,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           {shouldShowApplyNow && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
               <span>{documentsReady ? "Documents ready. Submit your application to continue." : "Complete required documents, then submit your application."}</span>
-              <Link href="/app/opportunities" className="rounded bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800">
+              <Link href="/opportunities" className="rounded bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800">
                 Submit application
               </Link>
             </div>

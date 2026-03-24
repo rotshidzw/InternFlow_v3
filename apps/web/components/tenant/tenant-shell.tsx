@@ -45,6 +45,7 @@ const primaryItems: NavItem[] = [
   { href: "enrollments", label: "Enrollments", icon: ClipboardList },
   { href: "intakes", label: "Intakes", icon: ClipboardList },
   { href: "documents", label: "Documents", icon: FolderOpen },
+  { href: "learners", label: "Learners", icon: Users },
   { href: "logbooks", label: "Logbooks", icon: FileText },
   { href: "approvals", label: "Approvals", icon: FileCheck2 },
 ];
@@ -205,10 +206,20 @@ export function TenantShell({
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  placeholder="Search learners, opportunities..."
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                />
+                <form
+                  action={`/org/${orgSlug}/app/learners`}
+                  method="get"
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    name="q"
+                    placeholder="Search learners..."
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <button className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs shadow-sm transition hover:bg-slate-50">
+                    Search
+                  </button>
+                </form>
                 <button
                   type="button"
                   onClick={toggleTheme}
