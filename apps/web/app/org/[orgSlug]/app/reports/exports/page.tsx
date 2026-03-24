@@ -41,6 +41,12 @@ export default async function ExportsPage({ params }: { params: { orgSlug: strin
       >
         Open export foundation summary (JSON)
       </a>
+      <a
+        href={`/org/${params.orgSlug}/app/templates/library`}
+        className="inline-flex rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm text-indigo-700 hover:bg-indigo-100"
+      >
+        Open audit template library
+      </a>
       <CloseoutExportsPanel orgSlug={params.orgSlug} programmes={safeProgrammes} templates={templates} initialJobs={safeJobs} />
     </div>
   );

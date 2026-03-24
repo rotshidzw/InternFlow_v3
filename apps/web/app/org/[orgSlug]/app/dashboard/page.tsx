@@ -10,7 +10,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
   const access = await requireTenantAccess(params.orgSlug);
   const orgId = access.membership.organizationId;
 
-  const [programs, opportunities, applications, enrollments, docs, approvalsPending, recentApps, recentLogs, recentAudits, onboardingProgress] =
+  const [programs, opportunities, applications, enrollments, docs, approvalsPending, recentApps, recentLogs, recentAudits, onboardingProgress, registersThisMonth, issuedCertificates] =
     await Promise.all([
       prisma.program.count({ where: { organizationId: orgId } }),
       prisma.opportunity.count({ where: { organizationId: orgId } }),
@@ -34,7 +34,15 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
         take: 6
       }),
       prisma.auditLog.findMany({ where: { orgId }, orderBy: { createdAt: "desc" }, take: 8, include: { actor: true } }),
-      prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, select: { progress: true } })
+      prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, select: { progress: true } }),
+      prisma.organizationDocument.count({
+        where: {
+          orgId,
+          category: "ATTENDANCE_REGISTER",
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+        }
+      }),
+      prisma.document.count({ where: { organizationId: orgId, type: "CERTIFICATE" } })
     ]);
 
   const activeEnrollments = enrollments.filter((e) => e.status === "ACTIVE").length;
@@ -51,6 +59,10 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
   const needsAttentionDocs = docs.filter((d) => ["SCAN_FAILED", "SCAN_PENDING"].includes(d.status) || (d.expirationDate && d.expirationDate < new Date())).length;
   const validDocs = docs.length - needsAttentionDocs;
   const compliancePct = pct(validDocs, docs.length);
+  const paymentsDue = enrollments.filter((entry) => entry.status === "ACTIVE" && !entry.stipendPaid).length;
+  const certificateBacklog = completedEnrollments - issuedCertificates;
+  const missingAttendance = activeEnrollments > 0 && registersThisMonth === 0 ? activeEnrollments : 0;
+  const auditGaps = needsAttentionDocs + paymentsDue + Math.max(0, certificateBacklog) + (registersThisMonth === 0 ? 1 : 0);
 
   const last14 = Array.from({ length: 14 }).map((_, i) => {
     const d = new Date();
@@ -123,6 +135,32 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           <p className="text-xs text-slate-500">Pending approvals</p>
           <p className="mt-2 text-3xl font-semibold">{approvalsPending}</p>
         </Link>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-amber-700">Pending docs</p>
+          <p className="mt-1 text-2xl font-semibold text-amber-900">{needsAttentionDocs}</p>
+        </div>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-rose-700">Missing attendance</p>
+          <p className="mt-1 text-2xl font-semibold text-rose-900">{missingAttendance}</p>
+        </div>
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-blue-700">Payments due</p>
+          <p className="mt-1 text-2xl font-semibold text-blue-900">{paymentsDue}</p>
+        </div>
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-violet-700">Certificate backlog</p>
+          <p className="mt-1 text-2xl font-semibold text-violet-900">{Math.max(0, certificateBacklog)}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-600">Audit gaps</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{auditGaps}</p>
+          <Link href={`/org/${params.orgSlug}/app/templates/library`} className="mt-2 inline-block text-xs text-blue-700 underline">
+            Open audit templates
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
