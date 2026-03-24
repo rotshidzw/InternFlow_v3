@@ -31,7 +31,7 @@ export default async function OpportunitiesPage({
         : {}),
     },
     include: { organization: true },
-    orderBy: { createdAt: "desc" },
+    orderBy: { id: "desc" },
   });
 
   const hasActiveProgram = context.type === "ENROLLED" && context.enrollment.status !== "COMPLETED";
