@@ -63,6 +63,18 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       : context.type === "APPLICATION"
         ? `/org/${context.application.organizationSlug}/student`
         : null;
+  const canOpenProgramWorkspace =
+    context.type === "ENROLLED"
+      ? memberships.some(
+          (membership) =>
+            membership.organization.slug === context.enrollment.organizationSlug,
+        )
+      : context.type === "APPLICATION"
+        ? memberships.some(
+            (membership) =>
+              membership.organization.slug === context.application.organizationSlug,
+          )
+        : false;
 
   const [
     profile,
@@ -169,7 +181,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               Ask for support
             </Link>
             <Link
-              href={programWorkspaceUrl ?? "/app/student"}
+              href={canOpenProgramWorkspace ? (programWorkspaceUrl ?? "/app/student") : "/app/student"}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Check programme status
