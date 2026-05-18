@@ -1,12 +1,19 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest, NextResponse } from "next/server";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {
-  const actor = await requireTenantApiActor(params.orgSlug);
-  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
-  const orgId = actor.membership.organizationId;
+  const orgId = actor.actor.membership.organizationId;
   const [programmes, enrollments, documents, certs, registers] = await Promise.all([
     prisma.program.findMany({ where: { organizationId: orgId }, select: { id: true, name: true } }),
     prisma.enrollment.count({ where: { organizationId: orgId } }),
@@ -40,6 +47,17 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
       payslips: docs.filter((d) => d.type === "PAYSLIP").length,
       rejectedDocs: docs.filter((d) => d.status === "REJECTED").length,
     };
+  });
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: orgId,
+      userId: actor.actor.user.id,
+      action: "EXPORT_FOUNDATION_VIEWED",
+      entityType: "Organization",
+      entityId: orgId,
+      metadata: { programmeId: programmeId ?? null },
+    },
   });
 
   return NextResponse.json({

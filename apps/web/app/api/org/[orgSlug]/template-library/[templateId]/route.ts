@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 function toCsv(rows: string[][]) {
   return rows
@@ -60,8 +64,11 @@ function templateRows(templateId: string) {
 }
 
 export async function GET(_: Request, { params }: { params: { orgSlug: string; templateId: string } }) {
-  const actor = await requireTenantApiActor(params.orgSlug);
-  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const template = templateRows(params.templateId);
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });

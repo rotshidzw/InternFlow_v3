@@ -1,33 +1,32 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest } from "next/server";
 import { readZipFromJob } from "@/lib/closeout-export";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
-export async function GET(req: NextRequest, { params }: { params: { jobId: string } }) {
-  const email = req.cookies.get("if_user")?.value;
-  if (!email) return new Response("Unauthorized", { status: 401 });
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
+export async function GET(_: NextRequest, { params }: { params: { jobId: string } }) {
   const record = await readZipFromJob(params.jobId);
   if (!record) return new Response("Export not ready", { status: 404 });
 
-  const membership = await prisma.membership.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: record.job.tenantId,
-      role: { in: ["COORDINATOR", "PROVIDER_ADMIN"] }
-    }
+  const actor = await resolveTenantApiActor({
+    organizationId: record.job.tenantId,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
   });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
-  if (!membership) return new Response("Forbidden", { status: 403 });
-
-  console.info("[closeout-export] download attempt", { jobId: params.jobId, tenantId: record.job.tenantId, userId: user.id });
+  console.info("[closeout-export] download attempt", {
+    jobId: params.jobId,
+    tenantId: record.job.tenantId,
+    userId: actor.actor.user.id,
+  });
 
   await prisma.auditEvent.create({
     data: {
       tenantId: record.job.tenantId,
-      userId: user.id,
+      userId: actor.actor.user.id,
       action: "EXPORT_DOWNLOADED",
       entityType: "ProgrammeExportJob",
       entityId: record.job.id,

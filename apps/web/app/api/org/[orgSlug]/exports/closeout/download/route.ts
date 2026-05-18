@@ -1,18 +1,25 @@
 import { prisma } from "@internflow/db/src";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextRequest, NextResponse } from "next/server";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {
-  const actor = await requireTenantApiActor(params.orgSlug);
-  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("jobId");
   if (!jobId) return NextResponse.json({ error: "jobId is required" }, { status: 400 });
 
   const job = await prisma.programmeExportJob.findFirst({
-    where: { id: jobId, tenantId: actor.membership.organizationId },
+    where: { id: jobId, tenantId: actor.actor.membership.organizationId },
   });
 
   if (!job || !job.zipObsKey || job.status !== "DONE") {
@@ -23,8 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: actor.membership.organizationId,
-      userId: actor.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "EXPORT_DOWNLOADED",
       entityType: "ProgrammeExportJob",
       entityId: job.id,
