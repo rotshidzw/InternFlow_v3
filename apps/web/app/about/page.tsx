@@ -1,34 +1,71 @@
+import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
+import { SectionHeading } from "@/components/marketing/section-heading";
 
 const founderImagePath = "/founder-placeholder.svg";
+
+const principles = [
+  "Operational clarity over fragmented administration",
+  "Evidence-first workflow design for audit confidence",
+  "Role-safe delivery for enterprise governance",
+  "Practical systems that scale across organisations",
+];
+
+const builtFor = [
+  "Providers and tenant administrators running multiple programmes",
+  "Coordinators and facilitators managing learner progression",
+  "Finance and payroll functions tracking stipend and payment evidence",
+  "Auditors and oversight stakeholders requiring traceable controls",
+];
 
 export default function AboutPage() {
   return (
     <SiteShell>
-      <div className="space-y-6">
-        <h1 className="text-4xl font-semibold text-brand-text">About InternFlow</h1>
-        <p className="max-w-3xl text-brand-textSoft">
-          InternFlow is a multi-organisation platform that helps teams run internship and
-          learnership programmes end-to-end: onboarding, applications, documentation, approvals,
-          and compliance reporting.
-        </p>
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-12">
+        <section className="if-panel p-6 md:p-8">
+          <SectionHeading
+            eyebrow="About InternFlow"
+            title="A systems company focused on programme operations integrity"
+            subtitle="InternFlow exists to help organisations deliver internship and learnership programmes with operational control, evidence quality, and audit readiness."
+          />
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-2">
           <AnimatedCard>
-            <h2 className="text-xl font-semibold text-brand-text">Who uses it</h2>
-            <p className="mt-2 text-sm text-brand-textSoft">
-              Organisation admins, coordinators, supervisors, providers, and students each get
-              purpose-built operational views.
+            <h2 className="text-xl font-semibold text-brand-text">Why InternFlow exists</h2>
+            <p className="mt-3 text-sm leading-relaxed text-brand-textSoft">
+              Many programme teams operate across disconnected files, ad hoc messaging, and manual
+              evidence tracking. This creates lifecycle confusion, weak accountability, and audit
+              stress. InternFlow was built to establish one controlled operating layer where teams
+              can execute consistently and report with confidence.
             </p>
           </AnimatedCard>
           <AnimatedCard>
-            <h2 className="text-xl font-semibold text-brand-text">What it solves</h2>
-            <p className="mt-2 text-sm text-brand-textSoft">
-              Reduces manual follow-up, keeps records audit-ready, and gives clear visibility on
-              application outcomes and active cohorts.
+            <h2 className="text-xl font-semibold text-brand-text">What problem it solves</h2>
+            <p className="mt-3 text-sm leading-relaxed text-brand-textSoft">
+              InternFlow reduces operational fragmentation across learner onboarding, documents,
+              register evidence, payment records, certificates, follow-up tracking, and close-out
+              reporting. Teams gain clearer state management and better evidence lineage across the
+              full programme cycle.
             </p>
           </AnimatedCard>
-        </div>
+        </section>
+
+        <section>
+          <SectionHeading
+            eyebrow="Who It Is Built For"
+            title="Designed for organisations delivering real programmes at scale"
+          />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {builtFor.map((item) => (
+              <AnimatedCard key={item}>
+                <p className="text-sm text-brand-textSoft">{item}</p>
+              </AnimatedCard>
+            ))}
+          </div>
+        </section>
+
         <section className="if-panel grid gap-6 p-6 md:grid-cols-[120px_1fr] md:items-center">
           <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
             <img
@@ -42,11 +79,41 @@ export default function AboutPage() {
             <h2 className="text-2xl font-semibold text-brand-text">Mavhungu Rotshidzwa Chester</h2>
             <p className="text-sm text-brand-muted">Developer - Systems Support - AI Engineer</p>
             <p className="text-sm leading-relaxed text-brand-textSoft">
-              Chester founded InternFlow to solve practical operations and audit challenges in
-              training, learnership, internship, and skills development programmes. The platform is
-              built for teams that need reliable systems control, workflow visibility, and
-              enterprise-grade evidence readiness.
+              Chester founded InternFlow to solve practical operational and audit challenges in
+              training, learnership, internship, and skills development programmes. The platform
+              vision is straightforward: give teams a reliable enterprise system for execution,
+              governance, and evidence confidence.
             </p>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeading
+            eyebrow="Operating Principles"
+            title="How InternFlow approaches enterprise workflow software"
+          />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {principles.map((principle) => (
+              <AnimatedCard key={principle}>
+                <p className="text-sm text-brand-textSoft">{principle}</p>
+              </AnimatedCard>
+            ))}
+          </div>
+        </section>
+
+        <section className="if-panel p-6 md:p-8">
+          <SectionHeading
+            eyebrow="Platform Vision"
+            title="Build trust through operational precision"
+            subtitle="InternFlow will continue evolving as a serious enterprise platform for teams that need strong control over programme delivery, reporting, and governance."
+          />
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
+              Request Demo
+            </Link>
+            <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
+              Register Organization
+            </Link>
           </div>
         </section>
       </div>

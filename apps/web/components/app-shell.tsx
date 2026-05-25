@@ -46,7 +46,11 @@ export function AppShell({
       <header className="sticky top-0 z-20 border-b border-brand-border/70 bg-[#090a1a]/84 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
-            <img src="/icon.svg" alt="InternFlow" className="h-8 w-8 rounded-lg ring-1 ring-brand-accent/40" />
+            <img
+              src="/internflow-logo.png"
+              alt="InternFlow"
+              className="h-9 w-auto drop-shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+            />
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">
                 InternFlow learner portal
