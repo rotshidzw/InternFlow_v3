@@ -16,11 +16,11 @@ export function AnimatedCard({ children }: PropsWithChildren) {
             : {
                 y: -6,
                 scale: 1.02,
-                boxShadow: "0 22px 50px rgba(2, 6, 23, 0.18)",
+                boxShadow: "0 22px 54px rgba(168, 85, 247, 0.28)",
               }
         }
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 shadow-lg transition-all duration-300 ease-out backdrop-blur hover:shadow-2xl dark:border-white/15 dark:bg-white/10"
+        className="if-panel rounded-2xl p-5 transition-all duration-300 ease-out backdrop-blur"
       >
         {children}
       </motion.div>

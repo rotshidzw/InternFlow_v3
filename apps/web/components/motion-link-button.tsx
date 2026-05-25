@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import Link from "next/link";
 
 export function MotionLinkButton({
   href,
@@ -10,7 +9,7 @@ export function MotionLinkButton({
 }: {
   href: string;
   label: string;
-  className: string;
+  className?: string;
 }) {
   const prefersReducedMotion = useReducedMotion();
 
@@ -21,9 +20,9 @@ export function MotionLinkButton({
       transition={{ duration: 0.2, ease: "easeOut" }}
       className="inline-flex"
     >
-      <Link href={href} className={className}>
+      <a href={href} className={className ?? "if-btn if-btn-primary"}>
         {label}
-      </Link>
+      </a>
     </motion.div>
   );
 }

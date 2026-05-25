@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PropsWithChildren } from "react";
 import {
   BellRing,
@@ -43,32 +42,26 @@ export function AppShell({
   const items = roleNav[role] ?? [];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe_0%,#f8fafc_38%,#f8fafc_100%)] text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+    <div className="min-h-screen bg-brand-bg text-brand-text">
+      <header className="sticky top-0 z-20 border-b border-brand-border/70 bg-[#090a1a]/84 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
-            <img
-              src="/icon.svg"
-              alt="InternFlow"
-              className="h-8 w-8 rounded-lg"
-            />
+            <img src="/icon.svg" alt="InternFlow" className="h-8 w-8 rounded-lg ring-1 ring-brand-accent/40" />
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">
                 InternFlow learner portal
               </p>
-              <p className="text-sm font-semibold">{orgName}</p>
+              <p className="text-sm font-semibold text-brand-text">{orgName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+          <div className="flex items-center gap-2 text-xs text-brand-muted">
+            <span className="if-badge">
+              <ShieldCheck className="h-3.5 w-3.5" />
               {role.replace("_", " ")}
             </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
-              {orgSlug}
-            </span>
+            <span className="if-badge">{orgSlug}</span>
             <form action="/api/auth/logout" method="post">
-              <button className="rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-50">
+              <button className="if-btn if-btn-secondary px-2.5 py-1 text-xs">
                 Log out
               </button>
             </form>
@@ -77,54 +70,43 @@ export function AppShell({
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[260px_1fr]">
-        <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-500">
+        <aside className="if-panel p-4">
+          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-brand-muted">
             Student workspace
           </p>
           <nav className="space-y-1.5 text-sm">
             {items.map((item) => (
-              <Link
+              <a
                 key={item.label}
                 href={`/org/${orgSlug}/${item.href}`}
-                className="block rounded-lg border border-transparent px-3 py-2 text-slate-700 transition hover:border-slate-200 hover:bg-slate-50"
+                className="group block rounded-lg border border-transparent px-3 py-2 text-brand-muted transition hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
-          <div className="mt-4 space-y-2 rounded-xl border border-sky-100 bg-sky-50/80 p-3 text-xs text-slate-700">
-            <p className="flex items-center gap-1.5 font-semibold text-slate-800">
-              <Compass className="h-3.5 w-3.5 text-sky-600" />
+          <div className="if-panel-muted mt-4 space-y-2 p-3 text-xs text-brand-muted">
+            <p className="flex items-center gap-1.5 font-semibold text-brand-text">
+              <Compass className="h-3.5 w-3.5 text-brand-accentStrong" />
               Quick actions
             </p>
-            <Link
-              href="/app/student"
-              className="flex items-center gap-1.5 hover:text-sky-700"
-            >
+            <a href="/app/student" className="flex items-center gap-1.5 hover:text-brand-text">
               <Building2 className="h-3.5 w-3.5" /> Global student portal
-            </Link>
-            <Link
-              href="/app/whatsapp-sim"
-              className="flex items-center gap-1.5 hover:text-sky-700"
-            >
+            </a>
+            <a href="/app/whatsapp-sim" className="flex items-center gap-1.5 hover:text-brand-text">
               <MessageSquare className="h-3.5 w-3.5" /> Messages
-            </Link>
-            <Link
-              href="/app/student/documents"
-              className="flex items-center gap-1.5 hover:text-sky-700"
-            >
+            </a>
+            <a href="/app/student/documents" className="flex items-center gap-1.5 hover:text-brand-text">
               <Building2 className="h-3.5 w-3.5" /> Upload documents
-            </Link>
-            <p className="flex items-center gap-1.5 text-slate-600">
-              <BellRing className="h-3.5 w-3.5" /> Stay on checklist deadlines
+            </a>
+            <p className="flex items-center gap-1.5">
+              <BellRing className="h-3.5 w-3.5 text-brand-accentStrong" /> Stay on checklist deadlines
             </p>
           </div>
         </aside>
 
-        <main className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          {children}
-        </main>
+        <main className="if-panel p-5">{children}</main>
       </div>
     </div>
   );

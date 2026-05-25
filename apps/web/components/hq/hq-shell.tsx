@@ -1,10 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { PropsWithChildren } from "react";
 
-type NavItem = { href: string; label: string; roles: string[]; group: "Core" | "Operations" };
+type NavItem = {
+  href: string;
+  label: string;
+  roles: string[];
+  group: "Core" | "Operations";
+};
 
 const nav: NavItem[] = [
   {
@@ -67,54 +71,54 @@ export function HQShell({
   const ops = visible.filter((item) => item.group === "Operations");
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#f0f9ff_0%,#f8fafc_46%,#eef2ff_100%)] text-slate-900">
-      <div className="grid min-h-screen md:grid-cols-[280px_1fr]">
-        <aside className="border-r border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl">
+    <div className="min-h-screen bg-brand-bg text-brand-text">
+      <div className="grid min-h-screen md:grid-cols-[290px_1fr]">
+        <aside className="border-r border-brand-border/80 bg-[#080a18]/86 p-5 shadow-2xl backdrop-blur-2xl">
           <div className="mb-6">
-            <p className="text-xs uppercase tracking-[0.15em] text-slate-500">InternFlow Head</p>
-            <p className="text-lg font-semibold">Platform Core Console</p>
-            <p className="mt-1 text-xs text-slate-500">Global governance, tenant operations, integrations.</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-brand-muted">InternFlow Head</p>
+            <p className="text-lg font-semibold text-brand-text">Platform Core Console</p>
+            <p className="mt-1 text-xs text-brand-muted">
+              Global governance, tenant operations, and systems oversight.
+            </p>
           </div>
 
-          <p className="mb-2 text-xs uppercase tracking-[0.15em] text-slate-500">Core</p>
+          <p className="mb-2 text-xs uppercase tracking-[0.15em] text-brand-muted">Core</p>
           <nav className="space-y-1.5">
             {core.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
-                className="block rounded-xl border border-transparent px-3 py-2 text-sm transition hover:border-slate-200 hover:bg-slate-100/90 hover:shadow-sm"
+                className="block rounded-xl border border-transparent px-3 py-2 text-sm text-brand-muted transition hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
-          <p className="mb-2 mt-5 text-xs uppercase tracking-[0.15em] text-slate-500">Operations</p>
+          <p className="mb-2 mt-5 text-xs uppercase tracking-[0.15em] text-brand-muted">Operations</p>
           <nav className="space-y-1.5">
             {ops.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
-                className="block rounded-xl border border-transparent px-3 py-2 text-sm transition hover:border-slate-200 hover:bg-slate-100/90 hover:shadow-sm"
+                className="block rounded-xl border border-transparent px-3 py-2 text-sm text-brand-muted transition hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </nav>
         </aside>
 
         <div>
-          <header className="sticky top-0 z-10 border-b border-white/70 bg-white/75 px-6 py-3 shadow-sm backdrop-blur-xl">
+          <header className="sticky top-0 z-10 border-b border-brand-border/75 bg-[#080a18]/76 px-6 py-3 shadow-lg backdrop-blur-xl">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm text-slate-600">
-                Head role: <span className="font-semibold text-slate-900">{role}</span>
+              <p className="text-sm text-brand-muted">
+                Head role: <span className="font-semibold text-brand-text">{role}</span>
               </p>
               <div className="flex items-center gap-3 text-sm">
-                <p className="text-slate-600">{userEmail}</p>
+                <p className="text-brand-muted">{userEmail}</p>
                 <form action="/api/auth/logout" method="post">
-                  <button className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                    Log out
-                  </button>
+                  <button className="if-btn if-btn-secondary px-3 py-1.5 text-xs">Log out</button>
                 </form>
               </div>
             </div>
