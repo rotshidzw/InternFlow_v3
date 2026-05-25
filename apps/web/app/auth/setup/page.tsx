@@ -50,87 +50,88 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white/85 p-6 text-slate-900 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-white/10 dark:text-white md:p-8">
-      <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
-        {forcedJoinMode ? "Student onboarding" : "Organisation onboarding"}
-      </p>
-      <h1 className="mt-2 text-3xl font-semibold">{title}</h1>
-
-      {forcedJoinMode ? (
-        <div className="mt-4 space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-200">
-            Join with an invite token to enter your tenant workspace and apply
-            for opportunities.
+    <div className="mx-auto mt-10 max-w-4xl">
+      <div className="if-panel grid gap-0 overflow-hidden rounded-3xl md:grid-cols-[1fr_1.15fr]">
+        <section className="border-b border-brand-border/70 bg-[#090c1f]/90 p-6 md:border-b-0 md:border-r">
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-accentStrong">
+            {forcedJoinMode ? "Student onboarding" : "Organisation onboarding"}
           </p>
+          <h1 className="mt-2 text-3xl font-semibold text-brand-text">{title}</h1>
+          <p className="mt-3 text-sm text-brand-textSoft">
+            Enterprise-grade tenant access with invite-driven enrolment and controlled workspace
+            activation.
+          </p>
+          <div className="if-panel-muted mt-6 p-4">
+            <p className="text-sm font-semibold text-brand-text">Onboarding principles</p>
+            <ul className="mt-2 space-y-1 text-xs text-brand-muted">
+              <li>Invite-based tenant membership for learners</li>
+              <li>Organisation setup reserved for provider/admin staff</li>
+              <li>Secure routing to profile completion and workspace context</li>
+            </ul>
+          </div>
+        </section>
 
-          <form onSubmit={joinWithToken} className="space-y-3">
-            <label className="block text-sm text-slate-600 dark:text-slate-200">
-              Invite token
-            </label>
-            <input
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              placeholder="Paste invite token"
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-slate-900 placeholder:text-slate-500 dark:border-white/20 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-400"
-            />
-            <button
-              disabled={busy}
-              className="w-full rounded-xl bg-emerald-500 py-3 font-medium text-slate-950 disabled:opacity-60"
-            >
-              {busy ? "Joining..." : "Join organization"}
-            </button>
-          </form>
+        <section className="bg-[#070b19]/88 p-6 md:p-8">
+          {forcedJoinMode ? (
+            <div className="space-y-4">
+              <p className="text-sm text-brand-textSoft">
+                Join with an invite token to enter your tenant workspace and apply for
+                opportunities.
+              </p>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-white/20 dark:bg-slate-950/30">
-            <p className="text-sm font-medium">No invite token yet?</p>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              Complete your student profile first, then explore public
-              opportunities while waiting for an invite.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/onboarding/profile"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
-              >
-                I don’t have a token
-              </Link>
-              <Link
-                href="/explore"
-                className="rounded-lg border border-emerald-300/40 px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-200"
-              >
-                Explore public opportunities
-              </Link>
+              <form onSubmit={joinWithToken} className="space-y-3">
+                <label className="block text-sm text-brand-textSoft">Invite token</label>
+                <input
+                  value={token}
+                  onChange={(event) => setToken(event.target.value)}
+                  placeholder="Paste invite token"
+                  className="w-full px-3 py-3"
+                />
+                <button disabled={busy} className="if-btn if-btn-primary w-full py-3 disabled:opacity-60">
+                  {busy ? "Joining..." : "Join organization"}
+                </button>
+              </form>
+
+              <div className="if-panel-muted rounded-xl p-4">
+                <p className="text-sm font-medium text-brand-text">No invite token yet?</p>
+                <p className="mt-1 text-sm text-brand-muted">
+                  Complete your student profile first, then explore public opportunities while
+                  waiting for an invite.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href="/onboarding/profile" className="if-btn if-btn-secondary text-sm">
+                    I do not have a token
+                  </Link>
+                  <Link href="/explore" className="if-btn if-btn-secondary text-sm">
+                    Explore public opportunities
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-5">
-          <p className="text-sm text-slate-600 dark:text-slate-200">
-            Organisation admins can create a tenant workspace. Students should
-            join via invite token.
-          </p>
-          <div className="mt-4 flex gap-3">
-            <Link
-              href="/onboarding/create-org"
-              className="rounded-xl bg-emerald-500 px-4 py-2 font-medium text-slate-950"
-            >
-              Create organization
-            </Link>
-            <Link
-              href="/auth/setup?mode=join"
-              className="rounded-xl border border-slate-300 px-4 py-2 dark:border-white/30"
-            >
-              Student join
-            </Link>
-          </div>
-        </div>
-      )}
+          ) : (
+            <div className="space-y-5">
+              <p className="text-sm text-brand-textSoft">
+                Organisation admins can create a tenant workspace. Students should join via invite
+                token.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/onboarding/create-org" className="if-btn if-btn-primary px-4 py-2">
+                  Create organization
+                </Link>
+                <Link href="/auth/setup?mode=join" className="if-btn if-btn-secondary px-4 py-2">
+                  Student join
+                </Link>
+              </div>
+            </div>
+          )}
 
-      {error && (
-        <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
-          {error}
-        </p>
-      )}
+          {error && (
+            <p className="if-status-error mt-4 rounded-lg border p-3 text-sm">
+              {error}
+            </p>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

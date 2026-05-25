@@ -8,6 +8,8 @@ import { AnimatedCard } from "@/components/animated-card";
 import { FadeInSection } from "@/components/fade-in-section";
 import { MotionLinkButton } from "@/components/motion-link-button";
 
+const founderImagePath = "/founder-placeholder.svg";
+
 const AnimatedCounter = dynamic(
   () => import("@/components/animated-counter").then((mod) => mod.AnimatedCounter),
   { ssr: false },
@@ -157,13 +159,17 @@ export default function HomePage() {
 
         <FadeInSection>
           <section id="founder" className="if-panel grid gap-6 p-6 md:grid-cols-[120px_1fr] md:items-center">
-            <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-2xl border border-brand-border bg-brand-surface text-xs uppercase tracking-[0.18em] text-brand-muted">
-              Founder Image
+            <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
+              <img
+                src={founderImagePath}
+                alt="Founder placeholder"
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.2em] text-brand-accentStrong">Founder</p>
               <h2 className="text-2xl font-semibold text-brand-text">Mavhungu Rotshidzwa Chester</h2>
-              <p className="text-sm text-brand-muted">Developer • Systems Support • Problem Solver</p>
+              <p className="text-sm text-brand-muted">Developer - Systems Support - AI Engineer</p>
               <p className="text-sm leading-relaxed text-brand-textSoft">
                 Chester is the founder behind InternFlow. The platform was created to solve real
                 operational and audit challenges in training, learnership, internship, and skills

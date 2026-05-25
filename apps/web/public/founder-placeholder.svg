@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="64" y1="48" x2="456" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1022"/>
+      <stop offset="1" stop-color="#181B36"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="128" y1="120" x2="384" y2="376" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="48" fill="url(#g1)"/>
+  <rect x="24" y="24" width="464" height="464" rx="36" stroke="#3D3669" stroke-width="2"/>
+  <circle cx="256" cy="204" r="78" fill="#252B53"/>
+  <path d="M136 392C136 326.771 188.771 274 254 274H258C323.229 274 376 326.771 376 392V408H136V392Z" fill="#252B53"/>
+  <circle cx="256" cy="204" r="58" fill="url(#g2)" fill-opacity="0.22"/>
+  <path d="M196 404H316" stroke="url(#g2)" stroke-width="8" stroke-linecap="round"/>
+  <text x="256" y="444" text-anchor="middle" fill="#A9A3CC" font-family="Segoe UI, Arial, sans-serif" font-size="20" letter-spacing="1.2">FOUNDER IMAGE</text>
+</svg>

@@ -19,8 +19,17 @@ export function SiteShell({ children }: PropsWithChildren) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-brand-bg text-brand-text">
       <div className="animated-bg-overlay pointer-events-none absolute inset-0" aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(168,85,247,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.25) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+        }}
+        aria-hidden
+      />
       <div className="relative z-10">
-        <header className="sticky top-0 z-30 border-b border-brand-border/70 bg-[#080714]/85 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/86 backdrop-blur-xl">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
             <Link href="/" className="flex items-center gap-3">
               <Image
@@ -36,7 +45,7 @@ export function SiteShell({ children }: PropsWithChildren) {
                   InternFlow
                 </p>
                 <p className="text-[10px] uppercase tracking-[0.24em] text-brand-muted">
-                  Operational Intelligence
+                  Enterprise Operations Intelligence
                 </p>
               </div>
             </Link>
@@ -119,7 +128,7 @@ export function SiteShell({ children }: PropsWithChildren) {
         <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
         <footer className="border-t border-brand-border/70 bg-[#070916]/72">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-brand-muted md:flex-row md:items-center md:justify-between">
-            <p>InternFlow · Premium operations system for skills development workflows.</p>
+            <p>InternFlow - Premium operations system for skills development workflows.</p>
             <div className="flex gap-3">
               <Link href="/onboarding/create-org" className="hover:text-brand-text">
                 Register Organization
@@ -128,6 +137,9 @@ export function SiteShell({ children }: PropsWithChildren) {
                 Login
               </Link>
             </div>
+          </div>
+          <div className="mx-auto max-w-6xl px-4 pb-6 text-xs text-brand-muted/80">
+            Founder: Mavhungu Rotshidzwa Chester - Developer - Systems Support - AI Engineer
           </div>
         </footer>
       </div>
