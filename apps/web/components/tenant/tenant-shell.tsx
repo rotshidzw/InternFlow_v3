@@ -58,6 +58,7 @@ const operationsItems: NavItem[] = [
   { href: "registers", label: "Attendance Registers", icon: FileText },
   { href: "progress", label: "Progress Tracker", icon: Gauge },
   { href: "stipends", label: "Stipends", icon: HandCoins },
+  { href: "costs", label: "Cost Capture", icon: FileSpreadsheet },
   { href: "certificates", label: "Certificates", icon: Award },
 ];
 

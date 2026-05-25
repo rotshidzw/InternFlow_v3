@@ -3,6 +3,11 @@ import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import {
+  loadOrganizationCostCaptureRecords,
+  loadOrganizationStipendRecords,
+  parseAttendanceRegisterMetadata,
+} from "@/lib/provider-operations";
 
 function sanitize(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
@@ -326,7 +331,7 @@ export async function generateCloseoutZipForJob(jobId: string) {
   const tmpRoot = await mkdtemp(path.join(os.tmpdir(), "internflow-closeout-"));
 
   try {
-    const [enrollments, docs, logoDoc, attendanceRegisters] = await Promise.all([
+    const [enrollments, docs, logoDoc, attendanceRegisters, stipendRecords, costCaptureRecords] = await Promise.all([
       prisma.enrollment.findMany({
         where: { organizationId: job.tenantId, programId: job.programmeId },
         include: { user: { include: { studentProfile: true } }, program: true }
@@ -337,7 +342,9 @@ export async function generateCloseoutZipForJob(jobId: string) {
         where: { orgId: job.tenantId, category: "ATTENDANCE_REGISTER" },
         orderBy: { createdAt: "desc" },
         take: 200
-      })
+      }),
+      loadOrganizationStipendRecords(job.tenantId),
+      loadOrganizationCostCaptureRecords(job.tenantId),
     ]);
 
     const learnerIds = enrollments.map((item) => item.userId);
@@ -402,6 +409,11 @@ export async function generateCloseoutZipForJob(jobId: string) {
 
     const xlsxBuffer = createXlsxBuffer(registerRows);
     const learnerProfileXlsxBuffer = createXlsxBuffer(learnerProfileRows);
+    const registerEntries = attendanceRegisters.map((register) => ({
+      register,
+      metadata: parseAttendanceRegisterMetadata(register.notes),
+    }));
+
     const attendanceRows = [
       ["Attendance Summary"],
       ["Tenant", job.tenant.name],
@@ -413,27 +425,33 @@ export async function generateCloseoutZipForJob(jobId: string) {
         "Learner Name",
         "Programme",
         "Active Enrollment",
-        "Daily Attendance Days Present",
+        "Attendance Evidence Count",
         "Induction Signed",
         "Trainer Sign-off",
         "Coordinator Approval",
         "Source Register File"
       ],
       ...enrollments.map((row) => {
-        const learnerRegisters = attendanceRegisters.filter((register) =>
-          register.fileKey.toLowerCase().includes(row.userId.toLowerCase())
-        );
-        const latestRegister = learnerRegisters[0]?.fileKey.split("/").pop() ?? "";
+        const learnerRegisters = registerEntries.filter((entry) => {
+          if (entry.metadata?.programmeId && entry.metadata.programmeId !== row.programId) {
+            return false;
+          }
+          if (!entry.metadata?.learnerUserId) return true;
+          return entry.metadata.learnerUserId === row.userId;
+        });
+        const latestRegister = learnerRegisters[0];
         return [
           row.userId,
           row.user.studentProfile?.fullName ?? row.user.name ?? row.user.email,
           row.program.name,
           row.status === "ACTIVE" ? "YES" : "NO",
-          "",
-          learnerRegisters.length > 0 ? "YES" : "NO",
-          "",
-          "",
-          latestRegister
+          String(learnerRegisters.length),
+          learnerRegisters.some((entry) => entry.metadata?.registerType === "INDUCTION")
+            ? "YES"
+            : "NO",
+          latestRegister?.metadata?.trainerSignoffBy ?? "",
+          latestRegister?.metadata?.coordinatorApprovalDecision ?? "",
+          latestRegister?.register.fileKey.split("/").pop() ?? "",
         ];
       })
     ].map((row) => row.map((cell) => String(cell ?? "")));
@@ -457,25 +475,60 @@ export async function generateCloseoutZipForJob(jobId: string) {
         "Proof of Payment Count"
       ],
       ...enrollments.map((row) => {
+        const paymentRecord = stipendRecords.find(
+          (record) => record.enrollmentId === row.id,
+        );
         const learnerDocs = docs.filter((doc) => doc.userId === row.userId);
-        const payslips = learnerDocs.filter((doc) => doc.type === "PAYSLIP").length;
-        const proofOfPayments = learnerDocs.filter((doc) =>
-          ["PAYMENT_PROOF", "PROOF_OF_PAYMENT", "BANK_CONFIRMATION"].includes(doc.type)
-        ).length;
+        const payslips =
+          paymentRecord?.payslipDocumentIds.length ??
+          learnerDocs.filter((doc) => doc.type === "PAYSLIP").length;
+        const proofOfPayments =
+          paymentRecord?.proofDocumentIds.length ??
+          learnerDocs.filter((doc) =>
+            ["PAYMENT_PROOF", "PROOF_OF_PAYMENT", "BANK_CONFIRMATION"].includes(doc.type)
+          ).length;
         return [
           row.userId,
           row.user.studentProfile?.fullName ?? row.user.name ?? row.user.email,
           row.user.email,
-          row.status === "ACTIVE" ? "YES" : "NO",
-          "",
-          row.stipendMonth ?? monthKey(new Date()),
-          row.stipendPaid ? "PAID" : "DUE",
-          "",
+          paymentRecord ? (paymentRecord.eligible ? "YES" : "NO") : row.status === "ACTIVE" ? "YES" : "NO",
+          paymentRecord?.stipendAmount === null || paymentRecord?.stipendAmount === undefined
+            ? ""
+            : String(paymentRecord.stipendAmount),
+          paymentRecord?.month ?? row.stipendMonth ?? monthKey(new Date()),
+          paymentRecord?.paymentStatus ?? (row.stipendPaid ? "PAID" : "DUE"),
+          paymentRecord?.exceptionReason ?? "",
           String(payslips),
           String(proofOfPayments)
         ];
       })
     ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const relevantCostRecords = costCaptureRecords.filter(
+      (record) => !record.programmeId || record.programmeId === job.programmeId,
+    );
+    const paidStipendTotal = stipendRecords.reduce((sum, record) => {
+      if (record.paymentStatus !== "PAID" || record.stipendAmount === null) return sum;
+      return sum + record.stipendAmount;
+    }, 0);
+
+    if (
+      paidStipendTotal > 0 &&
+      !relevantCostRecords.some((record) => record.category === "STIPEND_TOTALS")
+    ) {
+      relevantCostRecords.push({
+        id: `auto:stipend-totals:${monthKey(new Date())}`,
+        programmeId: job.programmeId,
+        month: monthKey(new Date()),
+        category: "STIPEND_TOTALS",
+        amount: paidStipendTotal,
+        status: "APPROVED",
+        evidenceDocumentIds: [],
+        notes: "Auto-calculated from paid stipend records.",
+        updatedAt: new Date().toISOString(),
+        updatedByUserId: "system",
+      });
+    }
 
     const costCaptureRows = [
       ["Programme Cost Capture"],
@@ -484,14 +537,19 @@ export async function generateCloseoutZipForJob(jobId: string) {
       ["Reporting month", monthKey(new Date())],
       [],
       ["Cost Category", "Amount", "Month", "Submitted By", "Approval Status", "Evidence Reference", "Notes"],
-      ["Facilitator Costs", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Transport", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["PPE", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Venue", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Admin", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Certification", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Stipend Totals", "", monthKey(new Date()), "", "PENDING", "", ""],
-      ["Other Programme Costs", "", monthKey(new Date()), "", "PENDING", "", ""]
+      ...(
+        relevantCostRecords.length > 0
+          ? relevantCostRecords.map((record) => [
+              record.category.replaceAll("_", " "),
+              record.amount.toFixed(2),
+              record.month,
+              record.updatedByUserId,
+              record.status,
+              record.evidenceDocumentIds.join(" | "),
+              record.notes ?? "",
+            ])
+          : [["No costs captured", "", monthKey(new Date()), "", "PENDING", "", ""]]
+      ),
     ].map((row) => row.map((cell) => String(cell ?? "")));
 
     const outcomeRows = [

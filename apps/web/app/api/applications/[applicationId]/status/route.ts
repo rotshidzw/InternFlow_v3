@@ -7,7 +7,22 @@ import {
   tenantApiAuthErrorResponse,
 } from "@/lib/tenant-api-auth";
 
-const schema = z.object({ status: z.enum(["SHORTLISTED", "ACCEPTED", "REJECTED"]) });
+const schema = z.object({
+  status: z.enum(["REVIEW", "SHORTLISTED", "ACCEPTED", "REJECTED"]),
+});
+
+const REVIEWABLE_SOURCE_STATUSES = ["APPLIED", "SUBMITTED", "REVIEW", "SHORTLISTED"] as const;
+
+function canTransition(currentStatus: string, nextStatus: string) {
+  const current = currentStatus.toUpperCase();
+  const next = nextStatus.toUpperCase();
+  if (current === next) return true;
+  if (next === "REVIEW") return REVIEWABLE_SOURCE_STATUSES.includes(current as any);
+  if (next === "SHORTLISTED") return REVIEWABLE_SOURCE_STATUSES.includes(current as any);
+  if (next === "ACCEPTED") return ["SUBMITTED", "REVIEW", "SHORTLISTED"].includes(current);
+  if (next === "REJECTED") return ["DRAFT", "APPLIED", "SUBMITTED", "REVIEW", "SHORTLISTED"].includes(current);
+  return false;
+}
 
 export async function POST(req: Request, { params }: { params: { applicationId: string } }) {
   const payload = Object.fromEntries(await req.formData());
@@ -29,31 +44,25 @@ export async function POST(req: Request, { params }: { params: { applicationId: 
   });
   if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
+  if (!canTransition(application.status, parsed.data.status)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Invalid transition from ${application.status} to ${parsed.data.status}`,
+      },
+      { status: 409 },
+    );
+  }
+
   const previousStatus = application.status;
   const updatedApplication = await prisma.application.update({
     where: { id: params.applicationId },
-    data: { status: parsed.data.status },
+    data: {
+      status: parsed.data.status,
+      submittedAt: parsed.data.status === "REJECTED" ? application.submittedAt : application.submittedAt ?? new Date(),
+    },
     include: { opportunity: true },
   });
-
-  if (parsed.data.status === "ACCEPTED") {
-    const existing = await prisma.enrollment.findFirst({
-      where: {
-        userId: updatedApplication.userId,
-        organizationId: updatedApplication.opportunity.organizationId,
-      },
-    });
-    if (!existing && updatedApplication.opportunity.programId) {
-      await prisma.enrollment.create({
-        data: {
-          organizationId: updatedApplication.opportunity.organizationId,
-          userId: updatedApplication.userId,
-          programId: updatedApplication.opportunity.programId,
-          status: "PENDING",
-        },
-      });
-    }
-  }
 
   await prisma.auditEvent.create({
     data: {
@@ -65,6 +74,7 @@ export async function POST(req: Request, { params }: { params: { applicationId: 
       metadata: {
         previousStatus,
         nextStatus: parsed.data.status,
+        placementChanged: false,
       },
     },
   });

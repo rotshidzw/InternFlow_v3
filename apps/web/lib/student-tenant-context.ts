@@ -31,17 +31,18 @@ export async function resolveStudentTenantContext(
   const activeEnrollment = await prisma.enrollment.findFirst({
     where: { userId, status: "ACTIVE" },
     include: { organization: true, program: true },
+    orderBy: { id: "desc" },
   });
 
-  const pendingOrCompletedEnrollment = activeEnrollment
+  const pendingEnrollment = activeEnrollment
     ? null
     : await prisma.enrollment.findFirst({
-        where: { userId, status: { in: ["PENDING", "COMPLETED"] } },
+        where: { userId, status: "PENDING" },
         include: { organization: true, program: true },
-        orderBy: [{ status: "asc" }, { id: "desc" }],
+        orderBy: { id: "desc" },
       });
 
-  const enrollment = activeEnrollment ?? pendingOrCompletedEnrollment;
+  const enrollment = activeEnrollment ?? pendingEnrollment;
 
   if (enrollment) {
     return {
@@ -73,6 +74,26 @@ export async function resolveStudentTenantContext(
         organizationSlug: latestApplication.opportunity.organization.slug,
         opportunityTitle: latestApplication.opportunity.title,
         status: latestApplication.status,
+      },
+    };
+  }
+
+  const completedEnrollment = await prisma.enrollment.findFirst({
+    where: { userId, status: "COMPLETED" },
+    include: { organization: true, program: true },
+    orderBy: { id: "desc" },
+  });
+
+  if (completedEnrollment) {
+    return {
+      type: "ENROLLED",
+      enrollment: {
+        id: completedEnrollment.id,
+        organizationId: completedEnrollment.organizationId,
+        organizationName: completedEnrollment.organization.name,
+        organizationSlug: completedEnrollment.organization.slug,
+        programName: completedEnrollment.program.name,
+        status: completedEnrollment.status,
       },
     };
   }

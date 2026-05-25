@@ -33,6 +33,25 @@ function docStatusLabel(status: string) {
   }
 }
 
+function applicationStatusLabel(status: string) {
+  if (status === "not_started") return "Not started";
+  if (status === "draft") return "Draft saved";
+  if (status === "submitted") return "Submitted";
+  if (status === "under_review") return "Under review";
+  if (status === "accepted") return "Accepted";
+  if (status === "rejected") return "Rejected";
+  return status.replace("_", " ");
+}
+
+function placementStatusLabel(status: string) {
+  if (status === "unassigned") return "Placement not assigned yet";
+  if (status === "shortlisted") return "Under review";
+  if (status === "assigned") return "Assigned - awaiting programme start";
+  if (status === "active") return "Assigned and active";
+  if (status === "completed") return "Placement completed";
+  return status.replace("_", " ");
+}
+
 export default async function StudentPortalPage({ searchParams }: StudentPortalProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth");
@@ -55,7 +74,6 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         ? context.application.opportunityTitle
         : null;
   const docPlan = resolveProgrammeDocumentPlan(programmeName);
-  const isEnrolled = context.type === "ENROLLED";
   const enrollmentStatus = context.type === "ENROLLED" ? context.enrollment.status : null;
   const programWorkspaceUrl =
     context.type === "ENROLLED"
@@ -63,7 +81,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       : context.type === "APPLICATION"
         ? `/org/${context.application.organizationSlug}/student`
         : null;
-  const canOpenProgramWorkspace =
+  const hasWorkspaceMembership =
     context.type === "ENROLLED"
       ? memberships.some(
           (membership) =>
@@ -105,7 +123,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
     prisma.document.count({ where: { userId: user.id, type: "PAYSLIP" } }),
     prisma.application.findFirst({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }],
       include: { opportunity: true },
     }),
   ]);
@@ -122,6 +140,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
   const showApplied = searchParams?.applied === "1";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
+  const showDraftSaved = searchParams?.notice === "draft-saved";
   const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
 
   const profileChecks = [Boolean(user.name), Boolean(profile?.phone), Boolean(profile?.education)];
@@ -131,18 +150,17 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const lifecycle = deriveStudentLifecycle({
     hasUser: true,
     hasProfileCore: profileCompletion >= 100,
-    docs: documents.map((d) => ({ status: d.status })),
+    docs: documents.map((d) => ({ status: d.status, type: d.type })),
+    requiredDocumentTypes: docPlan.required,
     latestApplicationStatus: latestApplication?.status ?? null,
+    latestApplicationSubmittedAt: latestApplication?.submittedAt ?? null,
     enrollmentStatus,
   });
   const documentsReady = requiredDone === docPlan.required.length && docPlan.required.length > 0;
-  const shouldShowApplyNow = ["not_started", "draft"].includes(lifecycle.applicationStatus);
-  const placementLabel =
-    lifecycle.placementStatus === "unassigned"
-      ? "Placement not assigned"
-      : lifecycle.placementStatus === "assigned" || lifecycle.placementStatus === "active"
-        ? programmeName ?? "Assigned provider"
-        : lifecycle.placementStatus;
+  const shouldShowApplyNow = ["not_started", "draft", "rejected"].includes(lifecycle.applicationStatus);
+  const canOpenProgramWorkspace =
+    hasWorkspaceMembership &&
+    ["assigned", "active", "completed"].includes(lifecycle.placementStatus);
 
   return (
     <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
@@ -156,9 +174,9 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               Welcome, {user.name ?? "Student"}
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              {isEnrolled
-                ? `Programme: ${programmeName ?? "Enrolled programme"}`
-                : "Complete your profile and required documents to move forward."}
+              {["assigned", "active", "completed"].includes(lifecycle.placementStatus) && programmeName
+                ? `Programme: ${programmeName}`
+                : "Placement not assigned yet. Complete profile, documents, and application steps to move forward."}
             </p>
           </div>
 
@@ -180,25 +198,30 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             >
               Ask for support
             </Link>
-            <Link
+            <a
               href={canOpenProgramWorkspace ? (programWorkspaceUrl ?? "/app/student") : "/app/student"}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Check programme status
-            </Link>
+            </a>
           </div>
         </div>
 
-        {(showApplied || showAlreadyApplied || showActiveEnrollmentError) && (
+        {(showApplied || showAlreadyApplied || showDraftSaved || showActiveEnrollmentError) && (
           <div className="mt-4 grid gap-2">
             {showApplied && (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                 Application submitted successfully.
               </div>
             )}
+            {showDraftSaved && (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                Application draft saved. Submit when ready.
+              </div>
+            )}
             {showAlreadyApplied && (
               <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                You already applied for this opportunity.
+                You already submitted this application.
               </div>
             )}
             {showActiveEnrollmentError && (
@@ -246,7 +269,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-sm text-slate-600">Application</p>
           <p className="mt-2 text-base font-semibold text-slate-900">
-            {lifecycle.applicationStatus.replace("_", " ")}
+            {applicationStatusLabel(lifecycle.applicationStatus)}
           </p>
           {documentsReady && shouldShowApplyNow && (
             <p className="mt-1 text-xs text-emerald-700">Documents ready · application not submitted</p>
@@ -258,11 +281,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Lifecycle status</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Application: {lifecycle.applicationStatus}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Placement: {placementLabel}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
             <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
           </div>
           {shouldShowApplyNow && (
@@ -280,7 +303,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           )}
           {lifecycle.applicationStatus === "accepted" && (
             <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              Application accepted. Placement/provider details appear when assignment is finalized.
+              Application accepted. Placement remains separate and appears only once assigned.
             </p>
           )}
         </section>

@@ -1,6 +1,10 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest, NextResponse } from "next/server";
 import {
+  loadOrganizationCostCaptureRecords,
+  loadOrganizationStipendRecords,
+} from "@/lib/provider-operations";
+import {
   TENANT_ROLE_GROUPS,
   resolveTenantApiActor,
   tenantApiAuthErrorResponse,
@@ -14,12 +18,14 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
   if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const orgId = actor.actor.membership.organizationId;
-  const [programmes, enrollments, documents, certs, registers] = await Promise.all([
+  const [programmes, enrollments, documents, certs, registers, stipendRecords, costRecords] = await Promise.all([
     prisma.program.findMany({ where: { organizationId: orgId }, select: { id: true, name: true } }),
     prisma.enrollment.count({ where: { organizationId: orgId } }),
     prisma.document.count({ where: { user: { memberships: { some: { organizationId: orgId } } } } }),
     prisma.document.count({ where: { type: "CERTIFICATE", user: { memberships: { some: { organizationId: orgId } } } } }),
     prisma.organizationDocument.count({ where: { orgId, category: "ATTENDANCE_REGISTER" } }),
+    loadOrganizationStipendRecords(orgId),
+    loadOrganizationCostCaptureRecords(orgId),
   ]);
 
   const { searchParams } = new URL(req.url);
@@ -68,6 +74,8 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
       documents,
       certificates: certs,
       attendanceRegisters: registers,
+      stipendRecords: stipendRecords.length,
+      costCaptureEntries: costRecords.length,
     },
     programmes,
     evidenceIndex,

@@ -31,7 +31,7 @@ export async function POST(
     const activeEnrollment = await prisma.enrollment.findFirst({
       where: {
         userId: actor.id,
-        status: { in: ACTIVE_ENROLLMENT_STATUSES as unknown as string[] },
+        status: { in: [...ACTIVE_ENROLLMENT_STATUSES] },
       },
       select: { id: true, organizationId: true },
     });
@@ -42,20 +42,6 @@ export async function POST(
     ) {
       return NextResponse.redirect(
         new URL("/app/student?error=active-enrollment", req.url),
-      );
-    }
-
-    const existing = await prisma.application.findFirst({
-      where: {
-        userId: actor.id,
-        opportunityId: params.opportunityId,
-        status: { not: "REJECTED" },
-      },
-      select: { id: true },
-    });
-    if (existing) {
-      return NextResponse.redirect(
-        new URL("/app/student?notice=already-applied", req.url),
       );
     }
 
@@ -80,6 +66,10 @@ export async function POST(
     ).studentProfile;
 
     const form = await req.formData();
+    const intent = String(form.get("intent") ?? "submit")
+      .trim()
+      .toLowerCase();
+    const saveAsDraft = intent === "draft";
     const file = form.get("file");
     const phone = String(form.get("phone") ?? "").trim();
     const education = String(form.get("education") ?? "").trim();
@@ -123,14 +113,55 @@ export async function POST(
       });
     }
 
-    const application = await prisma.application.create({
-      data: {
+    const existing = await prisma.application.findFirst({
+      where: {
         userId: actor.id,
         opportunityId: params.opportunityId,
-        status: "APPLIED",
-        submittedAt: new Date(),
+        status: { not: "REJECTED" },
       },
+      select: { id: true, status: true },
     });
+
+    let application = existing;
+    if (existing) {
+      if (saveAsDraft) {
+        if (existing.status !== "DRAFT") {
+          return NextResponse.redirect(
+            new URL("/app/student?notice=already-applied", req.url),
+          );
+        }
+      } else {
+        if (existing.status !== "DRAFT") {
+          return NextResponse.redirect(
+            new URL("/app/student?notice=already-applied", req.url),
+          );
+        }
+      }
+      application = await prisma.application.update({
+        where: { id: existing.id },
+        data: {
+          status: saveAsDraft ? "DRAFT" : "SUBMITTED",
+          submittedAt: saveAsDraft ? null : new Date(),
+        },
+        select: { id: true, status: true },
+      });
+    } else {
+      application = await prisma.application.create({
+        data: {
+          userId: actor.id,
+          opportunityId: params.opportunityId,
+          status: saveAsDraft ? "DRAFT" : "SUBMITTED",
+          submittedAt: saveAsDraft ? null : new Date(),
+        },
+        select: { id: true, status: true },
+      });
+    }
+
+    if (!application) {
+      return NextResponse.redirect(
+        new URL("/app/student?error=apply-failed", req.url),
+      );
+    }
 
     let uploadFailed = false;
 
@@ -174,8 +205,8 @@ export async function POST(
     await prisma.auditLog.create({
       data: {
         userId: actor.id,
-        action: "APPLICATION_SUBMITTED",
-        metadata: { applicationId: application.id },
+        action: saveAsDraft ? "APPLICATION_DRAFT_SAVED" : "APPLICATION_SUBMITTED",
+        metadata: { applicationId: application.id, intent: saveAsDraft ? "draft" : "submit" },
       },
     });
 
@@ -188,7 +219,12 @@ export async function POST(
       }
     }
 
-    return NextResponse.redirect(new URL("/app/student?applied=1", req.url));
+    return NextResponse.redirect(
+      new URL(
+        saveAsDraft ? "/app/student?notice=draft-saved" : "/app/student?applied=1",
+        req.url,
+      ),
+    );
   } catch (error) {
     console.error("[opportunity.apply]", error);
     const referer = req.headers.get("referer");

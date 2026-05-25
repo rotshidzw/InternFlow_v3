@@ -3,6 +3,7 @@ import { prisma } from "@internflow/db/src";
 import { AppShell } from "@/components/app-shell";
 import { getOrgAccess } from "@/lib/org-access";
 import { redirect } from "next/navigation";
+import { resolveProgrammeDocumentPlan } from "@/lib/student-document-requirements";
 import { deriveStudentLifecycle } from "@/lib/student-lifecycle";
 
 function matchQuery(text: string, query: string) {
@@ -82,11 +83,16 @@ export default async function CoordinatorPage({
   const rows = students.map((membership) => {
     const latestApplication = membership.user.applications[0];
     const enrollment = membership.user.enrollments[0];
+    const programmeNameForDocs =
+      enrollment?.program?.name ?? latestApplication?.opportunity?.title ?? "";
+    const docPlan = resolveProgrammeDocumentPlan(programmeNameForDocs);
     const lifecycle = deriveStudentLifecycle({
       hasUser: true,
       hasProfileCore: Boolean(membership.user.name && membership.user.profile?.phone),
-      docs: membership.user.documents.map((d) => ({ status: d.status })),
+      docs: membership.user.documents.map((d) => ({ status: d.status, type: d.type })),
+      requiredDocumentTypes: docPlan.required,
       latestApplicationStatus: latestApplication?.status ?? null,
+      latestApplicationSubmittedAt: latestApplication?.submittedAt ?? null,
       enrollmentStatus: enrollment?.status ?? null,
     });
     return {

@@ -4,6 +4,7 @@ import { requireTenantAccess } from "@/lib/tenant-portal";
 
 function statusTone(status: string) {
   if (status === "ACCEPTED") return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (status === "REVIEW" || status === "APPLIED" || status === "SUBMITTED") return "bg-sky-100 text-sky-700 border-sky-200";
   if (status === "SHORTLISTED") return "bg-amber-100 text-amber-700 border-amber-200";
   if (status === "REJECTED") return "bg-rose-100 text-rose-700 border-rose-200";
   return "bg-slate-100 text-slate-700 border-slate-200";
@@ -70,9 +71,17 @@ export default async function OpportunityDetailPage({ params }: { params: { orgS
             <form action={`/api/applications/${application.id}/status`} method="post" className="mt-3 grid gap-2 md:grid-cols-[220px_auto]">
               <select
                 name="status"
-                defaultValue={application.status === "SHORTLISTED" || application.status === "ACCEPTED" || application.status === "REJECTED" ? application.status : "SHORTLISTED"}
+                defaultValue={
+                  application.status === "REVIEW" ||
+                  application.status === "SHORTLISTED" ||
+                  application.status === "ACCEPTED" ||
+                  application.status === "REJECTED"
+                    ? application.status
+                    : "REVIEW"
+                }
                 className="rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               >
+                <option value="REVIEW">REVIEW</option>
                 <option value="SHORTLISTED">SHORTLISTED</option>
                 <option value="ACCEPTED">ACCEPTED</option>
                 <option value="REJECTED">REJECTED</option>

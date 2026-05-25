@@ -2,8 +2,10 @@ type LifecycleInput = {
   hasInvite?: boolean;
   hasUser: boolean;
   hasProfileCore: boolean;
-  docs: Array<{ status: string }>;
+  docs: Array<{ status: string; type?: string }>;
+  requiredDocumentTypes?: readonly string[];
   latestApplicationStatus?: string | null;
+  latestApplicationSubmittedAt?: Date | string | null;
   enrollmentStatus?: string | null;
 };
 
@@ -16,6 +18,53 @@ export type StudentLifecycle = {
   programmeStatus: "not_enrolled" | "enrolled" | "in_progress" | "completed";
 };
 
+function resolveDocumentStatus(
+  docs: Array<{ status: string; type?: string }>,
+  requiredDocumentTypes: readonly string[] = [],
+): StudentLifecycle["documentStatus"] {
+  if (requiredDocumentTypes.length > 0) {
+    const latestByType = new Map<string, string>();
+    for (const doc of docs) {
+      if (!doc.type || latestByType.has(doc.type)) continue;
+      latestByType.set(doc.type, doc.status);
+    }
+
+    const requiredStatuses = requiredDocumentTypes.map((type) => latestByType.get(type) ?? null);
+    const uploadedRequired = requiredStatuses.filter(Boolean).length;
+    const hasMissingRequired = uploadedRequired < requiredDocumentTypes.length;
+    const hasRejected = requiredStatuses.some(
+      (status) => status === "REJECTED" || status === "SCAN_FAILED",
+    );
+    const hasProcessing = requiredStatuses.some(
+      (status) => status === "SCAN_PENDING" || status === "SCAN_OK",
+    );
+    const hasSubmitted = requiredStatuses.some((status) => status === "SUBMITTED");
+    const allApproved =
+      requiredStatuses.length > 0 &&
+      requiredStatuses.every((status) => status === "APPROVED");
+
+    if (uploadedRequired === 0) return "missing";
+    if (hasRejected) return "rejected";
+    if (hasProcessing) return "processing";
+    if (allApproved) return "verified";
+    if (hasMissingRequired) return "partial";
+    if (hasSubmitted) return "submitted";
+    return "partial";
+  }
+
+  const docCount = docs.length;
+  const hasRejected = docs.some((d) => ["REJECTED", "SCAN_FAILED"].includes(d.status));
+  const hasVerified = docs.some((d) => d.status === "APPROVED");
+  const hasProcessing = docs.some((d) => ["SCAN_PENDING", "SCAN_OK"].includes(d.status));
+  const hasSubmitted = docs.some((d) => d.status === "SUBMITTED");
+  if (docCount === 0) return "missing";
+  if (hasRejected) return "rejected";
+  if (hasProcessing) return "processing";
+  if (hasVerified) return "verified";
+  if (hasSubmitted) return "submitted";
+  return "partial";
+}
+
 export function deriveStudentLifecycle(input: LifecycleInput): StudentLifecycle {
   const accountStatus: StudentLifecycle["accountStatus"] = !input.hasUser
     ? "invited"
@@ -27,29 +76,20 @@ export function deriveStudentLifecycle(input: LifecycleInput): StudentLifecycle 
     ? "complete"
     : "incomplete";
 
-  const docCount = input.docs.length;
-  const hasRejected = input.docs.some((d) => ["REJECTED", "SCAN_FAILED"].includes(d.status));
-  const hasVerified = input.docs.some((d) => d.status === "APPROVED");
-  const hasProcessing = input.docs.some((d) => ["SCAN_PENDING", "SCAN_OK"].includes(d.status));
-  const hasSubmitted = input.docs.some((d) => d.status === "SUBMITTED");
-  const documentStatus: StudentLifecycle["documentStatus"] = docCount === 0
-    ? "missing"
-    : hasRejected
-      ? "rejected"
-      : hasProcessing
-        ? "processing"
-        : hasVerified
-          ? "verified"
-          : hasSubmitted
-            ? "submitted"
-            : "partial";
+  const documentStatus = resolveDocumentStatus(
+    input.docs,
+    input.requiredDocumentTypes ?? [],
+  );
 
   const app = (input.latestApplicationStatus ?? "").toUpperCase();
+  const hasSubmittedAt = Boolean(input.latestApplicationSubmittedAt);
   const applicationStatus: StudentLifecycle["applicationStatus"] = !app
     ? "not_started"
-    : ["DRAFT"].includes(app)
+    : app === "DRAFT" && !hasSubmittedAt
       ? "draft"
-      : ["APPLIED", "SUBMITTED"].includes(app)
+      : app === "DRAFT" && hasSubmittedAt
+        ? "submitted"
+        : ["APPLIED", "SUBMITTED"].includes(app)
         ? "submitted"
         : ["REVIEW", "SHORTLISTED"].includes(app)
           ? "under_review"
