@@ -7,6 +7,11 @@ import {
   getDocumentDisplayName,
   resolveProgrammeDocumentPlan,
 } from "@/lib/student-document-requirements";
+import {
+  applyCertificateReleaseTransitionsWithAudit,
+  loadOrganizationCertificateRecords,
+  loadOrganizationFollowUpRecords,
+} from "@/lib/provider-operations";
 import { deriveStudentLifecycle } from "@/lib/student-lifecycle";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
 
@@ -52,6 +57,13 @@ function placementStatusLabel(status: string) {
   return status.replace("_", " ");
 }
 
+function isoDate(value: string | Date | null | undefined) {
+  if (!value) return "n/a";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "n/a";
+  return date.toISOString().slice(0, 10);
+}
+
 export default async function StudentPortalPage({ searchParams }: StudentPortalProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth");
@@ -93,6 +105,23 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               membership.organization.slug === context.application.organizationSlug,
           )
         : false;
+  const contextOrganizationId =
+    context.type === "ENROLLED" ? context.enrollment.organizationId : null;
+  const contextOrganizationSlug =
+    context.type === "ENROLLED"
+      ? context.enrollment.organizationSlug
+      : context.type === "APPLICATION"
+        ? context.application.organizationSlug
+        : null;
+  const contextEnrollmentId =
+    context.type === "ENROLLED" ? context.enrollment.id : null;
+
+  if (contextOrganizationId) {
+    await applyCertificateReleaseTransitionsWithAudit({
+      organizationId: contextOrganizationId,
+      actorUserId: user.id,
+    });
+  }
 
   const [
     profile,
@@ -102,6 +131,8 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
     recentThreads,
     payslips,
     latestApplication,
+    certificateRecords,
+    followUpRecords,
   ] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
     prisma.document.findMany({
@@ -126,6 +157,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }],
       include: { opportunity: true },
     }),
+    contextOrganizationId
+      ? loadOrganizationCertificateRecords(contextOrganizationId)
+      : Promise.resolve([]),
+    contextOrganizationId
+      ? loadOrganizationFollowUpRecords(contextOrganizationId)
+      : Promise.resolve([]),
   ]);
 
   const latestByType = new Map<string, (typeof documents)[number]>();
@@ -161,6 +198,50 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const canOpenProgramWorkspace =
     hasWorkspaceMembership &&
     ["assigned", "active", "completed"].includes(lifecycle.placementStatus);
+  const studentCertificateRecord = contextEnrollmentId
+    ? certificateRecords.find(
+        (record) =>
+          record.enrollmentId === contextEnrollmentId && record.userId === user.id,
+      ) ?? null
+    : null;
+  const studentFollowUps = contextEnrollmentId
+    ? followUpRecords
+        .filter((record) => record.enrollmentId === contextEnrollmentId)
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    : [];
+  const now = new Date();
+  const nextDueFollowUp =
+    studentFollowUps.find((record) => record.status === "DUE") ?? null;
+  const overdueFollowUpCount = studentFollowUps.filter(
+    (record) => record.status === "DUE" && new Date(record.dueDate) <= now,
+  ).length;
+  const completedFollowUpCount = studentFollowUps.filter(
+    (record) => record.status === "COMPLETED",
+  ).length;
+  const certificateDownloadHref =
+    contextOrganizationSlug &&
+    studentCertificateRecord?.documentId &&
+    studentCertificateRecord.status === "RELEASED"
+      ? `/api/org/${contextOrganizationSlug}/certificates/${studentCertificateRecord.documentId}/download`
+      : null;
+  const certificateStatusText =
+    context.type !== "ENROLLED"
+      ? "Certificate status starts after programme placement and completion."
+      : enrollmentStatus !== "COMPLETED"
+        ? "Not eligible yet. Certificate eligibility starts once programme status is completed."
+        : !studentCertificateRecord
+          ? "Eligible. Waiting for provider/coordinator issuance."
+          : studentCertificateRecord.status === "RELEASED"
+            ? "Certificate available now."
+            : `Issued with delayed release. Available from ${isoDate(studentCertificateRecord.releaseAt)}.`;
+  const followUpStatusText =
+    context.type !== "ENROLLED" || enrollmentStatus !== "COMPLETED"
+      ? "Follow-up tracking starts after programme completion."
+      : studentFollowUps.length === 0
+        ? "Follow-up schedule is not created yet."
+        : nextDueFollowUp
+          ? `Next follow-up: ${nextDueFollowUp.dueMonth}-month due ${isoDate(nextDueFollowUp.dueDate)}.`
+          : "All scheduled follow-ups are completed.";
 
   return (
     <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
@@ -261,10 +342,11 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            Payslip/Certificate
+            Payments & Certificate
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{payslips}</p>
-          <p className="text-xs text-slate-500">Visible when relevant</p>
+          <p className="text-xs text-slate-500">Payslips on file</p>
+          <p className="mt-1 text-xs text-slate-600">{certificateStatusText}</p>
         </article>
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-sm text-slate-600">Application</p>
@@ -306,6 +388,36 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               Application accepted. Placement remains separate and appears only once assigned.
             </p>
           )}
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Certificate</p>
+              <p>{certificateStatusText}</p>
+              {studentCertificateRecord && (
+                <p className="mt-1 text-xs text-slate-600">
+                  Certificate number: {studentCertificateRecord.certificateNumber} | Issue date:{" "}
+                  {studentCertificateRecord.issueDate}
+                </p>
+              )}
+              {certificateDownloadHref && (
+                <a
+                  href={certificateDownloadHref}
+                  className="mt-2 inline-block rounded border border-blue-300 px-2 py-1 text-xs text-blue-700"
+                >
+                  Download certificate
+                </a>
+              )}
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Post-training follow-up</p>
+              <p>{followUpStatusText}</p>
+              {studentFollowUps.length > 0 && (
+                <p className="mt-1 text-xs text-slate-600">
+                  Completed: {completedFollowUpCount}/{studentFollowUps.length} | Overdue:{" "}
+                  {overdueFollowUpCount}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

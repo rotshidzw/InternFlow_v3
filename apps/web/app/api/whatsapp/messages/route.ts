@@ -5,6 +5,10 @@ import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { Queue } from "bullmq";
 import { createRedisClient } from "@/lib/redis-queue";
 import { generateChatbotAssistance } from "@/lib/openrouter-ai";
+import {
+  applyCertificateReleaseTransitionsWithAudit,
+  loadOrganizationCertificateRecords,
+} from "@/lib/provider-operations";
 
 type Intent =
   | "status"
@@ -234,7 +238,28 @@ export async function POST(req: Request) {
         activeEnrollment?.status === "COMPLETED" &&
         userMembership?.organization.slug
       ) {
-        autoReply = `Certificate unlocked ✅ Download here: /api/org/${userMembership.organization.slug}/certificates/issue?enrollmentId=${activeEnrollment.id}`;
+        await applyCertificateReleaseTransitionsWithAudit({
+          organizationId: activeEnrollment.organizationId,
+          actorUserId: user.id,
+        });
+
+        const certificateRecords = await loadOrganizationCertificateRecords(
+          activeEnrollment.organizationId,
+        );
+        const certificateRecord = certificateRecords.find(
+          (record) =>
+            record.enrollmentId === activeEnrollment.id &&
+            record.userId === thread.userId,
+        );
+
+        if (!certificateRecord?.documentId) {
+          autoReply =
+            "Programme completed. Your certificate is not issued yet. The provider/coordinator must issue it first.";
+        } else if (certificateRecord.status !== "RELEASED") {
+          autoReply = `Certificate issued, but delayed-release policy is active. Available from ${certificateRecord.releaseAt.slice(0, 10)}.`;
+        } else {
+          autoReply = `Certificate available now. Download here: /api/org/${userMembership.organization.slug}/certificates/${certificateRecord.documentId}/download`;
+        }
       } else {
         autoReply =
           "Certificate is locked until your programme is marked COMPLETED. Continue checklist, attendance, and assessments.";

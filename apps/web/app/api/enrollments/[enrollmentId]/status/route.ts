@@ -6,6 +6,7 @@ import {
   resolveTenantApiActor,
   tenantApiAuthErrorResponse,
 } from "@/lib/tenant-api-auth";
+import { ensureFollowUpSchedulesForCompletedEnrollment } from "@/lib/provider-operations";
 
 const schema = z.object({
   status: z.enum(["PENDING", "ACTIVE", "COMPLETED", "CANCELLED"]),
@@ -71,6 +72,34 @@ export async function POST(req: Request, { params }: { params: { enrollmentId: s
     },
   });
 
+  if (nextStatus === "COMPLETED") {
+    const createdFollowUps = await ensureFollowUpSchedulesForCompletedEnrollment({
+      organizationId: enrollment.organizationId,
+      enrollmentId: enrollment.id,
+      userId: enrollment.userId,
+      programId: enrollment.programId,
+      actorUserId: actor.actor.user.id,
+    });
+
+    for (const followUp of createdFollowUps) {
+      await prisma.auditEvent.create({
+        data: {
+          tenantId: enrollment.organizationId,
+          userId: actor.actor.user.id,
+          action: "FOLLOW_UP_CREATED",
+          entityType: "FollowUp",
+          entityId: followUp.id,
+          metadata: {
+            enrollmentId: followUp.enrollmentId,
+            userId: followUp.userId,
+            dueMonth: followUp.dueMonth,
+            dueDate: followUp.dueDate,
+          },
+        },
+      });
+    }
+  }
+
   const referer = req.headers.get("referer");
   if (referer) {
     return NextResponse.redirect(new URL(referer));
@@ -78,4 +107,3 @@ export async function POST(req: Request, { params }: { params: { enrollmentId: s
 
   return NextResponse.json({ ok: true, enrollment: updated });
 }
-
