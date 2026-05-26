@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ContactLauncher } from "@/components/marketing/contact-launcher";
 import { contactConfig } from "@/lib/contact-config";
@@ -20,6 +20,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const currentYear = new Date().getFullYear();
 
   const navKey = useMemo(() => {
@@ -31,6 +33,31 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       setContactOpen(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!actionMenuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (!actionMenuRef.current?.contains(target)) {
+        setActionMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActionMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [actionMenuOpen]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-brand-bg text-brand-text">
@@ -46,14 +73,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       />
       <div className="relative z-10">
         <header className="if-site-header sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
-          <nav className="mx-auto grid h-[100px] max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
+          <nav className="mx-auto grid h-[100px] max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 xl:grid-cols-[minmax(17rem,auto)_1fr_minmax(17rem,auto)]">
             <Link href="/" className="flex shrink-0 items-center">
               <Image
                 src="/internflow-logo.png"
                 alt="InternFlow logo"
-                width={276}
-                height={100}
-                className="h-16 w-auto drop-shadow-[0_0_18px_rgba(168,85,247,0.3)]"
+                width={304}
+                height={112}
+                className="h-[4.25rem] w-auto drop-shadow-[0_0_20px_rgba(168,85,247,0.32)]"
                 priority
               />
             </Link>
@@ -76,32 +103,59 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <div className="hidden shrink-0 items-center justify-end gap-2.5 md:flex">
-              <Link href="/auth/login" className="if-btn if-btn-secondary if-btn-nav">
-                Sign In
-              </Link>
-              <Link
-                href="/student-sign-up"
-                className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
-              >
-                Student Sign Up
-              </Link>
-              <Link
-                href="/register-organization"
-                className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
-              >
-                Register Organization
-              </Link>
+            <div className="relative hidden shrink-0 items-center justify-end md:flex" ref={actionMenuRef}>
               <button
                 type="button"
-                className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
-                onClick={() => setContactOpen(true)}
+                className="if-btn if-btn-primary if-btn-nav min-w-[9.5rem] justify-between"
+                aria-haspopup="menu"
+                aria-expanded={actionMenuOpen}
+                aria-controls="public-action-menu"
+                onClick={() => setActionMenuOpen((prev) => !prev)}
               >
-                Chat with Us
+                Start Here
+                <span
+                  className={`text-[0.7rem] transition-transform duration-150 ${actionMenuOpen ? "rotate-180" : ""}`}
+                  aria-hidden
+                >
+                  v
+                </span>
               </button>
-              <Link href="/contact?intent=demo" className="if-btn if-btn-primary if-btn-nav">
-                Request Demo
-              </Link>
+
+              <div
+                id="public-action-menu"
+                role="menu"
+                aria-label="Public access actions"
+                className={`absolute right-0 top-[calc(100%+0.65rem)] w-[16.5rem] origin-top-right rounded-2xl border border-brand-border/70 bg-[#0a1024]/96 p-2.5 shadow-[0_18px_40px_rgba(7,10,24,0.55)] backdrop-blur-xl transition-all duration-170 ${actionMenuOpen ? "pointer-events-auto scale-100 opacity-100" : "pointer-events-none scale-[0.98] opacity-0"}`}
+              >
+                <p className="px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-brand-muted">
+                  Access Options
+                </p>
+                <div className="mt-1 grid gap-1">
+                  <Link href="/auth/login" className="if-btn if-btn-secondary justify-start px-3 py-2 text-xs" role="menuitem" onClick={() => setActionMenuOpen(false)}>
+                    Sign In
+                  </Link>
+                  <Link href="/student-sign-up" className="if-btn if-btn-secondary justify-start px-3 py-2 text-xs" role="menuitem" onClick={() => setActionMenuOpen(false)}>
+                    Student Sign Up
+                  </Link>
+                  <Link href="/register-organization" className="if-btn if-btn-secondary justify-start px-3 py-2 text-xs" role="menuitem" onClick={() => setActionMenuOpen(false)}>
+                    Register Organization
+                  </Link>
+                  <button
+                    type="button"
+                    className="if-btn if-btn-secondary justify-start px-3 py-2 text-xs"
+                    role="menuitem"
+                    onClick={() => {
+                      setActionMenuOpen(false);
+                      setContactOpen(true);
+                    }}
+                  >
+                    Chat with Us
+                  </button>
+                  <Link href="/contact?intent=demo" className="if-btn if-btn-primary justify-start px-3 py-2 text-xs" role="menuitem" onClick={() => setActionMenuOpen(false)}>
+                    Request Demo
+                  </Link>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 md:hidden">
