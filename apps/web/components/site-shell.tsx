@@ -109,18 +109,25 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <div className="relative hidden shrink-0 items-center justify-end md:flex" ref={actionMenuRef}>
               <button
                 type="button"
-                className="if-btn if-btn-primary if-btn-nav min-w-[9.5rem] justify-between"
+                className={`if-btn if-btn-nav if-start-here-trigger ${actionMenuOpen ? "is-open" : ""}`}
                 aria-haspopup="menu"
                 aria-expanded={actionMenuOpen}
                 aria-controls="public-action-menu"
                 onClick={() => setActionMenuOpen((prev) => !prev)}
               >
-                Start Here
-                <span
-                  className={`text-[0.7rem] transition-transform duration-150 ${actionMenuOpen ? "rotate-180" : ""}`}
-                  aria-hidden
-                >
-                  v
+                <span className="if-start-here-label">Start Here</span>
+                <span className="if-start-here-icon-zone" aria-hidden>
+                  <span className={`if-start-here-arrow-stack ${actionMenuOpen ? "is-open" : ""}`}>
+                    <svg viewBox="0 0 12 7" className="if-start-here-arrow if-start-here-arrow-top">
+                      <path d="M1.6 1.25 6 5.65 10.4 1.25" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+                    </svg>
+                    <svg viewBox="0 0 12 7" className="if-start-here-arrow if-start-here-arrow-mid">
+                      <path d="M1.6 1.25 6 5.65 10.4 1.25" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+                    </svg>
+                    <svg viewBox="0 0 12 7" className="if-start-here-arrow if-start-here-arrow-bottom">
+                      <path d="M1.6 1.25 6 5.65 10.4 1.25" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+                    </svg>
+                  </span>
                 </span>
               </button>
 
