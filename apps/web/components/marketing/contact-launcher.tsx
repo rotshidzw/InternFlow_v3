@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { contactConfig } from "@/lib/contact-config";
+import { submitPublicContact } from "@/lib/public-contact";
 
 function socialIcon(key: string) {
   if (key === "linkedin") return Linkedin;
@@ -31,6 +32,20 @@ export function ContactLauncher({
   demoIntent?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    topic: demoIntent ? "Demo request" : "",
+    message: demoIntent
+      ? "I would like to request a product demo for my organization."
+      : "",
+  });
+  const [submitState, setSubmitState] = useState<{
+    status: "idle" | "submitting" | "success" | "error";
+    note?: string;
+    ticketId?: string;
+  }>({ status: "idle" });
 
   useEffect(() => {
     setMounted(true);
@@ -39,9 +54,44 @@ export function ContactLauncher({
   useEffect(() => {
     if (!demoIntent) return;
     setOpen(true);
+    setForm((prev) => ({
+      ...prev,
+      topic: prev.topic || "Demo request",
+      message: prev.message || "I would like to request a product demo for my organization.",
+    }));
   }, [demoIntent, setOpen]);
 
   const socialLinks = useMemo(() => contactConfig.socials, []);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitState({ status: "submitting" });
+
+    const result = await submitPublicContact({
+      name: form.name,
+      email: form.email,
+      phone: form.phone || undefined,
+      topic: form.topic || undefined,
+      message: form.message,
+      intent: demoIntent ? "demo" : "chat",
+      source: "floating-contact-launcher",
+    });
+
+    if (!result.ok) {
+      setSubmitState({
+        status: "error",
+        note: result.error ?? "Message could not be sent right now. Please try again.",
+      });
+      return;
+    }
+
+    setSubmitState({
+      status: "success",
+      note: result.message ?? "Message received. We will contact you shortly.",
+      ticketId: result.ticketId,
+    });
+    setForm((prev) => ({ ...prev, message: "" }));
+  };
 
   if (!mounted) return null;
 
@@ -79,12 +129,65 @@ export function ContactLauncher({
                 your operational context.
               </p>
 
-              <div className="mt-4 grid gap-2 text-sm">
+              <form className="mt-4 grid gap-2 text-sm" onSubmit={submit}>
+                <input
+                  required
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Your name"
+                  className="px-3 py-2 text-xs"
+                />
+                <input
+                  required
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="you@company.com"
+                  className="px-3 py-2 text-xs"
+                />
+                <input
+                  value={form.phone}
+                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                  placeholder="Phone (optional)"
+                  className="px-3 py-2 text-xs"
+                />
+                <input
+                  value={form.topic}
+                  onChange={(event) => setForm((prev) => ({ ...prev, topic: event.target.value }))}
+                  placeholder="Topic (optional)"
+                  className="px-3 py-2 text-xs"
+                />
+                <textarea
+                  required
+                  value={form.message}
+                  onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
+                  placeholder="Tell us how we can help"
+                  rows={3}
+                  className="px-3 py-2 text-xs"
+                />
+                <button
+                  type="submit"
+                  disabled={submitState.status === "submitting"}
+                  className="if-btn if-btn-primary justify-center px-3 py-2 text-xs disabled:opacity-70"
+                >
+                  {submitState.status === "submitting" ? "Sending..." : "Chat with Us"}
+                </button>
+                {submitState.status === "success" ? (
+                  <p className="if-status-success rounded-lg border px-2.5 py-2 text-[11px]">
+                    {submitState.note} {submitState.ticketId ? `Ref: ${submitState.ticketId}` : ""}
+                  </p>
+                ) : null}
+                {submitState.status === "error" ? (
+                  <p className="if-status-error rounded-lg border px-2.5 py-2 text-[11px]">{submitState.note}</p>
+                ) : null}
+              </form>
+
+              <div className="mt-3 grid gap-2 text-sm">
                 <a
                   href={contactConfig.whatsappHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="if-btn if-btn-primary justify-between px-3 py-2 text-xs"
+                  className="if-btn if-btn-secondary justify-between px-3 py-2 text-xs"
                 >
                   <span className="inline-flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" /> WhatsApp
@@ -104,7 +207,10 @@ export function ContactLauncher({
                   <span>{contactConfig.emailAddress}</span>
                 </a>
                 <Link href="/contact?intent=demo" className="if-btn if-btn-secondary px-3 py-2 text-xs" onClick={() => setOpen(false)}>
-                  Contact for Demo
+                  Request Demo
+                </Link>
+                <Link href="/contact" className="if-btn if-btn-secondary px-3 py-2 text-xs" onClick={() => setOpen(false)}>
+                  Contact Us
                 </Link>
               </div>
 

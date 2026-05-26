@@ -42,7 +42,7 @@ export const contactConfig = {
       { label: "About", href: "/about" },
       { label: "Contact Us", href: "/contact" },
       { label: "Register Organization", href: "/register-organization" },
-      { label: "Login", href: "/auth" },
+      { label: "Login", href: "/auth/login" },
     ] as FooterLink[],
     supportLinks: [
       { label: "Contact for Demo", href: "/contact?intent=demo" },

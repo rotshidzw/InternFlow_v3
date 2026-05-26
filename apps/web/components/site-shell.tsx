@@ -1,11 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ContactLauncher } from "@/components/marketing/contact-launcher";
 import { contactConfig } from "@/lib/contact-config";
 
@@ -50,44 +48,37 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       />
       <div className="relative z-10">
         <header className="if-site-header sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
-          <nav className="mx-auto flex h-[88px] max-w-7xl items-center justify-between gap-4 px-4">
+          <nav className="mx-auto flex h-[94px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
             <Link href="/" className="flex shrink-0 items-center">
               <Image
                 src="/internflow-logo.png"
                 alt="InternFlow logo"
-                width={180}
-                height={64}
-                className="h-10 w-auto drop-shadow-[0_0_14px_rgba(168,85,247,0.22)]"
+                width={236}
+                height={84}
+                className="h-14 w-auto drop-shadow-[0_0_16px_rgba(168,85,247,0.28)]"
                 priority
               />
             </Link>
 
-            <div className="hidden min-w-0 flex-1 items-center justify-between gap-8 md:flex">
-              <div className="ml-6 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap py-1">
+            <div className="hidden min-w-0 flex-1 items-center justify-between gap-6 md:flex">
+              <div className="ml-7 flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1">
                 {marketingLinks.map((link) => {
                   const active = navKey === link.href;
                   return (
                     <a
                       key={link.href}
                       href={link.href}
-                      className={`if-nav-link relative ${active ? "text-brand-text" : "text-brand-muted"}`}
+                      className={`if-nav-link ${active ? "border-brand-border/80 bg-brand-surface text-brand-text shadow-[0_0_0_1px_rgba(168,85,247,0.2)]" : "text-brand-muted"}`}
                       aria-current={active ? "page" : undefined}
                     >
-                      {active && (
-                        <motion.span
-                          layoutId="marketing-nav-active"
-                          className="absolute inset-0 -z-0 rounded-xl border border-brand-border/70 bg-brand-surface/85 shadow-[0_0_14px_rgba(168,85,247,0.22)]"
-                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                        />
-                      )}
-                      <span className="relative z-10">{link.label}</span>
+                      {link.label}
                     </a>
                   );
                 })}
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <Link href="/auth" className="if-btn if-btn-secondary if-btn-nav">
+              <div className="flex shrink-0 items-center gap-2.5">
+                <Link href="/auth/login" className="if-btn if-btn-secondary if-btn-nav">
                   Login
                 </Link>
                 <Link
@@ -98,17 +89,18 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 </Link>
                 <button
                   type="button"
-                  className="if-btn if-btn-primary if-btn-nav"
+                  className="if-btn if-btn-secondary if-btn-nav"
                   onClick={() => setContactOpen(true)}
                 >
-                  Contact for Demo
+                  Chat with Us
                 </button>
-                <ThemeToggle />
+                <Link href="/contact?intent=demo" className="if-btn if-btn-primary if-btn-nav">
+                  Request Demo
+                </Link>
               </div>
             </div>
 
             <div className="flex items-center gap-2 md:hidden">
-              <ThemeToggle />
               <button
                 type="button"
                 aria-label="Toggle menu"
@@ -140,7 +132,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   })}
                 </div>
                 <Link
-                  href="/auth"
+                  href="/auth/login"
                   onClick={() => setMobileOpen(false)}
                   className="if-btn if-btn-secondary if-btn-nav"
                 >
@@ -159,10 +151,17 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                     setMobileOpen(false);
                     setContactOpen(true);
                   }}
+                  className="if-btn if-btn-secondary if-btn-nav"
+                >
+                  Chat with Us
+                </button>
+                <Link
+                  href="/contact?intent=demo"
+                  onClick={() => setMobileOpen(false)}
                   className="if-btn if-btn-primary if-btn-nav"
                 >
-                  Contact for Demo
-                </button>
+                  Request Demo
+                </Link>
               </div>
             </div>
           )}
@@ -222,7 +221,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 border-t border-brand-border/60 px-4 py-4 text-xs text-brand-muted/80">
-            <p>© {currentYear} {contactConfig.companyName}. All rights reserved.</p>
+            <p>Copyright {currentYear} {contactConfig.companyName}. All rights reserved.</p>
             <div className="flex flex-wrap gap-3">
               {contactConfig.footer.legalLinks.map((link) => (
                 <a key={link.href} href={link.href} className="hover:text-brand-text">
@@ -235,8 +234,11 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </footer>
       </div>
 
-      <ContactLauncher open={contactOpen} setOpen={setContactOpen} demoIntent={searchParams.get("intent") === "demo"} />
+      <ContactLauncher
+        open={contactOpen}
+        setOpen={setContactOpen}
+        demoIntent={searchParams.get("intent") === "demo"}
+      />
     </div>
   );
 }
-

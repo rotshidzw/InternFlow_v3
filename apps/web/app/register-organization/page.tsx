@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { Building2, Mail, MessageCircle, PhoneCall } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { BrandImagePanel } from "@/components/visual/brand-image-panel";
@@ -12,6 +12,7 @@ import {
   buildOrgRegistrationWhatsAppHref,
   contactConfig,
 } from "@/lib/contact-config";
+import { submitPublicContact } from "@/lib/public-contact";
 
 type OrgLeadForm = {
   organizationName: string;
@@ -42,12 +43,48 @@ const organizationTypes = [
 
 export default function RegisterOrganizationPage() {
   const [form, setForm] = useState<OrgLeadForm>(initialForm);
+  const [submitState, setSubmitState] = useState<{
+    status: "idle" | "submitting" | "success" | "error";
+    note?: string;
+    ticketId?: string;
+  }>({ status: "idle" });
 
   const emailHref = useMemo(() => buildOrgRegistrationEmailHref(form), [form]);
 
   const launchWhatsApp = () => {
     if (typeof window === "undefined") return;
     window.open(buildOrgRegistrationWhatsAppHref(form), "_blank", "noopener,noreferrer");
+  };
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitState({ status: "submitting" });
+
+    const result = await submitPublicContact({
+      name: form.contactPerson,
+      organization: form.organizationName,
+      organizationType: form.organizationType,
+      email: form.email,
+      phone: form.phone,
+      message: form.message || "Organization onboarding request submitted from public registration form.",
+      topic: "Organization registration",
+      intent: "org_registration",
+      source: "register-organization",
+    });
+
+    if (!result.ok) {
+      setSubmitState({
+        status: "error",
+        note: result.error ?? "Unable to submit right now. Please try again.",
+      });
+      return;
+    }
+
+    setSubmitState({
+      status: "success",
+      note: result.message ?? "Organization request received. Our team will contact you shortly.",
+      ticketId: result.ticketId,
+    });
   };
 
   return (
@@ -92,10 +129,7 @@ export default function RegisterOrganizationPage() {
           />
           <form
             className="mt-6 grid gap-3 md:grid-cols-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              launchWhatsApp();
-            }}
+            onSubmit={submit}
           >
             <label className="grid gap-1 text-sm text-brand-textSoft md:col-span-2">
               Organization or company name
@@ -163,7 +197,14 @@ export default function RegisterOrganizationPage() {
               />
             </label>
             <div className="md:col-span-2 flex flex-wrap gap-3">
-              <button type="submit" className="if-btn if-btn-primary px-4 py-2">
+              <button
+                type="submit"
+                disabled={submitState.status === "submitting"}
+                className="if-btn if-btn-primary px-4 py-2 disabled:opacity-70"
+              >
+                {submitState.status === "submitting" ? "Submitting..." : "Submit Registration Request"}
+              </button>
+              <button type="button" onClick={launchWhatsApp} className="if-btn if-btn-secondary px-4 py-2">
                 Submit via WhatsApp
               </button>
               <a href={emailHref} className="if-btn if-btn-secondary px-4 py-2">
@@ -173,6 +214,16 @@ export default function RegisterOrganizationPage() {
                 Contact Team
               </Link>
             </div>
+            {submitState.status === "success" ? (
+              <p className="md:col-span-2 if-status-success rounded-xl border px-3 py-2 text-xs">
+                {submitState.note} {submitState.ticketId ? `Reference: ${submitState.ticketId}` : ""}
+              </p>
+            ) : null}
+            {submitState.status === "error" ? (
+              <p className="md:col-span-2 if-status-error rounded-xl border px-3 py-2 text-xs">
+                {submitState.note}
+              </p>
+            ) : null}
           </form>
         </section>
 
