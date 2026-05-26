@@ -192,18 +192,18 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <div className="space-y-2 text-sm text-brand-muted">
               <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Quick Links</p>
               {contactConfig.footer.quickLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="block hover:text-brand-text">
+                <a key={link.href} href={link.href} className="block hover:text-brand-text">
                   {link.label}
-                </Link>
+                </a>
               ))}
             </div>
 
             <div className="space-y-2 text-sm text-brand-muted">
               <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Company</p>
               {contactConfig.footer.companyLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="block hover:text-brand-text">
+                <a key={link.href} href={link.href} className="block hover:text-brand-text">
                   {link.label}
-                </Link>
+                </a>
               ))}
             </div>
 
@@ -214,9 +214,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               <a href={contactConfig.emailHref} className="block hover:text-brand-text">{contactConfig.emailAddress}</a>
               <div className="pt-1 text-xs">
                 {contactConfig.footer.supportLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="block py-0.5 hover:text-brand-text">
+                  <a key={link.href} href={link.href} className="block py-0.5 hover:text-brand-text">
                     {link.label}
-                  </Link>
+                  </a>
                 ))}
               </div>
             </div>
@@ -225,9 +225,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <p>© {currentYear} {contactConfig.companyName}. All rights reserved.</p>
             <div className="flex flex-wrap gap-3">
               {contactConfig.footer.legalLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="hover:text-brand-text">
+                <a key={link.href} href={link.href} className="hover:text-brand-text">
                   {link.label}
-                </Link>
+                </a>
               ))}
             </div>
             <p>Founder: Mavhungu Rotshidzwa Chester - Developer - Systems Support - AI Engineer</p>
