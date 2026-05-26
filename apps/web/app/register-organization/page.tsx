@@ -95,7 +95,7 @@ export default function RegisterOrganizationPage() {
             <SectionHeading
               eyebrow="Register Organization"
               title="Start your InternFlow onboarding request"
-              subtitle="Register interest and our team will guide your organization through setup, access, and implementation planning."
+              subtitle="Start your organization sign-up and onboarding access request. Our team will guide setup activation, governance alignment, and workspace provisioning."
             />
             <div className="mt-5 grid gap-2 text-sm text-brand-textSoft">
               <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="if-btn if-btn-primary justify-between px-3 py-2 text-xs">
@@ -125,7 +125,7 @@ export default function RegisterOrganizationPage() {
           <SectionHeading
             eyebrow="Organization Profile"
             title="Share your organization details"
-            subtitle="This helps us prepare the right onboarding route before setup access is issued."
+            subtitle="This is the first onboarding registration step for new InternFlow organizations before secure setup access is issued."
           />
           <form
             className="mt-6 grid gap-3 md:grid-cols-2"
@@ -234,7 +234,8 @@ export default function RegisterOrganizationPage() {
             </div>
             <p>
               Existing authenticated users can still use the internal workspace creation flow. This
-              public route is the professional front-facing onboarding entry point for new organizations.
+              public route is the formal organization sign-up and onboarding entry point for new
+              providers and programme operators.
             </p>
           </div>
         </section>

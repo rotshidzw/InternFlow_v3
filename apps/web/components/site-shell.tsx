@@ -79,7 +79,13 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
               <div className="flex shrink-0 items-center gap-2.5">
                 <Link href="/auth/login" className="if-btn if-btn-secondary if-btn-nav">
-                  Login
+                  Sign In
+                </Link>
+                <Link
+                  href="/student-sign-up"
+                  className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
+                >
+                  Student Sign Up
                 </Link>
                 <Link
                   href="/register-organization"
@@ -136,7 +142,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   onClick={() => setMobileOpen(false)}
                   className="if-btn if-btn-secondary if-btn-nav"
                 >
-                  Login
+                  Sign In
+                </Link>
+                <Link
+                  href="/student-sign-up"
+                  onClick={() => setMobileOpen(false)}
+                  className="if-btn if-btn-secondary if-btn-nav"
+                >
+                  Student Sign Up
                 </Link>
                 <Link
                   href="/register-organization"

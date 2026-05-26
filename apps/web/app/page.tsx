@@ -114,14 +114,20 @@ export default function HomePage() {
                 and operational visibility in one enterprise-grade platform.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
-                  Contact for Demo
+                <Link href="/auth/login" className="if-btn if-btn-secondary px-4 py-2">
+                  Sign In
+                </Link>
+                <Link href="/student-sign-up" className="if-btn if-btn-secondary px-4 py-2">
+                  Student Sign Up
                 </Link>
                 <Link href="/register-organization" className="if-btn if-btn-secondary px-4 py-2">
                   Register Organization
                 </Link>
-                <Link href="/solutions" className="if-btn if-btn-secondary px-4 py-2">
-                  Explore Solutions
+                <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+                  Request Demo
+                </Link>
+                <Link href="/contact" className="if-btn if-btn-secondary px-4 py-2">
+                  Contact Us
                 </Link>
               </div>
               <div className="grid gap-2 text-sm text-brand-muted sm:grid-cols-2">
@@ -367,14 +373,20 @@ export default function HomePage() {
                   subtitle="Book a guided walkthrough of provider operations, learner lifecycle controls, and evidence-ready reporting flows."
                 />
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
-                    Contact for Demo
+                  <Link href="/auth/login" className="if-btn if-btn-secondary px-4 py-2">
+                    Sign In
+                  </Link>
+                  <Link href="/student-sign-up" className="if-btn if-btn-secondary px-4 py-2">
+                    Student Sign Up
                   </Link>
                   <Link href="/register-organization" className="if-btn if-btn-secondary px-4 py-2">
                     Register Organization
                   </Link>
-                  <Link href="/pricing" className="if-btn if-btn-secondary px-4 py-2">
-                    View Pricing
+                  <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+                    Request Demo
+                  </Link>
+                  <Link href="/contact" className="if-btn if-btn-secondary px-4 py-2">
+                    Contact Us
                   </Link>
                 </div>
               </div>

@@ -40,12 +40,13 @@ export const contactConfig = {
     ] as FooterLink[],
     companyLinks: [
       { label: "About", href: "/about" },
-      { label: "Contact Us", href: "/contact" },
+      { label: "Sign In", href: "/auth/login" },
+      { label: "Student Sign Up", href: "/student-sign-up" },
       { label: "Register Organization", href: "/register-organization" },
-      { label: "Login", href: "/auth/login" },
+      { label: "Contact Us", href: "/contact" },
     ] as FooterLink[],
     supportLinks: [
-      { label: "Contact for Demo", href: "/contact?intent=demo" },
+      { label: "Request Demo", href: "/contact?intent=demo" },
       { label: "Support", href: "/contact" },
     ] as FooterLink[],
     legalLinks: [

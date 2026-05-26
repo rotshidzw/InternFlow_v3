@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpRequestSchema } from "@internflow/shared/src/schemas";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const emailSchema = otpRequestSchema;
 const otpSchema = z.object({
@@ -24,6 +25,7 @@ const demoUsers = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"request" | "verify">("request");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,13 @@ export default function LoginPage() {
     resolver: zodResolver(emailSchema),
   });
   const otpForm = useForm<OtpFormValues>({ resolver: zodResolver(otpSchema) });
+  const prefilledEmail = searchParams.get("email")?.toLowerCase() ?? "";
+  const fromSignup = searchParams.get("from") === "signup";
+
+  useEffect(() => {
+    if (!prefilledEmail) return;
+    emailForm.setValue("email", prefilledEmail);
+  }, [emailForm, prefilledEmail]);
 
   const requestOtp = async (values: EmailFormValues) => {
     setError(null);
@@ -86,10 +95,10 @@ export default function LoginPage() {
     <div className="mx-auto mt-10 max-w-5xl">
       <div className="if-panel grid overflow-hidden rounded-3xl md:grid-cols-[1fr_1.2fr]">
         <section className="border-b border-brand-border/70 bg-[#090d21]/92 p-6 md:border-b-0 md:border-r md:p-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-brand-accentStrong">Secure access</p>
-          <h1 className="mt-2 text-3xl font-semibold text-brand-text">Sign in to InternFlow</h1>
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-accentStrong">Secure sign-in</p>
+          <h1 className="mt-2 text-3xl font-semibold text-brand-text">Sign In to InternFlow</h1>
           <p className="mt-3 text-sm text-brand-textSoft">
-            Enterprise authentication with one-time passcode verification and role-aware routing.
+            Existing users sign in here using one-time passcode verification and role-aware routing.
           </p>
           <div className="if-panel-muted mt-6 p-4">
             <p className="text-sm font-semibold text-brand-text">Workspace routing</p>
@@ -99,16 +108,29 @@ export default function LoginPage() {
               <li>OTP events remain local-dev friendly via MailHog</li>
             </ul>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="if-btn if-btn-secondary mt-6 px-3 py-1.5 text-xs"
-          >
-            Back to Home
-          </button>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="if-btn if-btn-secondary px-3 py-1.5 text-xs"
+            >
+              Back to Home
+            </button>
+            <Link href="/student-sign-up" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Student Sign Up
+            </Link>
+            <Link href="/register-organization" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Register Organization
+            </Link>
+          </div>
         </section>
 
         <section className="bg-[#070b18]/88 p-6 md:p-8">
+          {fromSignup ? (
+            <p className="if-status-success mb-4 rounded-lg border p-3 text-sm">
+              Account created. Complete sign-in verification to continue onboarding.
+            </p>
+          ) : null}
           {step === "request" ? (
             <form
               onSubmit={emailForm.handleSubmit(requestOtp)}
@@ -124,7 +146,7 @@ export default function LoginPage() {
                 disabled={emailForm.formState.isSubmitting}
                 className="if-btn if-btn-primary w-full py-3 disabled:opacity-50"
               >
-                Send OTP
+                Send Sign-In OTP
               </button>
             </form>
           ) : (
@@ -163,7 +185,7 @@ export default function LoginPage() {
           )}
 
           <div className="if-panel-muted mt-6 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-brand-accentStrong">Demo Login</h2>
+            <h2 className="text-sm font-semibold text-brand-accentStrong">Demo Sign In</h2>
             <p className="mt-1 text-xs text-brand-muted">
               Use demo accounts. OTP appears in MailHog at http://localhost:8025.
             </p>
@@ -181,6 +203,18 @@ export default function LoginPage() {
               ))}
             </div>
           </div>
+
+          <p className="mt-4 text-xs text-brand-muted">
+            New student?{" "}
+            <Link href="/student-sign-up" className="text-brand-accentStrong hover:text-brand-text">
+              Start Student Sign Up
+            </Link>
+            . Need organisation access?{" "}
+            <Link href="/register-organization" className="text-brand-accentStrong hover:text-brand-text">
+              Register Organization
+            </Link>
+            .
+          </p>
 
           {error && (
             <p className="if-status-error mt-4 rounded-lg border p-3 text-sm">

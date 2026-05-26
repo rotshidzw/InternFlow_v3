@@ -212,6 +212,12 @@ export function ContactLauncher({
                 <Link href="/contact" className="if-btn if-btn-secondary px-3 py-2 text-xs" onClick={() => setOpen(false)}>
                   Contact Us
                 </Link>
+                <Link href="/student-sign-up" className="if-btn if-btn-secondary px-3 py-2 text-xs" onClick={() => setOpen(false)}>
+                  Student Sign Up
+                </Link>
+                <Link href="/auth/login" className="if-btn if-btn-secondary px-3 py-2 text-xs" onClick={() => setOpen(false)}>
+                  Sign In
+                </Link>
               </div>
 
               <div className="mt-4 border-t border-brand-border/60 pt-3">

@@ -8,7 +8,7 @@ import { brandImagery } from "@/lib/brand-imagery";
 export default async function WorkspacesPage() {
   const email = cookies().get("if_user")?.value;
   if (!email) {
-    return <div className="p-8 text-brand-text">Please login at <Link href="/auth" className="underline">/auth</Link>.</div>;
+    return <div className="p-8 text-brand-text">Please sign in at <Link href="/auth/login" className="underline">/auth/login</Link>.</div>;
   }
 
   const user = await prisma.user.findUnique({

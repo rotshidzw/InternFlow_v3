@@ -137,7 +137,7 @@ export default function ContactPage() {
           <SectionHeading
             eyebrow="Demo Request"
             title="Tell us what you need"
-            subtitle="Send your request directly in-platform. You can still use WhatsApp or Email as alternate channels."
+            subtitle="Use this for contact and demo conversations. For account creation, use Student Sign Up or Register Organization."
           />
           <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={submit}>
             <label className="grid gap-1 text-sm text-brand-textSoft">
