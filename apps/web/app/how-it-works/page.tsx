@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const steps = [
   {
@@ -46,11 +48,20 @@ export default function HowItWorksPage() {
   return (
     <SiteShell>
       <div className="space-y-12">
-        <section className="if-panel p-6 md:p-8">
-          <SectionHeading
-            eyebrow="How It Works"
-            title="A structured delivery flow for enterprise programme operations"
-            subtitle="InternFlow aligns operational execution from onboarding through close-out with consistent state progression and evidence controls."
+        <section className="grid gap-5 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <div className="if-panel p-6 md:p-8">
+            <SectionHeading
+              eyebrow="How It Works"
+              title="A structured delivery flow for enterprise programme operations"
+              subtitle="InternFlow aligns operational execution from onboarding through close-out with consistent state progression and evidence controls."
+            />
+          </div>
+          <BrandImagePanel
+            image={brandImagery.providerControlRoom}
+            eyebrow="Operational Flow"
+            title="Designed for repeatable execution"
+            description="Each stage of programme delivery maps to explicit controls, responsibilities, and evidence checkpoints."
+            imageClassName="h-full min-h-[18rem]"
           />
         </section>
 

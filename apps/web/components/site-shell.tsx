@@ -30,9 +30,9 @@ export function SiteShell({ children }: PropsWithChildren) {
         aria-hidden
       />
       <div className="relative z-10">
-        <header className="sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/86 backdrop-blur-xl">
-          <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-            <Link href="/" className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
+          <nav className="mx-auto flex h-[82px] max-w-7xl items-center justify-between gap-4 px-4">
+            <Link href="/" className="flex shrink-0 items-center gap-3">
               <Image
                 src="/internflow-logo.png"
                 alt="InternFlow logo"
@@ -41,31 +41,30 @@ export function SiteShell({ children }: PropsWithChildren) {
                 className="h-10 w-auto drop-shadow-[0_0_14px_rgba(168,85,247,0.22)]"
                 priority
               />
-              <p className="hidden text-[10px] uppercase tracking-[0.24em] text-brand-muted lg:block">
+              <p className="hidden text-[10px] uppercase tracking-[0.24em] text-brand-muted xl:block">
                 Enterprise Operations Intelligence
               </p>
             </Link>
 
-            <div className="hidden flex-1 items-center justify-between gap-6 md:flex">
-              <div className="ml-8 flex items-center gap-1 text-sm">
+            <div className="hidden min-w-0 flex-1 items-center justify-between gap-6 md:flex">
+              <div className="ml-4 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap">
                 {marketingLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="rounded-lg border border-transparent px-3 py-2 text-brand-muted transition hover:border-brand-border hover:text-brand-text"
-                  >
+                  <a key={link.href} href={link.href} className="if-nav-link">
                     {link.label}
                   </a>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                <Link href="/auth" className="if-btn if-btn-secondary text-xs">
+              <div className="flex shrink-0 items-center gap-2">
+                <Link href="/auth" className="if-btn if-btn-secondary if-btn-nav">
                   Login
                 </Link>
-                <Link href="/demo" className="if-btn if-btn-primary text-xs">
+                <Link href="/demo" className="if-btn if-btn-primary if-btn-nav">
                   Request Demo
                 </Link>
-                <Link href="/onboarding/create-org" className="if-btn if-btn-secondary text-xs">
+                <Link
+                  href="/onboarding/create-org"
+                  className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
+                >
                   Register Organization
                 </Link>
                 <ThemeToggle />
@@ -79,7 +78,7 @@ export function SiteShell({ children }: PropsWithChildren) {
                 aria-label="Toggle menu"
                 aria-expanded={mobileOpen}
                 onClick={() => setMobileOpen((open) => !open)}
-                className="if-btn if-btn-secondary px-3 py-2 text-sm"
+                className="if-btn if-btn-secondary if-btn-nav text-xs"
               >
                 Menu
               </button>
@@ -95,22 +94,30 @@ export function SiteShell({ children }: PropsWithChildren) {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className="block rounded-lg border border-transparent px-3 py-2 text-brand-muted transition hover:border-brand-border hover:text-brand-text"
+                      className="if-nav-link w-full justify-between"
                     >
                       {link.label}
                     </a>
                   ))}
                 </div>
-                <Link href="/auth" onClick={() => setMobileOpen(false)} className="if-btn if-btn-secondary">
+                <Link
+                  href="/auth"
+                  onClick={() => setMobileOpen(false)}
+                  className="if-btn if-btn-secondary if-btn-nav"
+                >
                   Login
                 </Link>
-                <Link href="/demo" onClick={() => setMobileOpen(false)} className="if-btn if-btn-primary">
+                <Link
+                  href="/demo"
+                  onClick={() => setMobileOpen(false)}
+                  className="if-btn if-btn-primary if-btn-nav"
+                >
                   Request Demo
                 </Link>
                 <Link
                   href="/onboarding/create-org"
                   onClick={() => setMobileOpen(false)}
-                  className="if-btn if-btn-secondary"
+                  className="if-btn if-btn-secondary if-btn-nav"
                 >
                   Register Organization
                 </Link>

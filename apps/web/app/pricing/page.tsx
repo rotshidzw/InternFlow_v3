@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const plans = [
   {
@@ -48,11 +50,20 @@ export default function PricingPage() {
   return (
     <SiteShell>
       <div className="space-y-12">
-        <section className="if-panel p-6 md:p-8">
-          <SectionHeading
-            eyebrow="Pricing"
-            title="Commercial models for serious delivery teams"
-            subtitle="Start with demonstration and evaluation, then scale into production operations with a package aligned to your governance and delivery context."
+        <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+          <div className="if-panel p-6 md:p-8">
+            <SectionHeading
+              eyebrow="Pricing"
+              title="Commercial models for serious delivery teams"
+              subtitle="Start with demonstration and evaluation, then scale into production operations with a package aligned to your governance and delivery context."
+            />
+          </div>
+          <BrandImagePanel
+            image={brandImagery.providerControlRoom}
+            eyebrow="Commercial Alignment"
+            title="Pricing built around operational complexity"
+            description="Engagement models are designed for practical rollout, governance confidence, and delivery maturity."
+            imageClassName="h-full min-h-[18rem]"
           />
         </section>
 

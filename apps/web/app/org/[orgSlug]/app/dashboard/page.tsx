@@ -1,6 +1,8 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 function pct(value: number, total: number) {
   return total === 0 ? 0 : Math.round((value / total) * 100);
@@ -97,26 +99,52 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
   const avgOnboardingProgress = onboardingProgress.length ? Math.round(onboardingProgress.reduce((sum, c) => sum + c.progress, 0) / onboardingProgress.length) : 0;
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-white/85 p-5 shadow-sm">
-        <h1 className="text-3xl font-semibold">Tenant Home</h1>
-        <p className="text-sm text-slate-600">Manage recruitment, compliance, learner progression, and stipend delivery from one command center.</p>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="if-panel space-y-5 rounded-3xl p-5">
           <div>
-            <h2 className="font-semibold">Learner operations quick actions</h2>
-            <p className="text-xs text-slate-500">Access conversation, progress tracking, register exports, and certificate release tools.</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Tenant Command Center</p>
+            <h1 className="mt-2 text-3xl font-semibold">Tenant Home</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Manage recruitment, compliance, learner progression, and stipend delivery from one
+              coordinated control surface.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <Link href={`/org/${params.orgSlug}/app/learner-chat`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Chat with learners</Link>
-            <Link href={`/org/${params.orgSlug}/app/progress`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Track progress</Link>
-            <Link href={`/org/${params.orgSlug}/app/registers`} className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700">Upload/Export registers</Link>
-            <Link href={`/org/${params.orgSlug}/app/certificates`} className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700">One-click certificate release (PDF)</Link>
+
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-semibold">Learner operations quick actions</h2>
+                <p className="text-xs text-slate-500">
+                  Access conversation, progress tracking, register exports, and certificate release tools.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Link href={`/org/${params.orgSlug}/app/learner-chat`} className="if-btn if-btn-secondary if-btn-nav text-xs">
+                  Chat with learners
+                </Link>
+                <Link href={`/org/${params.orgSlug}/app/progress`} className="if-btn if-btn-secondary if-btn-nav text-xs">
+                  Track progress
+                </Link>
+                <Link href={`/org/${params.orgSlug}/app/registers`} className="if-btn if-btn-secondary if-btn-nav text-xs">
+                  Registers
+                </Link>
+                <Link href={`/org/${params.orgSlug}/app/certificates`} className="if-btn if-btn-primary if-btn-nav text-xs">
+                  Certificate release
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+
+        <BrandImagePanel
+          image={brandImagery.providerControlRoom}
+          eyebrow="Provider Operations"
+          title="Monthly management with real visibility"
+          description="Track attendance, payment evidence, compliance status, and close-out readiness in one place."
+          imageClassName="h-full min-h-[19rem]"
+        />
+      </section>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Link href={`/org/${params.orgSlug}/app/programs`} className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">

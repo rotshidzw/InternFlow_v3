@@ -79,9 +79,16 @@ export function TenantShell({
         <aside className="border-r border-brand-border/75 bg-[#080916]/84 p-4 shadow-2xl shadow-black/35 backdrop-blur-2xl">
           <div className="mb-4 flex items-center justify-between gap-2">
             {!collapsed ? (
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-brand-muted">InternFlow</p>
-                <p className="text-base font-semibold text-brand-text">{orgName}</p>
+              <div className="flex items-center gap-3">
+                <img
+                  src="/internflow-logo.png"
+                  alt="InternFlow"
+                  className="h-8 w-auto drop-shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+                />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-muted">InternFlow</p>
+                  <p className="text-base font-semibold text-brand-text">{orgName}</p>
+                </div>
               </div>
             ) : (
               <p className="text-lg font-bold text-brand-text">IF</p>
@@ -89,7 +96,7 @@ export function TenantShell({
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="if-btn if-btn-secondary px-2.5 py-1 text-xs"
+              className="if-btn if-btn-secondary if-btn-nav text-xs"
             >
               {collapsed ? ">" : "<"}
             </button>
@@ -160,10 +167,10 @@ export function TenantShell({
                     placeholder="Search learners..."
                     className="rounded-xl border border-brand-border bg-brand-surface px-3 py-1.5 text-sm text-brand-text outline-none transition focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/30"
                   />
-                  <button className="if-btn if-btn-secondary px-2.5 py-1.5 text-xs">Search</button>
+                  <button className="if-btn if-btn-secondary if-btn-nav text-xs">Search</button>
                 </form>
                 <form action="/api/auth/logout" method="post">
-                  <button className="if-btn if-btn-secondary px-3 py-1.5 text-xs">Logout</button>
+                  <button className="if-btn if-btn-secondary if-btn-nav text-xs">Logout</button>
                 </form>
               </div>
             </div>

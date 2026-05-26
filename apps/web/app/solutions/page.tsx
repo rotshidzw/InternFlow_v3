@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const solutions = [
   {
@@ -42,11 +44,20 @@ export default function SolutionsPage() {
   return (
     <SiteShell>
       <div className="space-y-12">
-        <section className="if-panel p-6 md:p-8">
-          <SectionHeading
-            eyebrow="Solutions"
-            title="Role-specific operational solutions for programme delivery"
-            subtitle="InternFlow supports the full enterprise delivery chain: provider governance, coordinator execution, finance evidence, and audit visibility."
+        <section className="grid gap-5 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <div className="if-panel p-6 md:p-8">
+            <SectionHeading
+              eyebrow="Solutions"
+              title="Role-specific operational solutions for programme delivery"
+              subtitle="InternFlow supports the full enterprise delivery chain: provider governance, coordinator execution, finance evidence, and audit visibility."
+            />
+          </div>
+          <BrandImagePanel
+            image={brandImagery.workflowIntelligence}
+            eyebrow="Systems Coordination"
+            title="One platform for each operational function"
+            description="Delivery teams gain consistent controls and clear accountability across monthly programme execution."
+            imageClassName="h-full min-h-[18rem]"
           />
         </section>
 

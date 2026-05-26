@@ -43,13 +43,13 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
-      <header className="sticky top-0 z-20 border-b border-brand-border/70 bg-[#090a1a]/84 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-brand-border/70 bg-[#090a1a]/88 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <img
               src="/internflow-logo.png"
               alt="InternFlow"
-              className="h-9 w-auto drop-shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+              className="h-8 w-auto drop-shadow-[0_0_12px_rgba(168,85,247,0.2)]"
             />
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">
@@ -65,7 +65,7 @@ export function AppShell({
             </span>
             <span className="if-badge">{orgSlug}</span>
             <form action="/api/auth/logout" method="post">
-              <button className="if-btn if-btn-secondary px-2.5 py-1 text-xs">
+              <button className="if-btn if-btn-secondary if-btn-nav text-xs">
                 Log out
               </button>
             </form>

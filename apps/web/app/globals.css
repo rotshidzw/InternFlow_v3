@@ -245,6 +245,13 @@ body {
       background-color var(--if-motion-fast) ease;
   }
 
+  .if-btn-nav {
+    height: 2.5rem;
+    padding-inline: 0.95rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+  }
+
   .if-btn:hover {
     transform: translateY(-1px);
   }
@@ -405,6 +412,35 @@ body {
     color: var(--if-text-muted);
     font-size: 0.92rem;
     line-height: 1.45;
+  }
+
+  .if-nav-link {
+    display: inline-flex;
+    height: 2.5rem;
+    align-items: center;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    padding-inline: 0.85rem;
+    color: var(--if-text-muted);
+    font-size: 0.84rem;
+    font-weight: 520;
+    transition:
+      border-color var(--if-motion-fast) ease,
+      color var(--if-motion-fast) ease,
+      background-color var(--if-motion-fast) ease;
+  }
+
+  .if-nav-link:hover {
+    border-color: rgba(118, 101, 189, 0.65);
+    background: rgba(16, 24, 47, 0.8);
+    color: var(--if-text);
+  }
+
+  .if-image-overlay {
+    background:
+      linear-gradient(180deg, rgba(7, 9, 20, 0.04), rgba(7, 9, 20, 0.88)),
+      radial-gradient(circle at 82% 15%, rgba(168, 85, 247, 0.35), transparent 46%),
+      radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.25), transparent 44%);
   }
 }
 

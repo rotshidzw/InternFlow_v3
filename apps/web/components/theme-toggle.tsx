@@ -16,7 +16,7 @@ export function ThemeToggle() {
       type="button"
       aria-label="Use dark theme"
       onClick={() => setTheme("dark")}
-      className="if-btn if-btn-secondary min-w-[108px] px-3 py-1.5 text-xs font-medium"
+      className="if-btn if-btn-secondary if-btn-nav min-w-[112px] font-medium"
     >
       {!mounted ? "Theme" : "Dark Theme"}
     </button>

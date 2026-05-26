@@ -14,6 +14,8 @@ import {
 } from "@/lib/provider-operations";
 import { deriveStudentLifecycle } from "@/lib/student-lifecycle";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 type StudentPortalProps = {
   searchParams?: Record<string, string | string[] | undefined>;
@@ -245,73 +247,79 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
   return (
     <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Student Dashboard
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">
-              Welcome, {user.name ?? "Student"}
-            </h1>
-            <p className="mt-2 text-sm text-slate-600">
-              {["assigned", "active", "completed"].includes(lifecycle.placementStatus) && programmeName
-                ? `Programme: ${programmeName}`
-                : "Placement not assigned yet. Complete profile, documents, and application steps to move forward."}
-            </p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Student Dashboard
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+                  Welcome, {user.name ?? "Student"}
+                </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  {["assigned", "active", "completed"].includes(lifecycle.placementStatus) && programmeName
+                    ? `Programme: ${programmeName}`
+                    : "Placement not assigned yet. Complete profile, documents, and application steps to move forward."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <form action="/api/auth/logout" method="post">
+                  <button className="if-btn if-btn-secondary if-btn-nav text-xs">
+                    Log out
+                  </button>
+                </form>
+                <Link href="/app/student/documents" className="if-btn if-btn-primary if-btn-nav text-xs">
+                  Upload documents
+                </Link>
+                <Link href="/app/whatsapp-sim" className="if-btn if-btn-secondary if-btn-nav text-xs">
+                  Ask for support
+                </Link>
+                <a
+                  href={canOpenProgramWorkspace ? (programWorkspaceUrl ?? "/app/student") : "/app/student"}
+                  className="if-btn if-btn-secondary if-btn-nav text-xs"
+                >
+                  Check programme status
+                </a>
+              </div>
+            </div>
+
+            {(showApplied || showAlreadyApplied || showDraftSaved || showActiveEnrollmentError) && (
+              <div className="grid gap-2">
+                {showApplied && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    Application submitted successfully.
+                  </div>
+                )}
+                {showDraftSaved && (
+                  <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                    Application draft saved. Submit when ready.
+                  </div>
+                )}
+                {showAlreadyApplied && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                    You already submitted this application.
+                  </div>
+                )}
+                {showActiveEnrollmentError && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    You already have an active enrollment in another organization.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <form action="/api/auth/logout" method="post">
-              <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Log out
-              </button>
-            </form>
-            <Link
-              href="/app/student/documents"
-              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-            >
-              Upload documents
-            </Link>
-            <Link
-              href="/app/whatsapp-sim"
-              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
-            >
-              Ask for support
-            </Link>
-            <a
-              href={canOpenProgramWorkspace ? (programWorkspaceUrl ?? "/app/student") : "/app/student"}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Check programme status
-            </a>
-          </div>
+          <BrandImagePanel
+            image={brandImagery.studentJourney}
+            eyebrow="Learner Journey"
+            title="Track your progress clearly"
+            description="Profile, documents, application, placement, and programme outcomes are separated so you always know your real status."
+            imageClassName="h-full min-h-[18rem]"
+          />
         </div>
-
-        {(showApplied || showAlreadyApplied || showDraftSaved || showActiveEnrollmentError) && (
-          <div className="mt-4 grid gap-2">
-            {showApplied && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                Application submitted successfully.
-              </div>
-            )}
-            {showDraftSaved && (
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
-                Application draft saved. Submit when ready.
-              </div>
-            )}
-            {showAlreadyApplied && (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                You already submitted this application.
-              </div>
-            )}
-            {showActiveEnrollmentError && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                You already have an active enrollment in another organization.
-              </div>
-            )}
-          </div>
-        )}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

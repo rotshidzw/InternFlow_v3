@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const controlDomains = [
   {
@@ -40,11 +42,20 @@ export default function SecurityPage() {
   return (
     <SiteShell>
       <div className="space-y-12">
-        <section className="if-panel p-6 md:p-8">
-          <SectionHeading
-            eyebrow="Security and Compliance"
-            title="Enterprise control posture for operational software"
-            subtitle="InternFlow is designed around secure operational boundaries, role-safe execution, and evidence continuity across programme workflows."
+        <section className="grid gap-5 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <div className="if-panel p-6 md:p-8">
+            <SectionHeading
+              eyebrow="Security and Compliance"
+              title="Enterprise control posture for operational software"
+              subtitle="InternFlow is designed around secure operational boundaries, role-safe execution, and evidence continuity across programme workflows."
+            />
+          </div>
+          <BrandImagePanel
+            image={brandImagery.trustAndGovernance}
+            eyebrow="Governance"
+            title="Secure by operational design"
+            description="Security, accountability, and evidence integrity are embedded into the platform architecture."
+            imageClassName="h-full min-h-[18rem]"
           />
         </section>
 

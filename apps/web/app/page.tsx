@@ -6,6 +6,8 @@ import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { FadeInSection } from "@/components/fade-in-section";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const platformPillars = [
   {
@@ -14,7 +16,7 @@ const platformPillars = [
       "Intake to completion workflows across onboarding, applications, placement, attendance, and follow-up.",
   },
   {
-    title: "Evidence & Documents",
+    title: "Evidence and Documents",
     description:
       "Document capture, verification states, metadata traceability, and evidence alignment to programme controls.",
   },
@@ -95,9 +97,9 @@ export default function HomePage() {
 
   return (
     <SiteShell>
-      <div className="space-y-14">
+      <div className="space-y-16">
         <FadeInSection>
-          <section id="product" className="grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <section id="product" className="grid gap-7 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div className="space-y-6">
               <p className="text-xs uppercase tracking-[0.25em] text-brand-accentStrong">
                 Enterprise Workflow Platform
@@ -130,7 +132,7 @@ export default function HomePage() {
             </div>
 
             <motion.div
-              animate={prefersReducedMotion ? undefined : { y: [0, -8, 0] }}
+              animate={prefersReducedMotion ? undefined : { y: [0, -6, 0] }}
               transition={
                 prefersReducedMotion
                   ? undefined
@@ -138,16 +140,22 @@ export default function HomePage() {
               }
               className="space-y-4"
             >
-              <AnimatedCard>
-                <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Control Surface</p>
-                <h2 className="mt-2 text-2xl font-semibold text-brand-text">Programme Operations Board</h2>
-                <div className="mt-4 grid gap-2 text-sm text-brand-textSoft">
-                  <p className="if-panel-muted px-3 py-2">Applications and placement progression</p>
-                  <p className="if-panel-muted px-3 py-2">Document, register, and evidence integrity</p>
-                  <p className="if-panel-muted px-3 py-2">Stipend and payment traceability</p>
-                  <p className="if-panel-muted px-3 py-2">Certificate and post-training follow-up readiness</p>
+              <BrandImagePanel
+                image={brandImagery.heroOps}
+                eyebrow="Control Surface"
+                title="Programme Operations Board"
+                description="Real delivery visibility across lifecycle, compliance, and finance signals."
+                imageClassName="h-[18rem]"
+              >
+                <div className="mt-3 grid gap-2 text-sm text-white/90 sm:grid-cols-2">
+                  <p className="rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2">
+                    Applications and placement progression
+                  </p>
+                  <p className="rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2">
+                    Document and evidence integrity
+                  </p>
                 </div>
-              </AnimatedCard>
+              </BrandImagePanel>
               <div className="grid gap-3 sm:grid-cols-2">
                 <AnimatedCard>
                   <p className="text-xs uppercase tracking-[0.16em] text-brand-muted">Operational focus</p>
@@ -167,20 +175,30 @@ export default function HomePage() {
         </FadeInSection>
 
         <FadeInSection>
-          <section>
-            <SectionHeading
-              eyebrow="Trust and Value"
-              title="Structured platform controls for real programme operations"
-              subtitle="InternFlow is designed for organisations that require consistency, compliance, and operational confidence across every learner cohort."
-            />
-            <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {platformPillars.map((pillar) => (
-                <AnimatedCard key={pillar.title}>
-                  <h3 className="text-lg font-semibold text-brand-text">{pillar.title}</h3>
-                  <p className="mt-2 text-sm text-brand-textSoft">{pillar.description}</p>
-                </AnimatedCard>
-              ))}
+          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <SectionHeading
+                eyebrow="Trust and Value"
+                title="Structured platform controls for real programme operations"
+                subtitle="InternFlow is designed for organisations that require consistency, compliance, and operational confidence across every learner cohort."
+              />
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {platformPillars.map((pillar) => (
+                  <AnimatedCard key={pillar.title}>
+                    <h3 className="text-lg font-semibold text-brand-text">{pillar.title}</h3>
+                    <p className="mt-2 text-sm text-brand-textSoft">{pillar.description}</p>
+                  </AnimatedCard>
+                ))}
+              </div>
             </div>
+            <BrandImagePanel
+              image={brandImagery.workflowIntelligence}
+              eyebrow="Workflow Intelligence"
+              title="Operational visibility across teams"
+              description="Monitor delivery rhythm and evidence quality with one coordinated command layer."
+              imageClassName="h-full min-h-[20rem]"
+              className="self-stretch"
+            />
           </section>
         </FadeInSection>
 
@@ -210,7 +228,7 @@ export default function HomePage() {
               title="Operational breadth across the full programme lifecycle"
               subtitle="Everything teams need to track learner progress, evidence quality, compliance controls, and close-out readiness."
             />
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="mt-6 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
               <AnimatedCard>
                 <div className="grid gap-2 md:grid-cols-2">
                   {capabilityRows.map((row) => (
@@ -220,65 +238,72 @@ export default function HomePage() {
                   ))}
                 </div>
               </AnimatedCard>
-              <AnimatedCard>
-                <h3 className="text-lg font-semibold text-brand-text">Why operations teams adopt InternFlow</h3>
-                <ul className="mt-3 space-y-2 text-sm text-brand-textSoft">
-                  <li>Clear accountability across provider, coordinator, trainer, and finance roles.</li>
-                  <li>Persistent operational history for every learner and programme checkpoint.</li>
-                  <li>Fewer disconnected spreadsheets, threads, and evidence silos.</li>
-                  <li>Enterprise posture for growth across multiple organisations and cohorts.</li>
-                </ul>
-              </AnimatedCard>
+              <BrandImagePanel
+                image={brandImagery.providerControlRoom}
+                eyebrow="Provider Operations"
+                title="Built for daily programme execution"
+                description="From registers to payslips to follow-ups, teams can run monthly operations with fewer blind spots."
+                imageClassName="h-full min-h-[20rem]"
+              />
             </div>
           </section>
         </FadeInSection>
 
         <FadeInSection>
-          <section>
-            <SectionHeading
-              eyebrow="Role-Based Value"
-              title="Designed for each function in programme delivery"
-              subtitle="Every major role gets a practical control surface aligned to real responsibilities."
+          <section className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+            <div>
+              <SectionHeading
+                eyebrow="Role-Based Value"
+                title="Designed for each function in programme delivery"
+                subtitle="Every major role gets a practical control surface aligned to real responsibilities."
+              />
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {roleValue.map((roleItem) => (
+                  <AnimatedCard key={roleItem.role}>
+                    <h3 className="text-lg font-semibold text-brand-text">{roleItem.role}</h3>
+                    <p className="mt-2 text-sm text-brand-textSoft">{roleItem.value}</p>
+                  </AnimatedCard>
+                ))}
+              </div>
+            </div>
+            <BrandImagePanel
+              image={brandImagery.modernTeam}
+              eyebrow="Role Collaboration"
+              title="Aligned execution across provider teams"
+              description="Coordinators, facilitators, finance, and audit stakeholders work from the same operational truth."
+              imageClassName="h-full min-h-[20rem]"
             />
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {roleValue.map((roleItem) => (
-                <AnimatedCard key={roleItem.role}>
-                  <h3 className="text-lg font-semibold text-brand-text">{roleItem.role}</h3>
-                  <p className="mt-2 text-sm text-brand-textSoft">{roleItem.value}</p>
-                </AnimatedCard>
-              ))}
-            </div>
           </section>
         </FadeInSection>
 
         <FadeInSection>
-          <section id="security">
-            <SectionHeading
+          <section id="security" className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <BrandImagePanel
+              image={brandImagery.trustAndGovernance}
               eyebrow="Compliance and Evidence"
-              title="Built for governance, traceability, and audit confidence"
-              subtitle="InternFlow aligns operations with control expectations across documentation, attendance, payments, certificates, and follow-up timelines."
+              title="Governance-ready by design"
+              description="Control signals and audit evidence stay connected from learner activity to close-out reporting."
+              imageClassName="h-full min-h-[20rem]"
             />
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <AnimatedCard>
-                <h3 className="text-lg font-semibold text-brand-text">Evidence domains managed in-platform</h3>
-                <ul className="mt-3 space-y-2 text-sm text-brand-textSoft">
-                  <li>Document verification states and requirement alignment</li>
-                  <li>Attendance registers with sign-off and review actions</li>
-                  <li>Payment evidence, stipend state updates, and monthly records</li>
-                  <li>Certificate release logic with policy-controlled timing</li>
-                  <li>Post-training follow-up records and outcome status trails</li>
-                </ul>
-              </AnimatedCard>
-              <AnimatedCard>
-                <h3 className="text-lg font-semibold text-brand-text">Control principles</h3>
-                <div className="mt-3 space-y-2 text-sm text-brand-textSoft">
-                  <p className="if-panel-muted px-3 py-2">Role-based access and operational separation of duties</p>
-                  <p className="if-panel-muted px-3 py-2">Tenant-scoped records and constrained workspace visibility</p>
-                  <p className="if-panel-muted px-3 py-2">Stateful lifecycle progression with explicit status transitions</p>
-                  <p className="if-panel-muted px-3 py-2">Action history for operational and audit inspection</p>
-                </div>
-              </AnimatedCard>
-            </div>
+            <AnimatedCard>
+              <h3 className="text-lg font-semibold text-brand-text">Evidence domains managed in-platform</h3>
+              <ul className="mt-3 space-y-2 text-sm text-brand-textSoft">
+                <li>Document verification states and requirement alignment</li>
+                <li>Attendance registers with sign-off and review actions</li>
+                <li>Payment evidence, stipend state updates, and monthly records</li>
+                <li>Certificate release logic with policy-controlled timing</li>
+                <li>Post-training follow-up records and outcome status trails</li>
+              </ul>
+              <h4 className="mt-5 text-sm font-semibold uppercase tracking-[0.16em] text-brand-accentStrong">
+                Control principles
+              </h4>
+              <div className="mt-2 space-y-2 text-sm text-brand-textSoft">
+                <p className="if-panel-muted px-3 py-2">Role-based access and operational separation of duties</p>
+                <p className="if-panel-muted px-3 py-2">Tenant-scoped records and constrained workspace visibility</p>
+                <p className="if-panel-muted px-3 py-2">Stateful lifecycle progression with explicit status transitions</p>
+                <p className="if-panel-muted px-3 py-2">Action history for operational and audit inspection</p>
+              </div>
+            </AnimatedCard>
           </section>
         </FadeInSection>
 
@@ -299,22 +324,34 @@ export default function HomePage() {
         </FadeInSection>
 
         <FadeInSection>
-          <section className="if-panel p-6 md:p-8">
-            <SectionHeading
-              eyebrow="Next Step"
-              title="See InternFlow in a real operational context"
-              subtitle="Book a guided walkthrough of provider operations, learner lifecycle controls, and evidence-ready reporting flows."
-            />
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-                Request Demo
-              </Link>
-              <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
-                Register Organization
-              </Link>
-              <Link href="/pricing" className="if-btn if-btn-secondary px-4 py-2">
-                View Pricing
-              </Link>
+          <section className="if-panel overflow-hidden p-0">
+            <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="p-6 md:p-8">
+                <SectionHeading
+                  eyebrow="Next Step"
+                  title="See InternFlow in a real operational context"
+                  subtitle="Book a guided walkthrough of provider operations, learner lifecycle controls, and evidence-ready reporting flows."
+                />
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
+                    Request Demo
+                  </Link>
+                  <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
+                    Register Organization
+                  </Link>
+                  <Link href="/pricing" className="if-btn if-btn-secondary px-4 py-2">
+                    View Pricing
+                  </Link>
+                </div>
+              </div>
+              <BrandImagePanel
+                image={brandImagery.complianceEvidence}
+                eyebrow="Evidence-Ready Delivery"
+                title="Operational maturity without manual chaos"
+                description="Run programmes with confidence across learners, documents, payments, certificates, and follow-up timelines."
+                imageClassName="h-full min-h-[18rem]"
+                className="rounded-none border-0 shadow-none"
+              />
             </div>
           </section>
         </FadeInSection>

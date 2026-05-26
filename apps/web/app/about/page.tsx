@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { AnimatedCard } from "@/components/animated-card";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 const founderImagePath = "/founder-placeholder.svg";
 
@@ -23,11 +25,20 @@ export default function AboutPage() {
   return (
     <SiteShell>
       <div className="space-y-12">
-        <section className="if-panel p-6 md:p-8">
-          <SectionHeading
-            eyebrow="About InternFlow"
-            title="A systems company focused on programme operations integrity"
-            subtitle="InternFlow exists to help organisations deliver internship and learnership programmes with operational control, evidence quality, and audit readiness."
+        <section className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="if-panel p-6 md:p-8">
+            <SectionHeading
+              eyebrow="About InternFlow"
+              title="A systems company focused on programme operations integrity"
+              subtitle="InternFlow exists to help organisations deliver internship and learnership programmes with operational control, evidence quality, and audit readiness."
+            />
+          </div>
+          <BrandImagePanel
+            image={brandImagery.trustAndGovernance}
+            eyebrow="Enterprise Positioning"
+            title="Built for operational trust"
+            description="InternFlow combines delivery control with evidence confidence across complex programme environments."
+            imageClassName="h-full min-h-[18rem]"
           />
         </section>
 
@@ -52,17 +63,26 @@ export default function AboutPage() {
           </AnimatedCard>
         </section>
 
-        <section>
-          <SectionHeading
-            eyebrow="Who It Is Built For"
-            title="Designed for organisations delivering real programmes at scale"
+        <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+          <BrandImagePanel
+            image={brandImagery.modernTeam}
+            eyebrow="Who We Serve"
+            title="Designed for operational teams under real delivery pressure"
+            description="The platform is built for organisations that need reliable day-to-day execution and consistent reporting outcomes."
+            imageClassName="h-full min-h-[20rem]"
           />
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {builtFor.map((item) => (
-              <AnimatedCard key={item}>
-                <p className="text-sm text-brand-textSoft">{item}</p>
-              </AnimatedCard>
-            ))}
+          <div>
+            <SectionHeading
+              eyebrow="Who It Is Built For"
+              title="Organisations delivering real programmes at scale"
+            />
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {builtFor.map((item) => (
+                <AnimatedCard key={item}>
+                  <p className="text-sm text-brand-textSoft">{item}</p>
+                </AnimatedCard>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -87,18 +107,27 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section>
-          <SectionHeading
-            eyebrow="Operating Principles"
-            title="How InternFlow approaches enterprise workflow software"
-          />
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {principles.map((principle) => (
-              <AnimatedCard key={principle}>
-                <p className="text-sm text-brand-textSoft">{principle}</p>
-              </AnimatedCard>
-            ))}
+        <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <SectionHeading
+              eyebrow="Operating Principles"
+              title="How InternFlow approaches enterprise workflow software"
+            />
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {principles.map((principle) => (
+                <AnimatedCard key={principle}>
+                  <p className="text-sm text-brand-textSoft">{principle}</p>
+                </AnimatedCard>
+              ))}
+            </div>
           </div>
+          <BrandImagePanel
+            image={brandImagery.complianceEvidence}
+            eyebrow="Evidence Culture"
+            title="Execution quality should always be visible"
+            description="InternFlow promotes measurable process discipline from learner onboarding to close-out." 
+            imageClassName="h-full min-h-[18rem]"
+          />
         </section>
 
         <section className="if-panel p-6 md:p-8">
