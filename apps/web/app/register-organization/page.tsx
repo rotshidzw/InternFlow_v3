@@ -215,9 +215,27 @@ export default function RegisterOrganizationPage() {
               </Link>
             </div>
             {submitState.status === "success" ? (
-              <p className="md:col-span-2 if-status-success rounded-xl border px-3 py-2 text-xs">
-                {submitState.note} {submitState.ticketId ? `Reference: ${submitState.ticketId}` : ""}
-              </p>
+              <div className="md:col-span-2 if-panel-muted rounded-xl p-4">
+                <p className="if-status-success inline-flex rounded-lg border px-2.5 py-1 text-xs">
+                  Onboarding request received
+                </p>
+                <p className="mt-2 text-sm text-brand-textSoft">
+                  {submitState.note} {submitState.ticketId ? `Reference: ${submitState.ticketId}.` : ""}
+                </p>
+                <div className="mt-3 space-y-1 text-xs text-brand-muted">
+                  <p>1. InternFlow reviews your organization profile and programme scope.</p>
+                  <p>2. Our team schedules a discovery/onboarding alignment call.</p>
+                  <p>3. Setup guidance and access issuance follow after review.</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href="/contact?intent=demo" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+                    Request Demo Session
+                  </Link>
+                  <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+                    Continue on WhatsApp
+                  </a>
+                </div>
+              </div>
             ) : null}
             {submitState.status === "error" ? (
               <p className="md:col-span-2 if-status-error rounded-xl border px-3 py-2 text-xs">

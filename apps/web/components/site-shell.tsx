@@ -12,8 +12,6 @@ const marketingLinks = [
   { href: "/solutions", label: "Solutions" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/security", label: "Security" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact Us" },
 ];
 
@@ -48,20 +46,20 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       />
       <div className="relative z-10">
         <header className="if-site-header sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
-          <nav className="mx-auto flex h-[94px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+          <nav className="mx-auto grid h-[100px] max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
             <Link href="/" className="flex shrink-0 items-center">
               <Image
                 src="/internflow-logo.png"
                 alt="InternFlow logo"
-                width={236}
-                height={84}
-                className="h-14 w-auto drop-shadow-[0_0_16px_rgba(168,85,247,0.28)]"
+                width={276}
+                height={100}
+                className="h-16 w-auto drop-shadow-[0_0_18px_rgba(168,85,247,0.3)]"
                 priority
               />
             </Link>
 
-            <div className="hidden min-w-0 flex-1 items-center justify-between gap-6 md:flex">
-              <div className="ml-7 flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1">
+            <div className="hidden items-center justify-center md:flex">
+              <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap py-1">
                 {marketingLinks.map((link) => {
                   const active = navKey === link.href;
                   return (
@@ -76,37 +74,37 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   );
                 })}
               </div>
-
-              <div className="flex shrink-0 items-center gap-2.5">
-                <Link href="/auth/login" className="if-btn if-btn-secondary if-btn-nav">
-                  Sign In
-                </Link>
-                <Link
-                  href="/student-sign-up"
-                  className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
-                >
-                  Student Sign Up
-                </Link>
-                <Link
-                  href="/register-organization"
-                  className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
-                >
-                  Register Organization
-                </Link>
-                <button
-                  type="button"
-                  className="if-btn if-btn-secondary if-btn-nav"
-                  onClick={() => setContactOpen(true)}
-                >
-                  Chat with Us
-                </button>
-                <Link href="/contact?intent=demo" className="if-btn if-btn-primary if-btn-nav">
-                  Request Demo
-                </Link>
-              </div>
             </div>
 
-            <div className="flex items-center gap-2 md:hidden">
+            <div className="hidden shrink-0 items-center justify-end gap-2.5 md:flex">
+              <Link href="/auth/login" className="if-btn if-btn-secondary if-btn-nav">
+                Sign In
+              </Link>
+              <Link
+                href="/student-sign-up"
+                className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
+              >
+                Student Sign Up
+              </Link>
+              <Link
+                href="/register-organization"
+                className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
+              >
+                Register Organization
+              </Link>
+              <button
+                type="button"
+                className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
+                onClick={() => setContactOpen(true)}
+              >
+                Chat with Us
+              </button>
+              <Link href="/contact?intent=demo" className="if-btn if-btn-primary if-btn-nav">
+                Request Demo
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 md:hidden">
               <button
                 type="button"
                 aria-label="Toggle menu"
