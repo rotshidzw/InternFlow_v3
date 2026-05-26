@@ -73,14 +73,17 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       />
       <div className="relative z-10">
         <header className="if-site-header sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
-          <nav className="mx-auto grid h-[100px] max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 xl:grid-cols-[minmax(17rem,auto)_1fr_minmax(17rem,auto)]">
-            <Link href="/" className="flex shrink-0 items-center">
+          <nav className="mx-auto grid h-[100px] max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6 xl:grid-cols-[minmax(14.5rem,auto)_1fr_minmax(14.5rem,auto)]">
+            <Link
+              href="/"
+              className="group flex shrink-0 items-center rounded-2xl border border-brand-border/70 bg-[#0a1024]/72 px-1 py-0.5 shadow-[0_0_0_1px_rgba(168,85,247,0.14),0_14px_30px_rgba(6,9,22,0.44)] transition-colors hover:border-brand-accent/60 md:px-1.5 md:py-1"
+            >
               <Image
-                src="/internflow-logo.png"
+                src="/internflow-logo-navbar-horizontal.png"
                 alt="InternFlow logo"
-                width={304}
-                height={112}
-                className="h-[4.25rem] w-auto drop-shadow-[0_0_20px_rgba(168,85,247,0.32)]"
+                width={413}
+                height={82}
+                className="h-[3.3rem] w-auto drop-shadow-[0_0_24px_rgba(168,85,247,0.42)] sm:h-[3.65rem] xl:h-[4.1rem]"
                 priority
               />
             </Link>
