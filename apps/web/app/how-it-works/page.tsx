@@ -82,8 +82,8 @@ export default function HowItWorksPage() {
             subtitle="InternFlow is designed for practical rollout with delivery teams who need reliability, accountability, and audit-grade evidence continuity."
           />
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-              Request Demo
+            <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+              Contact for Demo
             </Link>
             <Link href="/solutions" className="if-btn if-btn-secondary px-4 py-2">
               Explore Solutions
@@ -94,3 +94,4 @@ export default function HowItWorksPage() {
     </SiteShell>
   );
 }
+

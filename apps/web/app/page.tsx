@@ -8,6 +8,7 @@ import { FadeInSection } from "@/components/fade-in-section";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { BrandImagePanel } from "@/components/visual/brand-image-panel";
 import { brandImagery } from "@/lib/brand-imagery";
+import { contactConfig } from "@/lib/contact-config";
 
 const platformPillars = [
   {
@@ -113,8 +114,8 @@ export default function HomePage() {
                 and operational visibility in one enterprise-grade platform.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-                  Request Demo
+                <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+                  Contact for Demo
                 </Link>
                 <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
                   Register Organization
@@ -324,6 +325,39 @@ export default function HomePage() {
         </FadeInSection>
 
         <FadeInSection>
+          <section id="contact" className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+            <div className="if-panel p-6 md:p-8">
+              <SectionHeading
+                eyebrow="Contact Us"
+                title="Ready to talk through your delivery model?"
+                subtitle="Reach us directly for demo planning, implementation discussions, and operational fit checks."
+              />
+              <div className="mt-5 grid gap-2 text-sm">
+                <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="if-btn if-btn-primary justify-between px-3 py-2 text-xs">
+                  <span>WhatsApp</span>
+                  <span>{contactConfig.phoneDisplayLocal}</span>
+                </a>
+                <a href={contactConfig.phoneHref} className="if-btn if-btn-secondary justify-between px-3 py-2 text-xs">
+                  <span>Call</span>
+                  <span>{contactConfig.phoneDisplayIntl}</span>
+                </a>
+                <a href={contactConfig.emailHref} className="if-btn if-btn-secondary justify-between px-3 py-2 text-xs">
+                  <span>Email</span>
+                  <span>{contactConfig.emailAddress}</span>
+                </a>
+              </div>
+            </div>
+            <BrandImagePanel
+              image={brandImagery.modernTeam}
+              eyebrow="Contact Path"
+              title="Discovery conversation before demo access"
+              description="We tailor the walkthrough based on your learner volume, evidence obligations, and operating model."
+              imageClassName="h-full min-h-[18rem]"
+            />
+          </section>
+        </FadeInSection>
+
+        <FadeInSection>
           <section className="if-panel overflow-hidden p-0">
             <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
               <div className="p-6 md:p-8">
@@ -333,8 +367,8 @@ export default function HomePage() {
                   subtitle="Book a guided walkthrough of provider operations, learner lifecycle controls, and evidence-ready reporting flows."
                 />
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-                    Request Demo
+                  <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+                    Contact for Demo
                   </Link>
                   <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
                     Register Organization
@@ -359,3 +393,4 @@ export default function HomePage() {
     </SiteShell>
   );
 }
+

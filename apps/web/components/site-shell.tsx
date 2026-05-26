@@ -1,21 +1,39 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { PropsWithChildren, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ContactLauncher } from "@/components/marketing/contact-launcher";
+import { contactConfig } from "@/lib/contact-config";
 
 const marketingLinks = [
-  { href: "/#product", label: "Product" },
+  { href: "/", label: "Home" },
   { href: "/solutions", label: "Solutions" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/pricing", label: "Pricing" },
   { href: "/security", label: "Security" },
   { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
-export function SiteShell({ children }: PropsWithChildren) {
+export function SiteShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+
+  const navKey = useMemo(() => {
+    return marketingLinks.find((link) => link.href === pathname)?.href ?? null;
+  }, [pathname]);
+
+  useEffect(() => {
+    if (searchParams.get("intent") === "demo") {
+      setContactOpen(true);
+    }
+  }, [searchParams]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-brand-bg text-brand-text">
@@ -30,9 +48,9 @@ export function SiteShell({ children }: PropsWithChildren) {
         aria-hidden
       />
       <div className="relative z-10">
-        <header className="sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
-          <nav className="mx-auto flex h-[82px] max-w-7xl items-center justify-between gap-4 px-4">
-            <Link href="/" className="flex shrink-0 items-center gap-3">
+        <header className="if-site-header sticky top-0 z-30 border-b border-brand-border/70 bg-[#070913]/90 backdrop-blur-xl">
+          <nav className="mx-auto flex h-[88px] max-w-7xl items-center justify-between gap-4 px-4">
+            <Link href="/" className="flex shrink-0 items-center">
               <Image
                 src="/internflow-logo.png"
                 alt="InternFlow logo"
@@ -41,32 +59,49 @@ export function SiteShell({ children }: PropsWithChildren) {
                 className="h-10 w-auto drop-shadow-[0_0_14px_rgba(168,85,247,0.22)]"
                 priority
               />
-              <p className="hidden text-[10px] uppercase tracking-[0.24em] text-brand-muted xl:block">
-                Enterprise Operations Intelligence
-              </p>
             </Link>
 
-            <div className="hidden min-w-0 flex-1 items-center justify-between gap-6 md:flex">
-              <div className="ml-4 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap">
-                {marketingLinks.map((link) => (
-                  <a key={link.href} href={link.href} className="if-nav-link">
-                    {link.label}
-                  </a>
-                ))}
+            <div className="hidden min-w-0 flex-1 items-center justify-between gap-8 md:flex">
+              <div className="ml-6 flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap py-1">
+                {marketingLinks.map((link) => {
+                  const active = navKey === link.href;
+                  return (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className={`if-nav-link relative ${active ? "text-brand-text" : "text-brand-muted"}`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="marketing-nav-active"
+                          className="absolute inset-0 -z-0 rounded-xl border border-brand-border/70 bg-brand-surface/85 shadow-[0_0_14px_rgba(168,85,247,0.22)]"
+                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                      <span className="relative z-10">{link.label}</span>
+                    </a>
+                  );
+                })}
               </div>
+
               <div className="flex shrink-0 items-center gap-2">
                 <Link href="/auth" className="if-btn if-btn-secondary if-btn-nav">
                   Login
                 </Link>
-                <Link href="/demo" className="if-btn if-btn-primary if-btn-nav">
-                  Request Demo
-                </Link>
                 <Link
                   href="/onboarding/create-org"
-                  className="if-btn if-btn-secondary if-btn-nav hidden lg:inline-flex"
+                  className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
                 >
                   Register Organization
                 </Link>
+                <button
+                  type="button"
+                  className="if-btn if-btn-primary if-btn-nav"
+                  onClick={() => setContactOpen(true)}
+                >
+                  Contact for Demo
+                </button>
                 <ThemeToggle />
               </div>
             </div>
@@ -86,19 +121,22 @@ export function SiteShell({ children }: PropsWithChildren) {
           </nav>
 
           {mobileOpen && (
-            <div className="border-t border-brand-border/70 bg-[#090a1a]/95 px-4 py-3 md:hidden">
+            <div className="if-site-mobile-nav border-t border-brand-border/70 bg-[#090a1a]/95 px-4 py-3 md:hidden">
               <div className="flex flex-col gap-3 text-sm">
                 <div className="rounded-xl border border-brand-border/60 bg-brand-surface/50 p-2">
-                  {marketingLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="if-nav-link w-full justify-between"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {marketingLinks.map((link) => {
+                    const active = navKey === link.href;
+                    return (
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`if-nav-link w-full justify-between ${active ? "border-brand-border bg-brand-surface text-brand-text" : ""}`}
+                      >
+                        {link.label}
+                      </a>
+                    );
+                  })}
                 </div>
                 <Link
                   href="/auth"
@@ -108,27 +146,30 @@ export function SiteShell({ children }: PropsWithChildren) {
                   Login
                 </Link>
                 <Link
-                  href="/demo"
-                  onClick={() => setMobileOpen(false)}
-                  className="if-btn if-btn-primary if-btn-nav"
-                >
-                  Request Demo
-                </Link>
-                <Link
                   href="/onboarding/create-org"
                   onClick={() => setMobileOpen(false)}
                   className="if-btn if-btn-secondary if-btn-nav"
                 >
                   Register Organization
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setContactOpen(true);
+                  }}
+                  className="if-btn if-btn-primary if-btn-nav"
+                >
+                  Contact for Demo
+                </button>
               </div>
             </div>
           )}
         </header>
 
         <main className="mx-auto max-w-7xl px-4 py-10">{children}</main>
-        <footer className="border-t border-brand-border/70 bg-[#070916]/72">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-[1.2fr_1fr_1fr]">
+        <footer className="if-site-footer border-t border-brand-border/70 bg-[#070916]/72">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-[1.1fr_1fr_1fr_1fr]">
             <div className="space-y-2 text-sm text-brand-muted">
               <p className="text-base font-semibold text-brand-text">InternFlow</p>
               <p>
@@ -138,17 +179,36 @@ export function SiteShell({ children }: PropsWithChildren) {
             </div>
             <div className="space-y-2 text-sm text-brand-muted">
               <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Product</p>
-              <a href="/#product" className="block hover:text-brand-text">Overview</a>
-              <a href="/solutions" className="block hover:text-brand-text">Solutions</a>
-              <a href="/how-it-works" className="block hover:text-brand-text">How It Works</a>
-              <a href="/security" className="block hover:text-brand-text">Security</a>
+              <Link href="/" className="block hover:text-brand-text">Home</Link>
+              <Link href="/solutions" className="block hover:text-brand-text">Solutions</Link>
+              <Link href="/how-it-works" className="block hover:text-brand-text">How It Works</Link>
+              <Link href="/security" className="block hover:text-brand-text">Security</Link>
             </div>
             <div className="space-y-2 text-sm text-brand-muted">
               <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Company</p>
-              <a href="/about" className="block hover:text-brand-text">About</a>
-              <a href="/pricing" className="block hover:text-brand-text">Pricing</a>
-              <a href="/auth" className="block hover:text-brand-text">Login</a>
-              <a href="/onboarding/create-org" className="block hover:text-brand-text">Register Organization</a>
+              <Link href="/about" className="block hover:text-brand-text">About</Link>
+              <Link href="/pricing" className="block hover:text-brand-text">Pricing</Link>
+              <Link href="/contact" className="block hover:text-brand-text">Contact Us</Link>
+              <Link href="/onboarding/create-org" className="block hover:text-brand-text">Register Organization</Link>
+            </div>
+            <div className="space-y-2 text-sm text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Contact</p>
+              <a href={contactConfig.phoneHref} className="block hover:text-brand-text">{contactConfig.phoneDisplayIntl}</a>
+              <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="block hover:text-brand-text">WhatsApp</a>
+              <a href={contactConfig.emailHref} className="block hover:text-brand-text">{contactConfig.emailAddress}</a>
+              <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                {contactConfig.socials.map((social) => (
+                  <a
+                    key={social.key}
+                    href={social.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="if-btn if-btn-secondary px-2 py-1"
+                  >
+                    {social.label}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
           <div className="mx-auto max-w-7xl border-t border-brand-border/60 px-4 py-4 text-xs text-brand-muted/80">
@@ -156,6 +216,8 @@ export function SiteShell({ children }: PropsWithChildren) {
           </div>
         </footer>
       </div>
+
+      <ContactLauncher open={contactOpen} setOpen={setContactOpen} demoIntent={searchParams.get("intent") === "demo"} />
     </div>
   );
 }

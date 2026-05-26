@@ -108,8 +108,8 @@ export default function PricingPage() {
             subtitle="InternFlow engagements are designed around operational reality: existing delivery constraints, governance expectations, and evidence outcomes."
           />
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-              Request Demo
+            <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+              Contact for Demo
             </Link>
             <Link href="/about" className="if-btn if-btn-secondary px-4 py-2">
               About InternFlow
@@ -120,3 +120,4 @@ export default function PricingPage() {
     </SiteShell>
   );
 }
+

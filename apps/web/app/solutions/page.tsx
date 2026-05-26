@@ -83,8 +83,8 @@ export default function SolutionsPage() {
             subtitle="See how role-based controls align to your specific delivery structure, evidence obligations, and reporting expectations."
           />
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-              Request Demo
+            <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+              Contact for Demo
             </Link>
             <Link href="/pricing" className="if-btn if-btn-secondary px-4 py-2">
               View Pricing
@@ -95,3 +95,4 @@ export default function SolutionsPage() {
     </SiteShell>
   );
 }
+

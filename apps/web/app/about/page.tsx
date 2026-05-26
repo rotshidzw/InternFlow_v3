@@ -137,8 +137,8 @@ export default function AboutPage() {
             subtitle="InternFlow will continue evolving as a serious enterprise platform for teams that need strong control over programme delivery, reporting, and governance."
           />
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/demo" className="if-btn if-btn-primary px-4 py-2">
-              Request Demo
+            <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
+              Contact for Demo
             </Link>
             <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
               Register Organization
@@ -149,3 +149,4 @@ export default function AboutPage() {
     </SiteShell>
   );
 }
+
