@@ -4,11 +4,19 @@ export type SocialLink = {
   href: string;
 };
 
+export type FooterLink = {
+  label: string;
+  href: string;
+};
+
 const basePhoneDigits = "0826478408";
 const southAfricaIntlDigits = `27${basePhoneDigits.slice(1)}`;
 
 export const contactConfig = {
   supportLabel: "InternFlow Support",
+  companyName: "InternFlow",
+  supportLine:
+    "Enterprise operations platform for internship, learnership, and skills programme delivery with audit-ready control.",
   phoneDisplayLocal: "082 647 8408",
   phoneDisplayIntl: "+27 82 647 8408",
   phoneDigits: basePhoneDigits,
@@ -23,6 +31,28 @@ export const contactConfig = {
     { key: "x", label: "X", href: "https://x.com" },
     { key: "github", label: "GitHub", href: "https://github.com" },
   ] as SocialLink[],
+  footer: {
+    quickLinks: [
+      { label: "Home", href: "/" },
+      { label: "Solutions", href: "/solutions" },
+      { label: "How It Works", href: "/how-it-works" },
+      { label: "Pricing", href: "/pricing" },
+    ] as FooterLink[],
+    companyLinks: [
+      { label: "About", href: "/about" },
+      { label: "Contact Us", href: "/contact" },
+      { label: "Register Organization", href: "/register-organization" },
+      { label: "Login", href: "/auth" },
+    ] as FooterLink[],
+    supportLinks: [
+      { label: "Contact for Demo", href: "/contact?intent=demo" },
+      { label: "Support", href: "/contact" },
+    ] as FooterLink[],
+    legalLinks: [
+      { label: "Privacy", href: "/contact?topic=privacy" },
+      { label: "Terms", href: "/contact?topic=terms" },
+    ] as FooterLink[],
+  },
 };
 
 export function buildDemoWhatsAppHref(payload?: {
@@ -39,7 +69,7 @@ export function buildDemoWhatsAppHref(payload?: {
     payload?.message ? `Notes: ${payload.message}` : "",
   ].filter(Boolean);
 
-  return `https://wa.me/${contactConfig.phoneIntlDigits}?text=${encodeURIComponent(lines.join("\n"))}`;
+  return `https://wa.me/${contactConfig.phoneIntlDigits}?text=${encodeURIComponent(lines.join("\\n"))}`;
 }
 
 export function buildDemoEmailHref(payload?: {
@@ -61,5 +91,52 @@ export function buildDemoEmailHref(payload?: {
     "Thank you.",
   ].filter(Boolean);
 
-  return `mailto:${contactConfig.emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
+  return `mailto:${contactConfig.emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\\n"))}`;
+}
+
+export function buildOrgRegistrationWhatsAppHref(payload?: {
+  organizationName?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  organizationType?: string;
+  message?: string;
+}) {
+  const lines = [
+    "Hi Chester, we would like to register our organization with InternFlow.",
+    payload?.organizationName ? `Organization: ${payload.organizationName}` : "",
+    payload?.contactPerson ? `Contact person: ${payload.contactPerson}` : "",
+    payload?.email ? `Email: ${payload.email}` : "",
+    payload?.phone ? `Phone: ${payload.phone}` : "",
+    payload?.organizationType ? `Organization type: ${payload.organizationType}` : "",
+    payload?.message ? `Programme interest: ${payload.message}` : "",
+  ].filter(Boolean);
+
+  return `https://wa.me/${contactConfig.phoneIntlDigits}?text=${encodeURIComponent(lines.join("\\n"))}`;
+}
+
+export function buildOrgRegistrationEmailHref(payload?: {
+  organizationName?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  organizationType?: string;
+  message?: string;
+}) {
+  const subject = "InternFlow Organization Registration Interest";
+  const bodyLines = [
+    "Hi Chester,",
+    "",
+    "We would like to register our organization with InternFlow.",
+    payload?.organizationName ? `Organization: ${payload.organizationName}` : "",
+    payload?.contactPerson ? `Contact person: ${payload.contactPerson}` : "",
+    payload?.email ? `Email: ${payload.email}` : "",
+    payload?.phone ? `Phone: ${payload.phone}` : "",
+    payload?.organizationType ? `Organization type: ${payload.organizationType}` : "",
+    payload?.message ? `Programme interest: ${payload.message}` : "",
+    "",
+    "Thank you.",
+  ].filter(Boolean);
+
+  return `mailto:${contactConfig.emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join("\\n"))}`;
 }

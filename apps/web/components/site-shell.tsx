@@ -24,6 +24,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   const navKey = useMemo(() => {
     return marketingLinks.find((link) => link.href === pathname)?.href ?? null;
@@ -90,7 +91,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   Login
                 </Link>
                 <Link
-                  href="/onboarding/create-org"
+                  href="/register-organization"
                   className="if-btn if-btn-secondary if-btn-nav hidden xl:inline-flex"
                 >
                   Register Organization
@@ -146,7 +147,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   Login
                 </Link>
                 <Link
-                  href="/onboarding/create-org"
+                  href="/register-organization"
                   onClick={() => setMobileOpen(false)}
                   className="if-btn if-btn-secondary if-btn-nav"
                 >
@@ -169,33 +170,10 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
         <main className="mx-auto max-w-7xl px-4 py-10">{children}</main>
         <footer className="if-site-footer border-t border-brand-border/70 bg-[#070916]/72">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-[1.1fr_1fr_1fr_1fr]">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
             <div className="space-y-2 text-sm text-brand-muted">
-              <p className="text-base font-semibold text-brand-text">InternFlow</p>
-              <p>
-                Enterprise operations platform for internship, learnership, and skills programme
-                delivery with audit-ready control.
-              </p>
-            </div>
-            <div className="space-y-2 text-sm text-brand-muted">
-              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Product</p>
-              <Link href="/" className="block hover:text-brand-text">Home</Link>
-              <Link href="/solutions" className="block hover:text-brand-text">Solutions</Link>
-              <Link href="/how-it-works" className="block hover:text-brand-text">How It Works</Link>
-              <Link href="/security" className="block hover:text-brand-text">Security</Link>
-            </div>
-            <div className="space-y-2 text-sm text-brand-muted">
-              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Company</p>
-              <Link href="/about" className="block hover:text-brand-text">About</Link>
-              <Link href="/pricing" className="block hover:text-brand-text">Pricing</Link>
-              <Link href="/contact" className="block hover:text-brand-text">Contact Us</Link>
-              <Link href="/onboarding/create-org" className="block hover:text-brand-text">Register Organization</Link>
-            </div>
-            <div className="space-y-2 text-sm text-brand-muted">
-              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Contact</p>
-              <a href={contactConfig.phoneHref} className="block hover:text-brand-text">{contactConfig.phoneDisplayIntl}</a>
-              <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="block hover:text-brand-text">WhatsApp</a>
-              <a href={contactConfig.emailHref} className="block hover:text-brand-text">{contactConfig.emailAddress}</a>
+              <p className="text-base font-semibold text-brand-text">{contactConfig.companyName}</p>
+              <p>{contactConfig.supportLine}</p>
               <div className="flex flex-wrap gap-2 pt-1 text-xs">
                 {contactConfig.socials.map((social) => (
                   <a
@@ -210,9 +188,49 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
             </div>
+
+            <div className="space-y-2 text-sm text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Quick Links</p>
+              {contactConfig.footer.quickLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="block hover:text-brand-text">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="space-y-2 text-sm text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Company</p>
+              {contactConfig.footer.companyLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="block hover:text-brand-text">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="space-y-2 text-sm text-brand-muted">
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Contact</p>
+              <a href={contactConfig.phoneHref} className="block hover:text-brand-text">{contactConfig.phoneDisplayIntl}</a>
+              <a href={contactConfig.whatsappHref} target="_blank" rel="noreferrer" className="block hover:text-brand-text">WhatsApp</a>
+              <a href={contactConfig.emailHref} className="block hover:text-brand-text">{contactConfig.emailAddress}</a>
+              <div className="pt-1 text-xs">
+                {contactConfig.footer.supportLinks.map((link) => (
+                  <Link key={link.href} href={link.href} className="block py-0.5 hover:text-brand-text">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="mx-auto max-w-7xl border-t border-brand-border/60 px-4 py-4 text-xs text-brand-muted/80">
-            Founder: Mavhungu Rotshidzwa Chester - Developer - Systems Support - AI Engineer
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 border-t border-brand-border/60 px-4 py-4 text-xs text-brand-muted/80">
+            <p>© {currentYear} {contactConfig.companyName}. All rights reserved.</p>
+            <div className="flex flex-wrap gap-3">
+              {contactConfig.footer.legalLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="hover:text-brand-text">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            <p>Founder: Mavhungu Rotshidzwa Chester - Developer - Systems Support - AI Engineer</p>
           </div>
         </footer>
       </div>
@@ -221,3 +239,4 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

@@ -117,7 +117,7 @@ export default function HomePage() {
                 <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
                   Contact for Demo
                 </Link>
-                <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
+                <Link href="/register-organization" className="if-btn if-btn-secondary px-4 py-2">
                   Register Organization
                 </Link>
                 <Link href="/solutions" className="if-btn if-btn-secondary px-4 py-2">
@@ -370,7 +370,7 @@ export default function HomePage() {
                   <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
                     Contact for Demo
                   </Link>
-                  <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
+                  <Link href="/register-organization" className="if-btn if-btn-secondary px-4 py-2">
                     Register Organization
                   </Link>
                   <Link href="/pricing" className="if-btn if-btn-secondary px-4 py-2">
@@ -393,4 +393,5 @@ export default function HomePage() {
     </SiteShell>
   );
 }
+
 

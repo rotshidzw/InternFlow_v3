@@ -140,7 +140,7 @@ export default function AboutPage() {
             <Link href="/contact?intent=demo" className="if-btn if-btn-primary px-4 py-2">
               Contact for Demo
             </Link>
-            <Link href="/onboarding/create-org" className="if-btn if-btn-secondary px-4 py-2">
+            <Link href="/register-organization" className="if-btn if-btn-secondary px-4 py-2">
               Register Organization
             </Link>
           </div>
@@ -149,4 +149,5 @@ export default function AboutPage() {
     </SiteShell>
   );
 }
+
 

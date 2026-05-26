@@ -16,7 +16,7 @@ export function AudienceCTA() {
         </p>
         <div className="mt-4">
           <MotionLinkButton
-            href="/onboarding/create-org"
+            href="/register-organization"
             label="Register Organisation"
             className="rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 shadow-sm transition-shadow hover:shadow-[0_10px_30px_rgba(16,185,129,0.35)]"
           />
@@ -49,3 +49,4 @@ export function AudienceCTA() {
     </div>
   );
 }
+

@@ -115,7 +115,7 @@ export default function SetupPage() {
                 token.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/onboarding/create-org" className="if-btn if-btn-primary px-4 py-2">
+                <Link href="/register-organization" className="if-btn if-btn-primary px-4 py-2">
                   Create organization
                 </Link>
                 <Link href="/auth/setup?mode=join" className="if-btn if-btn-secondary px-4 py-2">
@@ -135,3 +135,4 @@ export default function SetupPage() {
     </div>
   );
 }
+
