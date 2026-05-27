@@ -4,10 +4,10 @@ import { BriefcaseBusiness, GraduationCap, UserRoundCheck } from "lucide-react";
 import { requireTenantAccess } from "@/lib/tenant-portal";
 
 function toneForStatus(status: string) {
-  if (["PUBLISHED", "ACTIVE", "OPEN"].includes(status)) return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (["DRAFT", "PENDING", "SHORTLISTED"].includes(status)) return "bg-amber-100 text-amber-700 border-amber-200";
-  if (["CLOSED", "REJECTED", "INACTIVE"].includes(status)) return "bg-rose-100 text-rose-700 border-rose-200";
-  return "bg-slate-100 text-slate-700 border-slate-200";
+  if (["PUBLISHED", "ACTIVE", "OPEN"].includes(status)) return "if-status if-status-success";
+  if (["DRAFT", "PENDING", "SHORTLISTED"].includes(status)) return "if-status if-status-warning";
+  if (["CLOSED", "REJECTED", "INACTIVE"].includes(status)) return "if-status if-status-rejected";
+  return "if-status if-status-draft";
 }
 
 export default async function ProgramDetailPage({ params }: { params: { orgSlug: string; programId: string } }) {
@@ -17,88 +17,88 @@ export default async function ProgramDetailPage({ params }: { params: { orgSlug:
     where: { id: params.programId, organizationId: access.membership.organizationId },
     include: {
       opportunities: { orderBy: { id: "desc" } },
-      enrollments: { include: { user: true }, orderBy: { id: "desc" } }
-    }
+      enrollments: { include: { user: true }, orderBy: { id: "desc" } },
+    },
   });
 
-  if (!program) return <div>Program not found.</div>;
+  if (!program) return <div className="if-empty-state">Program not found.</div>;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{program.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">{program.description}</p>
+            <h1 className="if-auth-title">{program.name}</h1>
+            <p className="if-auth-subtitle">{program.description || "No programme description provided."}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+            <span className="if-action-chip">
               <BriefcaseBusiness className="h-3.5 w-3.5" />
               {program.opportunities.length} opportunities
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+            <span className="if-action-chip">
               <UserRoundCheck className="h-3.5 w-3.5" />
               {program.enrollments.length} enrollments
             </span>
           </div>
         </div>
-      </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+        <section className="if-panel rounded-2xl p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <BriefcaseBusiness className="h-4 w-4 text-blue-600" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-text">
+              <BriefcaseBusiness className="h-4 w-4 text-brand-accentStrong" />
               Opportunities
             </h2>
-            <Link href={`/org/${params.orgSlug}/app/opportunities`} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+            <Link href={`/org/${params.orgSlug}/app/opportunities`} className="text-xs font-medium text-brand-accentStrong hover:text-brand-text">
               View all
             </Link>
           </div>
 
           <div className="space-y-2">
             {program.opportunities.length ? (
-              program.opportunities.map((o) => (
-                <Link
-                  key={o.id}
-                  href={`/org/${params.orgSlug}/app/opportunities/${o.id}`}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition hover:border-blue-200 hover:bg-blue-50/50"
+              program.opportunities.map((opportunity) => (
+                <a
+                  key={opportunity.id}
+                  href={`/org/${params.orgSlug}/app/opportunities/${opportunity.id}`}
+                  className="if-panel-muted flex items-center justify-between rounded-xl border border-brand-border/60 px-3 py-2.5 transition hover:border-brand-accent/40"
                 >
-                  <p className="max-w-[72%] truncate text-sm font-medium text-slate-800">{o.title}</p>
-                  <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${toneForStatus(o.status)}`}>{o.status}</span>
-                </Link>
+                  <p className="max-w-[72%] truncate text-sm font-medium text-brand-textSoft">{opportunity.title}</p>
+                  <span className={toneForStatus(opportunity.status)}>{opportunity.status}</span>
+                </a>
               ))
             ) : (
-              <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">No opportunities for this program yet.</p>
+              <p className="if-empty-state px-3 py-6 text-center text-sm">No opportunities for this programme yet.</p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+        <section className="if-panel rounded-2xl p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <GraduationCap className="h-4 w-4 text-indigo-600" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-text">
+              <GraduationCap className="h-4 w-4 text-brand-accentStrong" />
               Enrollments
             </h2>
-            <Link href={`/org/${params.orgSlug}/app/enrollments`} className="text-xs font-medium text-blue-600 hover:text-blue-700">
+            <Link href={`/org/${params.orgSlug}/app/enrollments`} className="text-xs font-medium text-brand-accentStrong hover:text-brand-text">
               Open enrollments
             </Link>
           </div>
 
           <div className="space-y-2">
             {program.enrollments.length ? (
-              program.enrollments.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/org/${params.orgSlug}/app/learners/${e.userId}`}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 transition hover:border-indigo-200 hover:bg-indigo-50/40"
+              program.enrollments.map((enrollment) => (
+                <a
+                  key={enrollment.id}
+                  href={`/org/${params.orgSlug}/app/learners/${enrollment.userId}`}
+                  className="if-panel-muted flex items-center justify-between rounded-xl border border-brand-border/60 px-3 py-2.5 transition hover:border-brand-accent/40"
                 >
-                  <p className="max-w-[72%] truncate text-sm font-medium text-slate-800">{e.user.email}</p>
-                  <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${toneForStatus(e.status)}`}>{e.status}</span>
-                </Link>
+                  <p className="max-w-[72%] truncate text-sm font-medium text-brand-textSoft">{enrollment.user.email}</p>
+                  <span className={toneForStatus(enrollment.status)}>{enrollment.status}</span>
+                </a>
               ))
             ) : (
-              <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">No learners are enrolled in this program yet.</p>
+              <p className="if-empty-state px-3 py-6 text-center text-sm">No learners are enrolled in this programme yet.</p>
             )}
           </div>
         </section>

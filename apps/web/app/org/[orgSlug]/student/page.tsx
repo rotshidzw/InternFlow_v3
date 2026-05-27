@@ -23,8 +23,8 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const notifications = await prisma.notification.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 5 });
   const checklist = applications[0]?.checklist;
   const checklistItems = checklist?.items ?? [];
-  const nextTask = checklistItems.find((i) => i.status !== "DONE");
-  const overdue = checklistItems.filter((i) => i.status !== "DONE" && i.dueDate && i.dueDate < new Date()).length;
+  const nextTask = checklistItems.find((item) => item.status !== "DONE");
+  const overdue = checklistItems.filter((item) => item.status !== "DONE" && item.dueDate && item.dueDate < new Date()).length;
 
   const currentWeekStart = new Date();
   currentWeekStart.setHours(0, 0, 0, 0);
@@ -40,109 +40,111 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
 
   return (
     <AppShell orgSlug={params.orgSlug} role={access.membership.role} orgName={access.membership.organization.name}>
-      <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-sky-50 via-white to-emerald-50 p-5">
-        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Assigned student portal</p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Student lifecycle dashboard</h1>
-        <p className="mt-1 text-sm text-slate-600">Track your assigned programme, documents, checklist actions, and weekly growth in one place.</p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <a href="#applications" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Applications</a>
-          <a href="#checklist" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Checklist</a>
-          <a href="#documents" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Documents</a>
-          <a href="#weekly-goals" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700 hover:bg-slate-50">Weekly goals</a>
-        </div>
-      </section>
-
-      <div id="overview" className="mt-4 grid gap-3 md:grid-cols-3">
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Onboarding progress</p>
-          <p className="mt-2 text-4xl font-bold text-emerald-600">{checklist?.progress ?? 0}%</p>
-          <p className="mt-2 text-sm text-slate-700">Next task: {nextTask?.label ?? "All done"}</p>
-          <p className="text-sm text-amber-700">Overdue items: {overdue}</p>
+      <div className="if-auth-page">
+        <section className="if-auth-hero">
+          <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Assigned Student Portal</p>
+          <h1 className="if-auth-title mt-2">Student lifecycle dashboard</h1>
+          <p className="if-auth-subtitle">Track programme progress, checklist actions, and weekly learning growth in one workspace.</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <a href="#applications" className="if-action-chip">Applications</a>
+            <a href="#checklist" className="if-action-chip">Checklist</a>
+            <a href="#documents" className="if-action-chip">Documents</a>
+            <a href="#weekly-goals" className="if-action-chip">Weekly goals</a>
+          </div>
         </section>
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Phase status</p>
-          <p className="mt-2 text-sm text-slate-700">Phase 1 (intake): completed through invite and profile capture.</p>
-          <p className="mt-1 text-sm text-slate-700">Phase 2 (assigned): active under this organisation workspace.</p>
-        </section>
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Compliance focus</p>
-          <p className="mt-2 text-sm text-slate-700">Keep documents current and complete all checklist actions before due dates.</p>
-        </section>
-      </div>
 
-      <section id="applications" className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Applications timeline</p>
-        {applications.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-600">No applications linked to this organisation yet.</p>
-        ) : (
-          applications.map((a) => (
-            <p key={a.id} className="mt-2 text-sm text-slate-700">
-              {a.opportunity.title} · <span className="font-medium">{a.status}</span>
-            </p>
-          ))
-        )}
-      </section>
-
-      <section id="checklist" className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold text-slate-900">Checklist actions</h2>
-        <div className="mt-2 space-y-2">
-          {checklistItems.map((item) => (
-            <form key={item.id} action={`/api/checklist/items/${item.id}/complete`} method="post" className="flex items-center justify-between rounded-lg border border-slate-200 p-2 text-sm">
-              <span className="text-slate-700">{item.label} · {item.status}</span>
-              <button disabled={item.status === "DONE"} className="rounded bg-emerald-500 px-3 py-1 text-slate-950 disabled:opacity-50">Complete</button>
-            </form>
-          ))}
-          {checklistItems.length === 0 && (
-            <p className="text-sm text-slate-500">No checklist items available yet for this programme.</p>
-          )}
+        <div id="overview" className="if-auth-metrics md:grid-cols-3">
+          <section className="if-auth-metric">
+            <p className="if-auth-metric-label">Onboarding progress</p>
+            <p className="mt-2 text-4xl font-bold text-brand-accentStrong">{checklist?.progress ?? 0}%</p>
+            <p className="mt-2 text-sm text-brand-textSoft">Next task: {nextTask?.label ?? "All done"}</p>
+            <p className="text-sm text-amber-300">Overdue items: {overdue}</p>
+          </section>
+          <section className="if-auth-metric">
+            <p className="if-auth-metric-label">Phase status</p>
+            <p className="mt-2 text-sm text-brand-textSoft">Phase 1 (intake): completed through invite and profile capture.</p>
+            <p className="mt-1 text-sm text-brand-textSoft">Phase 2 (assigned): active under this organisation workspace.</p>
+          </section>
+          <section className="if-auth-metric">
+            <p className="if-auth-metric-label">Compliance focus</p>
+            <p className="mt-2 text-sm text-brand-textSoft">Keep documents current and complete checklist actions before due dates.</p>
+          </section>
         </div>
-      </section>
 
-      <section id="weekly-goals" className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold text-slate-900">Weekly goals tracker</h2>
-        <p className="mt-1 text-sm text-slate-600">Week window: {currentWeekStart.toISOString().slice(0, 10)} to {currentWeekEnd.toISOString().slice(0, 10)} · completed {weeklyCompleted}/{weeklyGoals.length}</p>
-        <div className="mt-2 space-y-2 text-sm">
-          {weeklyGoals.length === 0 ? <p className="text-slate-500">No goals configured for this week yet.</p> : weeklyGoals.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-2">
-              <span className="text-slate-700">{item.label}</span>
-              <span className={item.status === "DONE" ? "text-emerald-700" : "text-amber-700"}>{item.status}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold text-slate-900">Notifications</h2>
-          <a href="/app/whatsapp-sim" className="text-sm text-blue-600">Open messages</a>
-        </div>
-        <div className="mt-2 space-y-2 text-sm">
-          {notifications.length === 0 ? (
-            <p className="text-slate-600">No alerts right now. Keep your checklist up to date.</p>
+        <section id="applications" className="if-panel rounded-xl p-4">
+          <p className="if-auth-metric-label">Applications timeline</p>
+          {applications.length === 0 ? (
+            <p className="mt-2 text-sm text-brand-muted">No applications linked to this organisation yet.</p>
           ) : (
-            notifications.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-200 p-3">
-                <p className="font-medium text-slate-900">{item.title}</p>
-                <p className="text-slate-700">{item.body}</p>
-                <p className="text-xs text-slate-500">{item.createdAt.toISOString().slice(0, 16).replace("T", " ")}</p>
-              </div>
+            applications.map((application) => (
+              <p key={application.id} className="mt-2 text-sm text-brand-textSoft">
+                {application.opportunity.title} - <span className="font-medium text-brand-text">{application.status}</span>
+              </p>
             ))
           )}
-        </div>
-      </section>
+        </section>
 
-      <section className="mt-3 grid gap-3 md:grid-cols-2">
-        <div id="documents" className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="font-semibold text-slate-900">Document vault + payslips</h2>
-          {docs.length === 0 ? <p className="mt-2 text-sm text-slate-600">No documents uploaded yet.</p> : docs.map((d) => <p key={d.id} className="mt-1 text-sm text-slate-700">{d.type} · {d.status} {d.expirationDate ? `· expires ${d.expirationDate.toISOString().slice(0, 10)}` : ""}</p>)}
-        </div>
-        <div id="growth" className="rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="font-semibold text-slate-900">Learning growth summary</h2>
-          <p className="mt-2 text-sm text-slate-700">Progress score: {Math.min(100, (checklist?.progress ?? 0) + logbooks.length * 3)} / 100</p>
-          <p className="mt-2 text-sm text-slate-700">Trend keywords: {growthSummary(logbooks.map((l) => l.summary)) || "insufficient data"}</p>
-          <p className="mt-1 text-sm text-slate-700">Weekly logs submitted: {logbooks.length}</p>
-        </div>
-      </section>
+        <section id="checklist" className="if-panel rounded-xl p-4">
+          <h2 className="font-semibold text-brand-text">Checklist actions</h2>
+          <div className="mt-2 space-y-2">
+            {checklistItems.map((item) => (
+              <form key={item.id} action={`/api/checklist/items/${item.id}/complete`} method="post" className="if-panel-muted flex items-center justify-between rounded-lg border border-brand-border/60 p-2 text-sm">
+                <span className="text-brand-textSoft">{item.label} - {item.status}</span>
+                <button disabled={item.status === "DONE"} className="if-btn if-btn-primary px-3 py-1 text-xs disabled:opacity-50">Complete</button>
+              </form>
+            ))}
+            {checklistItems.length === 0 && (
+              <p className="if-empty-state text-sm">No checklist items available yet for this programme.</p>
+            )}
+          </div>
+        </section>
+
+        <section id="weekly-goals" className="if-panel rounded-xl p-4">
+          <h2 className="font-semibold text-brand-text">Weekly goals tracker</h2>
+          <p className="mt-1 text-sm text-brand-textSoft">Week window: {currentWeekStart.toISOString().slice(0, 10)} to {currentWeekEnd.toISOString().slice(0, 10)} - completed {weeklyCompleted}/{weeklyGoals.length}</p>
+          <div className="mt-2 space-y-2 text-sm">
+            {weeklyGoals.length === 0 ? <p className="text-brand-muted">No goals configured for this week yet.</p> : weeklyGoals.map((item) => (
+              <div key={item.id} className="if-panel-muted flex items-center justify-between rounded-lg border border-brand-border/60 p-2">
+                <span className="text-brand-textSoft">{item.label}</span>
+                <span className={item.status === "DONE" ? "text-emerald-300" : "text-amber-300"}>{item.status}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="if-panel rounded-xl p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-brand-text">Notifications</h2>
+            <a href="/app/whatsapp-sim" className="text-sm text-brand-accentStrong">Open messages</a>
+          </div>
+          <div className="mt-2 space-y-2 text-sm">
+            {notifications.length === 0 ? (
+              <p className="text-brand-muted">No alerts right now. Keep your checklist up to date.</p>
+            ) : (
+              notifications.map((item) => (
+                <div key={item.id} className="if-panel-muted rounded-lg border border-brand-border/60 p-3">
+                  <p className="font-medium text-brand-text">{item.title}</p>
+                  <p className="text-brand-textSoft">{item.body}</p>
+                  <p className="text-xs text-brand-muted">{item.createdAt.toISOString().slice(0, 16).replace("T", " ")}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2">
+          <div id="documents" className="if-panel rounded-xl p-4">
+            <h2 className="font-semibold text-brand-text">Document vault + payslips</h2>
+            {docs.length === 0 ? <p className="mt-2 text-sm text-brand-muted">No documents uploaded yet.</p> : docs.map((doc) => <p key={doc.id} className="mt-1 text-sm text-brand-textSoft">{doc.type} - {doc.status} {doc.expirationDate ? `- expires ${doc.expirationDate.toISOString().slice(0, 10)}` : ""}</p>)}
+          </div>
+          <div id="growth" className="if-panel rounded-xl p-4">
+            <h2 className="font-semibold text-brand-text">Learning growth summary</h2>
+            <p className="mt-2 text-sm text-brand-textSoft">Progress score: {Math.min(100, (checklist?.progress ?? 0) + logbooks.length * 3)} / 100</p>
+            <p className="mt-2 text-sm text-brand-textSoft">Trend keywords: {growthSummary(logbooks.map((logbook) => logbook.summary)) || "insufficient data"}</p>
+            <p className="mt-1 text-sm text-brand-textSoft">Weekly logs submitted: {logbooks.length}</p>
+          </div>
+        </section>
+      </div>
     </AppShell>
   );
 }

@@ -125,138 +125,145 @@ export default async function CoordinatorPage({
       role={access.membership.role}
       orgName={access.membership.organization.name}
     >
-      <h1 className="text-2xl font-semibold">Coordinator learner directory</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Search learners and filter by lifecycle state to review submissions and placement readiness.
-      </p>
+      <div className="if-auth-page">
+        <section className="if-auth-hero">
+          <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Coordinator View</p>
+          <h1 className="if-auth-title mt-2">Learner directory</h1>
+          <p className="if-auth-subtitle">
+            Search learners and filter by lifecycle state to review submissions and placement readiness.
+          </p>
+        </section>
 
-      <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-        <form className="grid gap-2 md:grid-cols-5">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search name, email, phone"
-            className="rounded border border-slate-300 bg-white px-2 py-2 text-sm md:col-span-2"
-          />
-          <select
-            name="applicationStatus"
-            defaultValue={applicationFilter}
-            className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
-          >
-            <option value="">Any application status</option>
-            <option value="not_started">not_started</option>
-            <option value="draft">draft</option>
-            <option value="submitted">submitted</option>
-            <option value="under_review">under_review</option>
-            <option value="accepted">accepted</option>
-            <option value="rejected">rejected</option>
-          </select>
-          <select
-            name="documentStatus"
-            defaultValue={documentFilter}
-            className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
-          >
-            <option value="">Any document status</option>
-            <option value="missing">missing</option>
-            <option value="partial">partial</option>
-            <option value="submitted">submitted</option>
-            <option value="processing">processing</option>
-            <option value="verified">verified</option>
-            <option value="rejected">rejected</option>
-          </select>
-          <select
-            name="placementStatus"
-            defaultValue={placementFilter}
-            className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
-          >
-            <option value="">Any placement status</option>
-            <option value="unassigned">unassigned</option>
-            <option value="shortlisted">shortlisted</option>
-            <option value="assigned">assigned</option>
-            <option value="active">active</option>
-            <option value="completed">completed</option>
-          </select>
-          <select
-            name="programme"
-            defaultValue={programmeFilter}
-            className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
-          >
-            <option value="">Any programme</option>
-            {programs.map((program) => (
-              <option key={program.id} value={program.id}>
-                {program.name}
-              </option>
-            ))}
-          </select>
-          <button className="rounded bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-            Search
-          </button>
-        </form>
-      </section>
-
-      <section className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Students ({filtered.length})</h2>
-          <span className="text-xs text-slate-500">Recent registrations included</span>
-        </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <th className="py-2 pr-3">Learner</th>
-                <th className="py-2 pr-3">Application</th>
-                <th className="py-2 pr-3">Documents</th>
-                <th className="py-2 pr-3">Placement</th>
-                <th className="py-2 pr-3">Programme</th>
-                <th className="py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => (
-                <tr key={row.membershipId} className="border-b border-slate-100">
-                  <td className="py-2 pr-3">
-                    <p className="font-medium text-slate-900">{row.name || "Unnamed learner"}</p>
-                    <p className="text-xs text-slate-500">{row.email}</p>
-                  </td>
-                  <td className="py-2 pr-3">{row.lifecycle.applicationStatus}</td>
-                  <td className="py-2 pr-3">
-                    {row.lifecycle.documentStatus} ({row.documentsCount})
-                  </td>
-                  <td className="py-2 pr-3">{row.lifecycle.placementStatus}</td>
-                  <td className="py-2 pr-3">{row.enrollment?.program?.name ?? "Unassigned"}</td>
-                  <td className="py-2">
-                    <Link
-                      href={`/org/${params.orgSlug}/app/learners/${row.userId}`}
-                      className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-50"
-                    >
-                      View
-                    </Link>
-                  </td>
-                </tr>
+        <section className="if-auth-form">
+          <form className="if-filter-grid md:grid-cols-5">
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search name, email, phone"
+              className="rounded px-2 py-2 text-sm md:col-span-2"
+            />
+            <select
+              name="applicationStatus"
+              defaultValue={applicationFilter}
+              className="rounded px-2 py-2 text-sm"
+            >
+              <option value="">Any application status</option>
+              <option value="not_started">not_started</option>
+              <option value="draft">draft</option>
+              <option value="submitted">submitted</option>
+              <option value="under_review">under_review</option>
+              <option value="accepted">accepted</option>
+              <option value="rejected">rejected</option>
+            </select>
+            <select
+              name="documentStatus"
+              defaultValue={documentFilter}
+              className="rounded px-2 py-2 text-sm"
+            >
+              <option value="">Any document status</option>
+              <option value="missing">missing</option>
+              <option value="partial">partial</option>
+              <option value="submitted">submitted</option>
+              <option value="processing">processing</option>
+              <option value="verified">verified</option>
+              <option value="rejected">rejected</option>
+            </select>
+            <select
+              name="placementStatus"
+              defaultValue={placementFilter}
+              className="rounded px-2 py-2 text-sm"
+            >
+              <option value="">Any placement status</option>
+              <option value="unassigned">unassigned</option>
+              <option value="shortlisted">shortlisted</option>
+              <option value="assigned">assigned</option>
+              <option value="active">active</option>
+              <option value="completed">completed</option>
+            </select>
+            <select
+              name="programme"
+              defaultValue={programmeFilter}
+              className="rounded px-2 py-2 text-sm"
+            >
+              <option value="">Any programme</option>
+              {programs.map((program) => (
+                <option key={program.id} value={program.id}>
+                  {program.name}
+                </option>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-sm text-slate-500">
-                    No learners matched the current search filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </select>
+            <button className="if-btn if-btn-primary px-3 py-2 text-sm font-semibold">
+              Search
+            </button>
+          </form>
+        </section>
 
-      <section className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold">Documents requiring attention</h2>
-        <div className="mt-2 space-y-1 text-sm text-slate-700">
-          {pendingDocs.map((d) => (
-            <p key={d.id}>
-              {d.user.email} · {d.type} · {d.status}
-            </p>
-          ))}
-          {pendingDocs.length === 0 && <p className="text-slate-500">No pending document issues.</p>}
-        </div>
-      </section>
+        <section className="if-auth-table-wrap p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-brand-text">Students ({filtered.length})</h2>
+            <span className="text-xs text-brand-muted">Recent registrations included</span>
+          </div>
+          <div className="mt-3 overflow-x-auto">
+            <table className="if-table-hover min-w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide">
+                  <th className="py-2 pr-3">Learner</th>
+                  <th className="py-2 pr-3">Application</th>
+                  <th className="py-2 pr-3">Documents</th>
+                  <th className="py-2 pr-3">Placement</th>
+                  <th className="py-2 pr-3">Programme</th>
+                  <th className="py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((row) => (
+                  <tr key={row.membershipId} className="border-b border-brand-border/45">
+                    <td className="py-2 pr-3">
+                      <p className="font-medium text-brand-text">{row.name || "Unnamed learner"}</p>
+                      <p className="text-xs text-brand-muted">{row.email}</p>
+                    </td>
+                    <td className="py-2 pr-3 text-brand-textSoft">{row.lifecycle.applicationStatus}</td>
+                    <td className="py-2 pr-3 text-brand-textSoft">
+                      {row.lifecycle.documentStatus} ({row.documentsCount})
+                    </td>
+                    <td className="py-2 pr-3 text-brand-textSoft">{row.lifecycle.placementStatus}</td>
+                    <td className="py-2 pr-3 text-brand-textSoft">{row.enrollment?.program?.name ?? "Unassigned"}</td>
+                    <td className="py-2">
+                      <Link
+                        href={`/org/${params.orgSlug}/app/learners/${row.userId}`}
+                        className="if-btn if-btn-secondary px-2 py-1 text-xs"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-4 text-center text-sm text-brand-muted">
+                      No learners matched the current search filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="if-panel rounded-xl p-4">
+          <h2 className="font-semibold text-brand-text">Documents requiring attention</h2>
+          <div className="mt-2 space-y-1 text-sm text-brand-textSoft">
+            {pendingDocs.map((doc) => (
+              <p key={doc.id}>
+                {doc.user.email} - {doc.type} - {doc.status}
+              </p>
+            ))}
+            {pendingDocs.length === 0 ? (
+              <p className="text-brand-muted">No pending document issues.</p>
+            ) : null}
+          </div>
+        </section>
+      </div>
     </AppShell>
   );
 }

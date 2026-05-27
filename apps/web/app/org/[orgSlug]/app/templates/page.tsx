@@ -38,11 +38,12 @@ export default async function TemplatesPage({ params }: { params: { orgSlug: str
   });
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Compliance Templates (SETA/CETA)</h1>
-        <p className="mt-1 text-sm text-slate-600">Create, edit, and publish business-ready templates with guided clicks only.</p>
-      </div>
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Template Operations</p>
+        <h1 className="if-auth-title mt-2">Compliance templates (SETA/CETA)</h1>
+        <p className="if-auth-subtitle">Create, edit, and publish business-ready templates with guided workflow controls.</p>
+      </section>
 
       <TemplateBuilderForm orgSlug={params.orgSlug} templates={templateCards} />
     </div>

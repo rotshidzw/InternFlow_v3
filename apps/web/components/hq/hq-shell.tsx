@@ -1,13 +1,25 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { PropsWithChildren } from "react";
+import { type ComponentType, type PropsWithChildren } from "react";
+import { usePathname } from "next/navigation";
+import {
+  CalendarClock,
+  CheckCheck,
+  Gauge,
+  Headset,
+  Settings,
+  Users,
+  UserSquare2,
+  Activity,
+} from "lucide-react";
 
 type NavItem = {
   href: string;
   label: string;
   roles: string[];
   group: "Core" | "Operations";
+  icon: ComponentType<{ className?: string }>;
 };
 
 const nav: NavItem[] = [
@@ -16,48 +28,56 @@ const nav: NavItem[] = [
     label: "Dashboard",
     roles: ["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS", "PLATFORM_FINANCE"],
     group: "Core",
+    icon: Gauge,
   },
   {
     href: "/hq/tenants",
     label: "Tenants",
     roles: ["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS"],
     group: "Core",
+    icon: Users,
   },
   {
     href: "/hq/users",
     label: "HQ Users",
     roles: ["PLATFORM_ADMIN"],
     group: "Core",
+    icon: UserSquare2,
   },
   {
     href: "/hq/settings",
     label: "Settings",
     roles: ["PLATFORM_ADMIN", "PLATFORM_OPS"],
     group: "Core",
+    icon: Settings,
   },
   {
     href: "/hq/approvals",
     label: "Approvals",
     roles: ["PLATFORM_ADMIN", "PLATFORM_SALES"],
     group: "Operations",
+    icon: CheckCheck,
   },
   {
     href: "/hq/meetings",
     label: "Meetings",
     roles: ["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_OPS"],
     group: "Operations",
+    icon: CalendarClock,
   },
   {
     href: "/hq/support",
     label: "Support",
     roles: ["PLATFORM_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_OPS"],
     group: "Operations",
+    icon: Headset,
   },
   {
     href: "/hq/observability",
     label: "Observability",
     roles: ["PLATFORM_ADMIN", "PLATFORM_OPS", "PLATFORM_SUPPORT"],
     group: "Operations",
+    icon: Activity,
   },
 ];
 
@@ -66,9 +86,18 @@ export function HQShell({
   role,
   userEmail,
 }: PropsWithChildren<{ role: string; userEmail: string }>) {
+  const pathname = usePathname() ?? "";
   const visible = nav.filter((item) => item.roles.includes(role));
   const core = visible.filter((item) => item.group === "Core");
   const ops = visible.filter((item) => item.group === "Operations");
+  const navItemClass = (href: string) => {
+    const isActive = pathname === href || pathname.startsWith(`${href}/`);
+    return `flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm transition ${
+      isActive
+        ? "border-brand-accent/45 bg-brand-surface text-brand-text shadow-[0_0_0_1px_rgba(168,85,247,0.24)]"
+        : "border-transparent text-brand-muted hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
+    }`;
+  };
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
@@ -88,8 +117,9 @@ export function HQShell({
               <a
                 key={item.href}
                 href={item.href}
-                className="block rounded-xl border border-transparent px-3 py-2 text-sm text-brand-muted transition hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
+                className={navItemClass(item.href)}
               >
+                <item.icon className="h-4 w-4 text-brand-muted" />
                 {item.label}
               </a>
             ))}
@@ -101,8 +131,9 @@ export function HQShell({
               <a
                 key={item.href}
                 href={item.href}
-                className="block rounded-xl border border-transparent px-3 py-2 text-sm text-brand-muted transition hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
+                className={navItemClass(item.href)}
               >
+                <item.icon className="h-4 w-4 text-brand-muted" />
                 {item.label}
               </a>
             ))}

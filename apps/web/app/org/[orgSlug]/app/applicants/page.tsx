@@ -4,11 +4,11 @@ import { BriefcaseBusiness, CheckCircle2, Clock3, UserRound, XCircle } from "luc
 import { requireTenantAccess } from "@/lib/tenant-portal";
 
 function statusTone(status: string) {
-  if (status === "ACCEPTED") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (status === "REVIEW" || status === "APPLIED" || status === "SUBMITTED") return "bg-sky-100 text-sky-700 border-sky-200";
-  if (status === "SHORTLISTED") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (status === "REJECTED") return "bg-rose-100 text-rose-700 border-rose-200";
-  return "bg-slate-100 text-slate-700 border-slate-200";
+  if (status === "ACCEPTED") return "if-status if-status-success";
+  if (status === "REVIEW" || status === "APPLIED" || status === "SUBMITTED") return "if-status if-status-pending";
+  if (status === "SHORTLISTED") return "if-status if-status-warning";
+  if (status === "REJECTED") return "if-status if-status-rejected";
+  return "if-status if-status-draft";
 }
 
 export default async function ApplicantsPage({ params }: { params: { orgSlug: string } }) {
@@ -41,46 +41,45 @@ export default async function ApplicantsPage({ params }: { params: { orgSlug: st
   const rejected = applications.filter((application) => application.status === "REJECTED").length;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Applicants Pipeline</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Review applicants, move candidates through clear stages, then assign placement after acceptance.
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Pipeline Operations</p>
+        <h1 className="if-auth-title mt-2">Applicants pipeline</h1>
+        <p className="if-auth-subtitle">
+          Review applicants, move candidates through stages, and assign placement only after acceptance.
         </p>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5 text-slate-500" />
-            Submitted: <span className="font-semibold">{submitted}</span>
+        <div className="if-auth-metrics mt-3 md:grid-cols-4">
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> Submitted</p>
+            <p className="if-auth-metric-value">{submitted}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <BriefcaseBusiness className="h-3.5 w-3.5 text-amber-600" />
-            Under review: <span className="font-semibold">{underReview}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><BriefcaseBusiness className="h-3.5 w-3.5" /> Under review</p>
+            <p className="if-auth-metric-value">{underReview}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            Accepted: <span className="font-semibold">{accepted}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Accepted</p>
+            <p className="if-auth-metric-value">{accepted}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <XCircle className="h-3.5 w-3.5 text-rose-600" />
-            Rejected: <span className="font-semibold">{rejected}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Rejected</p>
+            <p className="if-auth-metric-value">{rejected}</p>
           </div>
         </div>
-      </div>
+      </section>
 
       <div className="space-y-2">
         {applications.map((application) => {
           const placement = enrollmentByUserId.get(application.userId);
           return (
-            <div key={application.id} className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+            <div key={application.id} className="if-panel rounded-2xl border border-brand-border/65 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-lg font-semibold text-slate-900">{application.user.email}</p>
-                  <p className="mt-0.5 text-sm text-slate-600">{application.opportunity.title}</p>
+                  <p className="text-lg font-semibold text-brand-text">{application.user.email}</p>
+                  <p className="mt-0.5 text-sm text-brand-textSoft">{application.opportunity.title}</p>
                 </div>
-                <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusTone(application.status)}`}>
-                  {application.status}
-                </span>
+                <span className={statusTone(application.status)}>{application.status}</span>
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -95,40 +94,36 @@ export default async function ApplicantsPage({ params }: { params: { orgSlug: st
                         ? application.status
                         : "REVIEW"
                     }
-                    className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700"
+                    className="rounded-xl px-2.5 py-1.5 text-xs font-medium"
                   >
                     <option value="REVIEW">Under review</option>
                     <option value="SHORTLISTED">Shortlisted</option>
                     <option value="ACCEPTED">Accepted</option>
                     <option value="REJECTED">Rejected</option>
                   </select>
-                  <button className="rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100">
-                    Update status
-                  </button>
+                  <button className="if-btn if-btn-secondary px-2.5 py-1.5 text-xs">Update status</button>
                 </form>
 
                 <Link
                   href={`/org/${params.orgSlug}/app/learners/${application.userId}`}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                  className="if-btn if-btn-secondary inline-flex items-center gap-1 px-2.5 py-1.5 text-xs"
                 >
                   <UserRound className="h-3.5 w-3.5" /> Learner profile
                 </Link>
               </div>
 
               {application.status === "ACCEPTED" && (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+                <div className="if-panel-muted mt-3 rounded-xl border border-brand-border/60 p-3 text-xs text-brand-textSoft">
                   {placement ? (
                     <p>
-                      Placement status: <span className="font-semibold">{placement.status}</span>
+                      Placement status: <span className="font-semibold text-brand-text">{placement.status}</span>
                       {" - "}
-                      Programme: <span className="font-semibold">{placement.program.name}</span>
+                      Programme: <span className="font-semibold text-brand-text">{placement.program.name}</span>
                     </p>
                   ) : application.opportunity.programId ? (
                     <form action={`/api/applications/${application.id}/placement`} method="post" className="flex flex-wrap items-center gap-2">
                       <input type="hidden" name="programId" value={application.opportunity.programId} />
-                      <button className="rounded-xl border border-emerald-300 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50">
-                        Assign placement
-                      </button>
+                      <button className="if-btn if-btn-primary px-2.5 py-1.5 text-xs">Assign placement</button>
                       <span>Acceptance does not assign placement automatically.</span>
                     </form>
                   ) : (
@@ -139,6 +134,9 @@ export default async function ApplicantsPage({ params }: { params: { orgSlug: st
             </div>
           );
         })}
+        {applications.length === 0 ? (
+          <p className="if-empty-state text-sm">No applicants found.</p>
+        ) : null}
       </div>
     </div>
   );

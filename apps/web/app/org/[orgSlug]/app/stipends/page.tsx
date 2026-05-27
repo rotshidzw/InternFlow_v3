@@ -48,26 +48,31 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
   const exceptionCount = stipendRecords.filter((record) => Boolean(record.exceptionReason)).length;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h1 className="text-2xl font-semibold">Stipend & Payment Operations</h1>
-        <p className="text-sm text-slate-600">
-          Track monthly eligibility, payment state, exceptions, and payslip/proof evidence.
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Finance Operations</p>
+        <h1 className="if-auth-title mt-2">Stipend and payment operations</h1>
+        <p className="if-auth-subtitle">
+          Track monthly eligibility, payment state, exceptions, and payslip/proof evidence with clear audit context.
         </p>
-      </div>
+      </section>
 
-      <div className="grid gap-2 sm:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Paid: <span className="font-semibold">{paidCount}</span>
+      <div className="if-auth-metrics sm:grid-cols-4">
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Paid</p>
+          <p className="if-auth-metric-value">{paidCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Due: <span className="font-semibold">{dueCount}</span>
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Due</p>
+          <p className="if-auth-metric-value">{dueCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          On hold: <span className="font-semibold">{holdCount}</span>
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">On hold</p>
+          <p className="if-auth-metric-value">{holdCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Exceptions: <span className="font-semibold">{exceptionCount}</span>
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Exceptions</p>
+          <p className="if-auth-metric-value">{exceptionCount}</p>
         </div>
       </div>
 
@@ -79,11 +84,11 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
             );
             const latest = history[0];
             return (
-              <div key={enrollment.id} className="rounded-xl border border-slate-200 bg-white p-3 text-sm">
-                <p className="font-medium">
+              <div key={enrollment.id} className="if-panel rounded-xl p-3 text-sm">
+                <p className="font-medium text-brand-text">
                   {(enrollment.user.name ?? enrollment.user.email) + " | " + enrollment.program.name}
                 </p>
-                <p className="text-slate-600">
+                <p className="text-brand-textSoft">
                   Enrollment: {enrollment.status} | Last payment status:{" "}
                   {latest?.paymentStatus ?? (enrollment.stipendPaid ? "PAID" : "DUE")} | Month:{" "}
                   {latest?.month ?? enrollment.stipendMonth ?? "n/a"}
@@ -92,19 +97,19 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                   action={`/api/enrollments/${enrollment.id}/stipend`}
                   method="post"
                   encType="multipart/form-data"
-                  className="mt-2 grid gap-2 md:grid-cols-3"
+                  className="if-filter-grid mt-2 md:grid-cols-3"
                 >
                   <input type="hidden" name="recordId" value={latest?.id ?? ""} />
                   <input
                     name="month"
                     defaultValue={latest?.month ?? thisMonth()}
                     placeholder="YYYY-MM"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   />
                   <select
                     name="eligible"
                     defaultValue={String(latest?.eligible ?? (enrollment.status === "ACTIVE"))}
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   >
                     <option value="true">Eligible</option>
                     <option value="false">Not eligible</option>
@@ -112,7 +117,7 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                   <select
                     name="paymentStatus"
                     defaultValue={latest?.paymentStatus ?? (enrollment.stipendPaid ? "PAID" : "DUE")}
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   >
                     {STIPEND_PAYMENT_STATUSES.map((status) => (
                       <option key={status} value={status}>
@@ -127,25 +132,25 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                     step="0.01"
                     defaultValue={latest?.stipendAmount ?? ""}
                     placeholder="Amount"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   />
                   <input
                     name="exceptionReason"
                     defaultValue={latest?.exceptionReason ?? ""}
                     placeholder="Exception reason (if any)"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs md:col-span-2"
+                    className="rounded px-2 py-1 text-xs md:col-span-2"
                   />
                   <input
                     name="payslipFile"
                     type="file"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   />
                   <input
                     name="proofFile"
                     type="file"
-                    className="rounded border border-slate-300 px-2 py-1 text-xs"
+                    className="rounded px-2 py-1 text-xs"
                   />
-                  <button className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700">
+                  <button className="if-btn if-btn-primary px-2 py-1 text-xs">
                     Save payment record
                   </button>
                 </form>
@@ -154,16 +159,16 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
           })}
         </div>
       ) : (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="if-status if-status-warning">
           Your role can inspect stipend records but cannot update payment state.
         </p>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold">Recorded stipend periods</h2>
+      <div className="if-panel rounded-2xl p-4">
+        <h2 className="font-semibold text-brand-text">Recorded stipend periods</h2>
         <div className="mt-3 space-y-2 text-sm">
           {stipendRecords.length === 0 ? (
-            <p className="text-slate-500">No stipend payment records captured yet.</p>
+            <p className="text-brand-muted">No stipend payment records captured yet.</p>
           ) : (
             stipendRecords.map((record) => {
               const enrollment = enrollmentById.get(record.enrollmentId);
@@ -171,15 +176,15 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                 ? enrollment.user.name ?? enrollment.user.email
                 : record.userId;
               return (
-                <div key={record.id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-900">
+                <div key={record.id} className="if-panel-muted rounded-lg border border-brand-border/60 p-3">
+                  <p className="font-medium text-brand-text">
                     {learnerLabel} | {record.month}
                   </p>
-                  <p className="text-slate-600">
+                  <p className="text-brand-textSoft">
                     Status: {record.paymentStatus} | Eligible: {record.eligible ? "YES" : "NO"} | Amount:{" "}
                     {record.stipendAmount ?? 0}
                   </p>
-                  <p className="text-slate-600">
+                  <p className="text-brand-textSoft">
                     Exception: {record.exceptionReason ?? "None"} | Payslips:{" "}
                     {record.payslipDocumentIds.length} | Proofs: {record.proofDocumentIds.length}
                   </p>
@@ -189,7 +194,7 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                         <a
                           key={documentId}
                           href={`/api/org/${params.orgSlug}/documents/${documentId}/download`}
-                          className="rounded border border-slate-300 px-2 py-1 text-slate-700"
+                          className="if-btn if-btn-secondary px-2 py-1 text-xs"
                         >
                           Payslip {index + 1}
                         </a>
@@ -198,7 +203,7 @@ export default async function StipendsPage({ params }: { params: { orgSlug: stri
                         <a
                           key={documentId}
                           href={`/api/org/${params.orgSlug}/documents/${documentId}/download`}
-                          className="rounded border border-slate-300 px-2 py-1 text-slate-700"
+                          className="if-btn if-btn-secondary px-2 py-1 text-xs"
                         >
                           Proof {index + 1}
                         </a>

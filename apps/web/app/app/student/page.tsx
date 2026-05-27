@@ -26,7 +26,7 @@ function docStatusLabel(status: string) {
     case "SCAN_PENDING":
       return "OCR/scan started";
     case "SCAN_OK":
-      return "Parsed · verification pending";
+      return "Parsed - verification pending";
     case "APPROVED":
       return "Verified";
     case "REJECTED":
@@ -246,10 +246,10 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           : "All scheduled follow-ups are completed.";
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+    <div className="if-auth-page min-h-[calc(100vh-7rem)] p-4 md:p-6">
+      <section className="if-panel p-4 md:p-5">
         <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+          <div className="if-panel-muted space-y-4 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -323,7 +323,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <FileText className="h-4 w-4 text-sky-600" />
             Required docs
@@ -333,21 +333,21 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </p>
           <p className="text-xs text-slate-500">{requiredProgress}% complete</p>
         </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <Clock3 className="h-4 w-4 text-amber-600" />
             Profile completion
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{profileCompletion}%</p>
         </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <MessageSquare className="h-4 w-4 text-violet-600" />
             Discussions
           </p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{threadCount}</p>
         </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             Payments & Certificate
@@ -356,32 +356,32 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           <p className="text-xs text-slate-500">Payslips on file</p>
           <p className="mt-1 text-xs text-slate-600">{certificateStatusText}</p>
         </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="text-sm text-slate-600">Application</p>
           <p className="mt-2 text-base font-semibold text-slate-900">
             {applicationStatusLabel(lifecycle.applicationStatus)}
           </p>
           {documentsReady && shouldShowApplyNow && (
-            <p className="mt-1 text-xs text-emerald-700">Documents ready · application not submitted</p>
+            <p className="mt-1 text-xs text-emerald-700">Documents ready - application not submitted</p>
           )}
         </article>
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <section className="if-panel rounded-2xl p-5 xl:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Lifecycle status</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
           </div>
           {shouldShowApplyNow && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-              <span>{documentsReady ? "Documents ready. Submit your application to continue." : "Complete required documents, then submit your application."}</span>
-              <Link href="/opportunities" className="rounded bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-800">
+              <span>{documentsReady ? "Documents ready - submit your application to continue." : "Complete required documents, then submit your application."}</span>
+              <Link href="/opportunities" className="if-btn if-btn-primary px-3 py-1.5 text-xs">
                 Submit application
               </Link>
             </div>
@@ -397,30 +397,30 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             </p>
           )}
           <div className="mt-3 grid gap-2 lg:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
               <p className="font-medium text-slate-900">Certificate</p>
               <p>{certificateStatusText}</p>
               {studentCertificateRecord && (
                 <p className="mt-1 text-xs text-slate-600">
-                  Certificate number: {studentCertificateRecord.certificateNumber} | Issue date:{" "}
+                  Certificate number: {studentCertificateRecord.certificateNumber} - Issue date:{" "}
                   {studentCertificateRecord.issueDate}
                 </p>
               )}
               {certificateDownloadHref && (
                 <a
                   href={certificateDownloadHref}
-                  className="mt-2 inline-block rounded border border-blue-300 px-2 py-1 text-xs text-blue-700"
+                  className="if-btn if-btn-secondary mt-2 inline-block px-2 py-1 text-xs"
                 >
                   Download certificate
                 </a>
               )}
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
               <p className="font-medium text-slate-900">Post-training follow-up</p>
               <p>{followUpStatusText}</p>
               {studentFollowUps.length > 0 && (
                 <p className="mt-1 text-xs text-slate-600">
-                  Completed: {completedFollowUpCount}/{studentFollowUps.length} | Overdue:{" "}
+                  Completed: {completedFollowUpCount}/{studentFollowUps.length} - Overdue:{" "}
                   {overdueFollowUpCount}
                 </p>
               )}
@@ -428,12 +428,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="if-panel rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Required document checklist</h2>
             <Link
               href="/app/student/documents"
-              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+              className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
             >
               Go to Documents
             </Link>
@@ -444,7 +444,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               return (
                 <div
                   key={type}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  className="flex items-center justify-between if-panel-muted rounded-lg px-3 py-2 text-sm"
                 >
                   <span className="font-medium text-slate-700">{getDocumentDisplayName(type)}</span>
                   <span className="text-xs text-slate-600">
@@ -456,7 +456,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="if-panel rounded-2xl p-5">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
             <Bell className="h-5 w-5 text-amber-500" />
             Recent updates
@@ -465,21 +465,21 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             {recentDocumentUpdates.map((doc) => (
               <p
                 key={doc.id}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700"
+                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
               >
-                {getDocumentDisplayName(doc.type)} · {docStatusLabel(doc.status)}
-                {doc.rejectionReason ? ` · ${doc.rejectionReason}` : ""}
+                {getDocumentDisplayName(doc.type)} - {docStatusLabel(doc.status)}
+                {doc.rejectionReason ? ` - ${doc.rejectionReason}` : ""}
               </p>
             ))}
             {recentDocumentUpdates.length === 0 && (
-              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600">
+              <p className="if-panel-muted rounded-lg px-3 py-2 text-slate-600">
                 No document updates yet.
               </p>
             )}
             {notifications.map((n) => (
               <p
                 key={n.id}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700"
+                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
               >
                 {n.title}: {n.body}
               </p>
@@ -488,12 +488,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </section>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="if-panel rounded-2xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Discussions & support</h2>
           <Link
             href="/app/whatsapp-sim"
-            className="text-xs font-semibold text-violet-700 hover:text-violet-800"
+            className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
           >
             Open support
           </Link>
@@ -503,14 +503,14 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </p>
         <div className="mt-3 grid gap-2">
           {recentThreads.length === 0 && (
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-600">
               No discussion history yet.
             </p>
           )}
           {recentThreads.map((thread) => (
             <div
               key={thread.id}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+              className="if-panel-muted rounded-lg px-3 py-2"
             >
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {thread.title}
@@ -523,25 +523,25 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="if-panel rounded-2xl p-5">
         <div className="flex flex-wrap gap-2">
           <Link
             href="/app/student/profile"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="if-btn if-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm font-medium"
           >
             <UserCircle2 className="h-4 w-4" />
             View profile
           </Link>
           <Link
             href="/app/student/profile/edit"
-            className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+            className="if-btn if-btn-secondary px-3 py-2 text-sm font-medium"
           >
             Edit profile
           </Link>
           {(lifecycle.programmeStatus === "completed" || payslips > 0) && (
             <Link
               href="/app/whatsapp-sim"
-              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+              className="if-btn if-btn-primary px-3 py-2 text-sm font-medium"
             >
               Request certificate or payslip
             </Link>

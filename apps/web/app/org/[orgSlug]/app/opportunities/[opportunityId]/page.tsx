@@ -3,21 +3,21 @@ import { BriefcaseBusiness, CheckCircle2, Clock3, Users, XCircle } from "lucide-
 import { requireTenantAccess } from "@/lib/tenant-portal";
 
 function statusTone(status: string) {
-  if (status === "ACCEPTED") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (status === "REVIEW" || status === "APPLIED" || status === "SUBMITTED") return "bg-sky-100 text-sky-700 border-sky-200";
-  if (status === "SHORTLISTED") return "bg-amber-100 text-amber-700 border-amber-200";
-  if (status === "REJECTED") return "bg-rose-100 text-rose-700 border-rose-200";
-  return "bg-slate-100 text-slate-700 border-slate-200";
+  if (status === "ACCEPTED") return "if-status if-status-success";
+  if (status === "REVIEW" || status === "APPLIED" || status === "SUBMITTED") return "if-status if-status-pending";
+  if (status === "SHORTLISTED") return "if-status if-status-warning";
+  if (status === "REJECTED") return "if-status if-status-rejected";
+  return "if-status if-status-draft";
 }
 
 export default async function OpportunityDetailPage({ params }: { params: { orgSlug: string; opportunityId: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
   const opportunity = await prisma.opportunity.findFirst({
     where: { id: params.opportunityId, organizationId: access.membership.organizationId },
-    include: { applications: { include: { user: true }, orderBy: { createdAt: "desc" } }, program: true }
+    include: { applications: { include: { user: true }, orderBy: { createdAt: "desc" } }, program: true },
   });
 
-  if (!opportunity) return <div>Opportunity not found.</div>;
+  if (!opportunity) return <div className="if-empty-state">Opportunity not found.</div>;
 
   const totalApplicants = opportunity.applications.length;
   const shortlisted = opportunity.applications.filter((application) => application.status === "SHORTLISTED").length;
@@ -25,50 +25,50 @@ export default async function OpportunityDetailPage({ params }: { params: { orgS
   const rejected = opportunity.applications.filter((application) => application.status === "REJECTED").length;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{opportunity.title}</h1>
-            <p className="mt-1 text-sm text-slate-600">{opportunity.description}</p>
+            <h1 className="if-auth-title">{opportunity.title}</h1>
+            <p className="if-auth-subtitle">{opportunity.description}</p>
           </div>
-          <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusTone(opportunity.status)}`}>{opportunity.status}</span>
+          <span className={statusTone(opportunity.status)}>{opportunity.status}</span>
         </div>
 
-        <div className="mt-3 grid gap-2 md:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <Users className="h-3.5 w-3.5 text-slate-500" />
-            Applicants: <span className="font-semibold">{totalApplicants}</span>
+        <div className="if-auth-metrics mt-3 md:grid-cols-4">
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Applicants</p>
+            <p className="if-auth-metric-value">{totalApplicants}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5 text-amber-600" />
-            Shortlisted: <span className="font-semibold">{shortlisted}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> Shortlisted</p>
+            <p className="if-auth-metric-value">{shortlisted}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            Accepted: <span className="font-semibold">{accepted}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Accepted</p>
+            <p className="if-auth-metric-value">{accepted}</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 inline-flex items-center gap-1">
-            <XCircle className="h-3.5 w-3.5 text-rose-600" />
-            Rejected: <span className="font-semibold">{rejected}</span>
+          <div className="if-auth-metric">
+            <p className="if-auth-metric-label inline-flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Rejected</p>
+            <p className="if-auth-metric-value">{rejected}</p>
           </div>
         </div>
 
-        <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+        <p className="if-action-chip mt-3">
           <BriefcaseBusiness className="h-3.5 w-3.5" />
-          {opportunity.type} · Program: {opportunity.program?.name ?? "Unassigned"}
+          {opportunity.type} - Program: {opportunity.program?.name ?? "Unassigned"}
         </p>
-      </div>
+      </section>
 
       <section className="space-y-2">
         {opportunity.applications.map((application) => (
-          <div key={application.id} className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+          <div key={application.id} className="if-panel rounded-2xl border border-brand-border/60 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <p className="text-lg font-semibold text-slate-900">{application.user.email}</p>
-              <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusTone(application.status)}`}>{application.status}</span>
+              <p className="text-lg font-semibold text-brand-text">{application.user.email}</p>
+              <span className={statusTone(application.status)}>{application.status}</span>
             </div>
 
-            <form action={`/api/applications/${application.id}/status`} method="post" className="mt-3 grid gap-2 md:grid-cols-[220px_auto]">
+            <form action={`/api/applications/${application.id}/status`} method="post" className="if-filter-grid mt-3 md:grid-cols-[220px_auto]">
               <select
                 name="status"
                 defaultValue={
@@ -79,14 +79,14 @@ export default async function OpportunityDetailPage({ params }: { params: { orgS
                     ? application.status
                     : "REVIEW"
                 }
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="rounded-xl px-3 py-2 text-sm"
               >
                 <option value="REVIEW">REVIEW</option>
                 <option value="SHORTLISTED">SHORTLISTED</option>
                 <option value="ACCEPTED">ACCEPTED</option>
                 <option value="REJECTED">REJECTED</option>
               </select>
-              <button className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Update candidate status</button>
+              <button className="if-btn if-btn-primary px-3 py-2 text-sm font-medium">Update candidate status</button>
             </form>
           </div>
         ))}

@@ -95,23 +95,25 @@ export default async function LearnersDirectoryPage({
     });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h1 className="text-2xl font-semibold text-slate-900">Learner directory</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Search by name, surname, email, phone, or ID number and filter by lifecycle status.
-      </p>
+    <section className="if-auth-page">
+      <div className="if-auth-hero">
+        <h1 className="if-auth-title">Learner directory</h1>
+        <p className="if-auth-subtitle">
+          Search by name, email, phone, or ID number and filter by lifecycle status.
+        </p>
+      </div>
 
-      <form className="mt-4 grid gap-2 md:grid-cols-5">
+      <form className="if-auth-form if-filter-grid md:grid-cols-5">
         <input
           name="q"
           defaultValue={q}
           placeholder="Search learner"
-          className="rounded border border-slate-300 bg-white px-2 py-2 text-sm md:col-span-2"
+          className="rounded bg-white px-2 py-2 text-sm md:col-span-2"
         />
         <select
           name="applicationStatus"
           defaultValue={applicationStatus}
-          className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         >
           <option value="">Any application status</option>
           <option value="not_started">not_started</option>
@@ -124,7 +126,7 @@ export default async function LearnersDirectoryPage({
         <select
           name="documentStatus"
           defaultValue={documentStatus}
-          className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         >
           <option value="">Any document status</option>
           <option value="missing">missing</option>
@@ -137,7 +139,7 @@ export default async function LearnersDirectoryPage({
         <select
           name="placementStatus"
           defaultValue={placementStatus}
-          className="rounded border border-slate-300 bg-white px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         >
           <option value="">Any placement status</option>
           <option value="unassigned">unassigned</option>
@@ -146,15 +148,15 @@ export default async function LearnersDirectoryPage({
           <option value="active">active</option>
           <option value="completed">completed</option>
         </select>
-        <button className="rounded bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+        <button className="if-btn if-btn-primary px-3 py-2 text-sm font-semibold">
           Search
         </button>
       </form>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
+      <div className="if-auth-table-wrap">
+        <table className="if-table-hover min-w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+            <tr className="text-xs uppercase tracking-wide">
               <th className="py-2 pr-3">Learner</th>
               <th className="py-2 pr-3">Application</th>
               <th className="py-2 pr-3">Documents</th>
@@ -165,19 +167,19 @@ export default async function LearnersDirectoryPage({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.userId} className="border-b border-slate-100">
+              <tr key={row.userId} className="border-b border-brand-border/40">
                 <td className="py-2 pr-3">
-                  <p className="font-medium text-slate-900">{row.name}</p>
-                  <p className="text-xs text-slate-500">{row.email}</p>
+                  <p className="font-medium text-brand-text">{row.name}</p>
+                  <p className="text-xs text-brand-muted">{row.email}</p>
                 </td>
-                <td className="py-2 pr-3">{row.lifecycle.applicationStatus}</td>
-                <td className="py-2 pr-3">{row.lifecycle.documentStatus}</td>
-                <td className="py-2 pr-3">{row.lifecycle.placementStatus}</td>
-                <td className="py-2 pr-3">{row.enrollment?.program?.name ?? "Unassigned"}</td>
+                <td className="py-2 pr-3 text-brand-textSoft">{row.lifecycle.applicationStatus}</td>
+                <td className="py-2 pr-3 text-brand-textSoft">{row.lifecycle.documentStatus}</td>
+                <td className="py-2 pr-3 text-brand-textSoft">{row.lifecycle.placementStatus}</td>
+                <td className="py-2 pr-3 text-brand-textSoft">{row.enrollment?.program?.name ?? "Unassigned"}</td>
                 <td className="py-2">
                   <Link
                     href={`/org/${params.orgSlug}/app/learners/${row.userId}`}
-                    className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-50"
+                    className="if-btn if-btn-secondary px-2 py-1 text-xs"
                   >
                     Open
                   </Link>
@@ -186,7 +188,7 @@ export default async function LearnersDirectoryPage({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-center text-sm text-slate-500">
+                <td colSpan={6} className="py-4 text-center text-sm text-brand-muted">
                   No learners found. Try a broader query or clear filters.
                 </td>
               </tr>

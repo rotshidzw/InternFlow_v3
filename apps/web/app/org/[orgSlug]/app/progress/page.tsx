@@ -13,15 +13,15 @@ export default async function ProgressPage({ params }: { params: { orgSlug: stri
   const orgId = access.membership.organizationId;
 
   const [enrollments, logbooks, checklists] = await Promise.all([
-    prisma.enrollment.findMany({ where: { organizationId: orgId } , include: { user: true, program: true }, take: 100 }),
+    prisma.enrollment.findMany({ where: { organizationId: orgId }, include: { user: true, program: true }, take: 100 }),
     prisma.logbookEntry.findMany({ where: { user: { memberships: { some: { organizationId: orgId } } } }, include: { user: true }, orderBy: { weekStart: "desc" }, take: 500 }),
-    prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, include: { application: { include: { user: true } }, items: true }, orderBy: { applicationId: "desc" }, take: 200 })
+    prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, include: { application: { include: { user: true } }, items: true }, orderBy: { applicationId: "desc" }, take: 200 }),
   ]);
 
   const progressRows = enrollments.map((enrollment) => {
     const learnerLogs = logbooks.filter((entry) => entry.userId === enrollment.userId);
     const learnerChecklist = checklists.find((item) => item.application.userId === enrollment.userId);
-    const completedGoals = learnerChecklist?.items.filter((i) => i.status === "DONE").length ?? 0;
+    const completedGoals = learnerChecklist?.items.filter((item) => item.status === "DONE").length ?? 0;
     const totalGoals = learnerChecklist?.items.length ?? 0;
 
     return {
@@ -32,21 +32,24 @@ export default async function ProgressPage({ params }: { params: { orgSlug: stri
       checklistProgress: learnerChecklist?.progress ?? 0,
       weeklyLogs: learnerLogs.length,
       latestWeek: learnerLogs[0] ? weekKey(learnerLogs[0].weekStart) : "No logs",
-      goals: `${completedGoals}/${totalGoals}`
+      goals: `${completedGoals}/${totalGoals}`,
     };
   });
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h1 className="text-2xl font-semibold">Learner progress tracker</h1>
-        <p className="text-sm text-slate-600">Weekly growth board per learner: checklist goals, logbook cadence, and latest activity.</p>
-      </div>
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Delivery Analytics</p>
+        <h1 className="if-auth-title mt-2">Learner progress tracker</h1>
+        <p className="if-auth-subtitle">
+          Weekly growth view per learner: checklist goals, logbook cadence, and latest activity windows.
+        </p>
+      </section>
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3">
-        <table className="min-w-full text-sm">
+      <div className="if-auth-table-wrap">
+        <table className="if-table-hover min-w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-500">
+            <tr className="text-left">
               <th className="p-2">Learner</th>
               <th className="p-2">Programme</th>
               <th className="p-2">Status</th>
@@ -59,17 +62,28 @@ export default async function ProgressPage({ params }: { params: { orgSlug: stri
           </thead>
           <tbody>
             {progressRows.map((row) => (
-              <tr key={`${row.learnerId}-${row.programme}`} className="border-t border-slate-100">
-                <td className="p-2 font-medium">{row.learnerName}</td>
-                <td className="p-2">{row.programme}</td>
-                <td className="p-2">{row.status}</td>
-                <td className="p-2">{row.checklistProgress}%</td>
-                <td className="p-2">{row.goals}</td>
-                <td className="p-2">{row.weeklyLogs}</td>
-                <td className="p-2">{row.latestWeek}</td>
-                <td className="p-2"><Link className="text-blue-600" href={`/org/${params.orgSlug}/app/learners/${row.learnerId}`}>Open learner</Link></td>
+              <tr key={`${row.learnerId}-${row.programme}`} className="border-t border-brand-border/50">
+                <td className="p-2 font-medium text-brand-text">{row.learnerName}</td>
+                <td className="p-2 text-brand-textSoft">{row.programme}</td>
+                <td className="p-2 text-brand-textSoft">{row.status}</td>
+                <td className="p-2 text-brand-textSoft">{row.checklistProgress}%</td>
+                <td className="p-2 text-brand-textSoft">{row.goals}</td>
+                <td className="p-2 text-brand-textSoft">{row.weeklyLogs}</td>
+                <td className="p-2 text-brand-textSoft">{row.latestWeek}</td>
+                <td className="p-2">
+                  <Link className="if-btn if-btn-secondary px-2 py-1 text-xs" href={`/org/${params.orgSlug}/app/learners/${row.learnerId}`}>
+                    Open learner
+                  </Link>
+                </td>
               </tr>
             ))}
+            {progressRows.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-8 text-center text-sm text-brand-muted">
+                  No progress records available yet.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

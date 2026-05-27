@@ -669,6 +669,102 @@ body {
     line-height: 1.45;
   }
 
+  .if-auth-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .if-auth-hero {
+    border-radius: 1.45rem;
+    border: 1px solid rgba(108, 93, 176, 0.58);
+    background:
+      radial-gradient(circle at 86% 14%, rgba(168, 85, 247, 0.2), transparent 45%),
+      radial-gradient(circle at 16% 80%, rgba(34, 211, 238, 0.14), transparent 40%),
+      linear-gradient(160deg, rgba(18, 25, 52, 0.96), rgba(11, 17, 35, 0.95));
+    box-shadow: var(--if-shadow);
+    padding: 1.2rem;
+  }
+
+  .if-auth-title {
+    font-size: clamp(1.5rem, 2.4vw, 2.05rem);
+    font-weight: 630;
+    letter-spacing: -0.02em;
+    color: var(--if-text);
+  }
+
+  .if-auth-subtitle {
+    margin-top: 0.35rem;
+    color: var(--if-text-muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+
+  .if-auth-metrics {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .if-auth-metric {
+    border-radius: 0.95rem;
+    border: 1px solid rgba(92, 80, 143, 0.58);
+    background: rgba(13, 19, 39, 0.82);
+    padding: 0.66rem 0.78rem;
+  }
+
+  .if-auth-metric-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--if-text-muted);
+  }
+
+  .if-auth-metric-value {
+    margin-top: 0.22rem;
+    color: var(--if-text);
+    font-size: 1.2rem;
+    font-weight: 630;
+  }
+
+  .if-auth-form {
+    border-radius: 1.1rem;
+    border: 1px solid rgba(96, 83, 151, 0.56);
+    background: rgba(14, 21, 44, 0.84);
+    box-shadow: var(--if-shadow);
+    padding: 0.95rem;
+  }
+
+  .if-auth-table-wrap {
+    overflow: hidden;
+    border-radius: 1.1rem;
+    border: 1px solid rgba(96, 83, 151, 0.56);
+    background: rgba(10, 15, 33, 0.82);
+    box-shadow: var(--if-shadow);
+  }
+
+  .if-table-hover tbody tr:hover td {
+    background: rgba(25, 36, 70, 0.72);
+  }
+
+  .if-filter-grid {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .if-action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    border: 1px solid rgba(105, 92, 167, 0.64);
+    background: rgba(19, 29, 58, 0.84);
+    padding: 0.28rem 0.68rem;
+    color: var(--if-text-soft);
+    font-size: 0.74rem;
+    font-weight: 520;
+    letter-spacing: 0.01em;
+  }
+
   .if-nav-link {
     display: inline-flex;
     height: 2.5rem;

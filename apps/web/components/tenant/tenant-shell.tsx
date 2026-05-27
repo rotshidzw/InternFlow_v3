@@ -2,7 +2,9 @@
 
 import { useState, type ComponentType, type PropsWithChildren } from "react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 import {
+  ChevronsLeftRightEllipsis,
   BellRing,
   Briefcase,
   ClipboardList,
@@ -69,9 +71,18 @@ export function TenantShell({
   role,
 }: PropsWithChildren<{ orgSlug: string; orgName: string; role: string }>) {
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname() ?? "";
+  const currentSegment = pathname.split("/").filter(Boolean).at(-1)?.replaceAll("-", " ") ?? "dashboard";
 
-  const navClass =
-    "group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-brand-muted transition-all hover:border-brand-border hover:bg-brand-surface hover:text-brand-text";
+  const navClass = (href: string) => {
+    const fullPath = `/org/${orgSlug}/app/${href}`;
+    const isActive = pathname === fullPath || pathname.startsWith(`${fullPath}/`);
+    return `group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+      isActive
+        ? "border-brand-accent/45 bg-brand-surface text-brand-text shadow-[0_0_0_1px_rgba(168,85,247,0.24)]"
+        : "border-transparent text-brand-muted hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
+    }`;
+  };
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text transition-colors duration-300">
@@ -97,15 +108,16 @@ export function TenantShell({
               type="button"
               onClick={() => setCollapsed((v) => !v)}
               className="if-btn if-btn-secondary if-btn-nav text-xs"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              {collapsed ? ">" : "<"}
+              <ChevronsLeftRightEllipsis className="h-3.5 w-3.5" />
             </button>
           </div>
 
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-brand-muted">Tenant portal</p>
           <nav className="space-y-1.5">
             {primaryItems.map(({ href, label, icon: Icon }) => (
-              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
+              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass(href)} title={label}>
                 <Icon className="h-4 w-4 shrink-0 text-brand-muted transition group-hover:text-brand-accentStrong" />
                 {!collapsed && <span>{label}</span>}
               </a>
@@ -117,7 +129,7 @@ export function TenantShell({
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-brand-muted">Operations</p>
           <nav className="space-y-1.5">
             {operationsItems.map(({ href, label, icon: Icon }) => (
-              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
+              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass(href)} title={label}>
                 <Icon className="h-4 w-4 shrink-0 text-brand-muted transition group-hover:text-brand-accentStrong" />
                 {!collapsed && <span>{label}</span>}
               </a>
@@ -129,7 +141,7 @@ export function TenantShell({
           <p className="mb-2 text-xs uppercase tracking-[0.16em] text-brand-muted">Administration</p>
           <nav className="space-y-1.5">
             {adminItems.map(({ href, label, icon: Icon }) => (
-              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass} title={label}>
+              <a key={href} href={`/org/${orgSlug}/app/${href}`} className={navClass(href)} title={label}>
                 <Icon className="h-4 w-4 shrink-0 text-brand-muted transition group-hover:text-brand-accentStrong" />
                 {!collapsed && <span>{label}</span>}
               </a>
@@ -151,7 +163,9 @@ export function TenantShell({
           <header className="sticky top-0 z-10 border-b border-brand-border/75 bg-[#080916]/78 px-6 py-3 shadow-lg shadow-black/35 backdrop-blur-2xl">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-widest text-brand-muted">InternFlow</p>
+                <p className="text-xs uppercase tracking-widest text-brand-muted">
+                  InternFlow / {currentSegment}
+                </p>
                 <p className="flex items-center gap-2 font-semibold text-brand-text">
                   {orgName}
                   <span className="if-badge">
