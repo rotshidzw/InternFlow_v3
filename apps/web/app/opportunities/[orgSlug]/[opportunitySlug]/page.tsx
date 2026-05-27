@@ -31,8 +31,8 @@ export default async function OpportunityDetail({
 
   if (!opportunity) {
     return (
-      <div className="mx-auto mt-10 max-w-4xl rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-sm">
-        Opportunity not found.
+      <div className="mx-auto mt-10 max-w-4xl">
+        <div className="if-panel rounded-3xl p-8">Opportunity not found.</div>
       </div>
     );
   }
@@ -89,26 +89,26 @@ export default async function OpportunityDetail({
   const showUploadFailed = searchParams?.warning === "cv-upload-failed";
 
   return (
-    <div className="mx-auto mt-10 max-w-4xl space-y-5 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Opportunity details
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold text-slate-900">{opportunity.title}</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            {opportunity.organization.name} - {opportunity.type}
-          </p>
+    <div className="mx-auto mt-10 max-w-4xl space-y-5">
+      <section className="if-panel rounded-3xl p-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="if-kicker">Opportunity details</p>
+            <h1 className="if-page-title mt-1 text-3xl">{opportunity.title}</h1>
+            <p className="if-page-subtitle mt-2">
+              {opportunity.organization.name} - {opportunity.type}
+            </p>
+          </div>
+          <Link
+            href="/opportunities"
+            className="if-btn if-btn-secondary px-3 py-2 text-sm"
+          >
+            Back to opportunities
+          </Link>
         </div>
-        <Link
-          href="/opportunities"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-        >
-          Back to opportunities
-        </Link>
-      </div>
+      </section>
 
-      <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+      <p className="if-panel-muted rounded-xl p-4 text-sm text-brand-textSoft">
         {opportunity.description}
       </p>
 
@@ -139,16 +139,16 @@ export default async function OpportunityDetail({
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
-        <p className="font-semibold text-slate-900">Application readiness</p>
-        <p className="mt-1 text-slate-700">
+      <div className="if-panel rounded-xl p-4 text-sm">
+        <p className="if-section-title">Application readiness</p>
+        <p className="mt-1 text-brand-textSoft">
           Current application state:{" "}
-          <span className="font-semibold">{applicationStatusLabel(existingApplication?.status)}</span>
+          <span className="font-semibold text-brand-text">{applicationStatusLabel(existingApplication?.status)}</span>
         </p>
-        <p className="mt-2 text-slate-700">{hasCv ? "[x]" : "[ ]"} Upload CV</p>
-        <p className="text-slate-700">{hasEducation ? "[x]" : "[ ]"} Add education history</p>
-        <p className="text-slate-700">{hasSkills ? "[x]" : "[ ]"} Add skills</p>
-        <p className="text-slate-700">{hasContact ? "[x]" : "[ ]"} Verify contact details</p>
+        <p className="mt-2 text-brand-textSoft">{hasCv ? "[x]" : "[ ]"} Upload CV</p>
+        <p className="text-brand-textSoft">{hasEducation ? "[x]" : "[ ]"} Add education history</p>
+        <p className="text-brand-textSoft">{hasSkills ? "[x]" : "[ ]"} Add skills</p>
+        <p className="text-brand-textSoft">{hasContact ? "[x]" : "[ ]"} Verify contact details</p>
         {isReadyToApply ? (
           <p className="mt-2 text-emerald-700">You are ready to apply.</p>
         ) : (
@@ -169,19 +169,19 @@ export default async function OpportunityDetail({
         action={`/api/opportunities/${opportunity.id}/apply`}
         method="post"
         encType="multipart/form-data"
-        className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+        className="if-panel-muted space-y-3 rounded-xl p-4"
       >
         {!isReadyToApply && (
           <>
             {!hasCv && (
               <>
-                <label className="block text-sm font-medium text-slate-800">
+                <label className="block text-sm font-medium text-brand-textSoft">
                   Upload CV
                 </label>
                 <input
                   name="file"
                   type="file"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text"
                 />
               </>
             )}
@@ -190,7 +190,7 @@ export default async function OpportunityDetail({
                 name="education"
                 defaultValue={profile?.education ?? ""}
                 placeholder="Add education history"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text placeholder:text-brand-muted"
               />
             )}
             {!hasSkills && (
@@ -198,7 +198,7 @@ export default async function OpportunityDetail({
                 name="skills"
                 defaultValue={studentProfile?.skills.join(", ") ?? ""}
                 placeholder="Add skills (comma separated)"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text placeholder:text-brand-muted"
               />
             )}
             {!hasContact && (
@@ -206,7 +206,7 @@ export default async function OpportunityDetail({
                 name="phone"
                 defaultValue={profile?.phone ?? studentProfile?.phone ?? ""}
                 placeholder="Verify contact details (phone number)"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text placeholder:text-brand-muted"
               />
             )}
           </>
@@ -217,7 +217,7 @@ export default async function OpportunityDetail({
             name="intent"
             value="draft"
             disabled={hasActiveProgram || !user || hasSubmittedApplication}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="if-btn if-btn-secondary px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             Save draft
           </button>
@@ -225,7 +225,7 @@ export default async function OpportunityDetail({
             name="intent"
             value="submit"
             disabled={hasActiveProgram || !user || hasSubmittedApplication}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="if-btn if-btn-primary px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {hasActiveProgram ? "Application locked (active programme)" : "Submit application"}
           </button>
@@ -234,4 +234,3 @@ export default async function OpportunityDetail({
     </div>
   );
 }
-

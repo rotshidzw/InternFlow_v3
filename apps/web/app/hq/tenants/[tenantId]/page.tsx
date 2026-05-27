@@ -1,4 +1,4 @@
-import { prisma } from "@internflow/db/src";
+﻿import { prisma } from "@internflow/db/src";
 import { requirePlatformAccess } from "@/lib/hq/auth";
 
 function statusTone(status: string) {
@@ -44,22 +44,23 @@ export default async function TenantDetailPage({ params }: { params: { tenantId:
   const health = tenant.status === "APPROVED" ? 90 : tenant.status === "PENDING_REVIEW" ? 55 : 30;
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-5 shadow-sm">
+    <div className="if-auth-page gap-5">
+      <section className="if-auth-hero">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{tenant.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">Tenant workspace profile for HQ approvals, government readiness and account oversight.</p>
+            <p className="if-kicker">Tenant workspace profile</p>
+            <h1 className="if-auth-title mt-2">{tenant.name}</h1>
+            <p className="if-auth-subtitle">Tenant workspace profile for HQ approvals, government readiness and account oversight.</p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusTone(tenant.status)}`}>{tenant.status.replace("_", " ")}</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700">{tenant.type.replace("_", " ")}</span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700">Health {health}%</span>
+            <span className="if-status if-status-draft">{tenant.type.replace("_", " ")}</span>
+            <span className="if-status if-status-pending">Health {health}%</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="if-auth-metrics md:grid-cols-2 xl:grid-cols-5">
         {[
           ["Active users (14d)", totalUsers14],
           ["Docs uploaded (14d)", totalDocs14],
@@ -67,72 +68,72 @@ export default async function TenantDetailPage({ params }: { params: { tenantId:
           ["Open tickets", openTickets],
           ["Meetings next 30d", meetingsNext30]
         ].map(([label, value]) => (
-          <div key={label as string} className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-            <p className="text-xs text-slate-500">{label}</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{value as number}</p>
+          <div key={label as string} className="if-auth-metric">
+            <p className="if-auth-metric-label">{label}</p>
+            <p className="if-auth-metric-value">{value as number}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-          <h2 className="font-semibold">Profile & onboarding info</h2>
-          <dl className="mt-3 space-y-2 text-sm text-slate-700">
-            <div className="flex justify-between gap-4"><dt className="text-slate-500">Contact person</dt><dd>{tenant.contactPerson ?? "Not set"}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-slate-500">Country / Province</dt><dd>{tenant.country ?? "-"} / {tenant.province ?? "-"}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-slate-500">Slug</dt><dd>{tenant.slug}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-slate-500">Created by</dt><dd>{tenant.creator?.email ?? "Unknown"}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-slate-500">Created at</dt><dd>{tenant.createdAt.toISOString().slice(0, 10)}</dd></div>
+        <div className="if-panel rounded-2xl p-4">
+          <h2 className="if-section-title">Profile & onboarding info</h2>
+          <dl className="mt-3 space-y-2 text-sm text-brand-textSoft">
+            <div className="flex justify-between gap-4"><dt className="text-brand-muted">Contact person</dt><dd>{tenant.contactPerson ?? "Not set"}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-brand-muted">Country / Province</dt><dd>{tenant.country ?? "-"} / {tenant.province ?? "-"}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-brand-muted">Slug</dt><dd>{tenant.slug}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-brand-muted">Created by</dt><dd>{tenant.creator?.email ?? "Unknown"}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-brand-muted">Created at</dt><dd>{tenant.createdAt.toISOString().slice(0, 10)}</dd></div>
           </dl>
-          <p className="mt-3 text-xs text-slate-500">Tenant communication emails: {contacts.map((c) => c.user.email).join(", ") || "None"}</p>
+          <p className="mt-3 text-xs text-brand-muted">Tenant communication emails: {contacts.map((c) => c.user.email).join(", ") || "None"}</p>
           <form action={`/api/hq/impersonate/${tenant.id}`} method="post" className="mt-3">
-            <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition hover:bg-slate-50">Impersonate tenant admin (dev)</button>
+            <button className="if-btn if-btn-secondary px-3 py-2 text-sm">Impersonate tenant admin (dev)</button>
           </form>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-          <h2 className="font-semibold">Government compliance readiness</h2>
-          <p className="mt-1 text-sm text-slate-600">{checklistDone}/{checklist.length} core documents marked uploaded in latest verification.</p>
+        <div className="if-panel rounded-2xl p-4">
+          <h2 className="if-section-title">Government compliance readiness</h2>
+          <p className="mt-1 text-sm text-brand-textSoft">{checklistDone}/{checklist.length} core documents marked uploaded in latest verification.</p>
           <div className="mt-3 space-y-2">
             {checklist.map(([label, value]) => {
               const ok = asUploaded(value);
               return (
-                <div key={label} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2 text-sm">
-                  <span>{label}</span>
+                <div key={label} className="if-panel-muted flex items-center justify-between rounded-lg px-3 py-2 text-sm">
+                  <span className="text-brand-textSoft">{label}</span>
                   <span className={`rounded-full px-2 py-1 text-xs ${ok ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{ok ? "Uploaded" : String(value ?? "Missing")}</span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-3 text-xs text-slate-500">Verification status: {verification?.status ?? "PENDING"}{verification?.reason ? ` · ${verification.reason}` : ""}</p>
+          <p className="mt-3 text-xs text-brand-muted">Verification status: {verification?.status ?? "PENDING"}{verification?.reason ? ` - ${verification.reason}` : ""}</p>
         </div>
       </div>
 
-      <details open className="group rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur">
-        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-900">Operational records (roll up / down)</summary>
-        <div className="grid gap-4 border-t border-slate-200 p-4 md:grid-cols-2">
+      <details open className="if-panel group rounded-2xl">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-brand-text">Operational records (roll up / down)</summary>
+        <div className="grid gap-4 border-t border-brand-border/50 p-4 md:grid-cols-2">
           <div>
-            <h3 className="font-medium">Last 10 tickets</h3>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
-              {tickets.length === 0 ? <p className="text-slate-500">No tickets.</p> : tickets.map((t) => <p key={t.id}>{t.title} · {t.status} · {t.priority}</p>)}
+            <h3 className="if-card-title">Last 10 tickets</h3>
+            <div className="mt-2 space-y-1 text-sm text-brand-textSoft">
+              {tickets.length === 0 ? <p className="text-brand-muted">No tickets.</p> : tickets.map((t) => <p key={t.id}>{t.title} - {t.status} - {t.priority}</p>)}
             </div>
           </div>
           <div>
-            <h3 className="font-medium">Last 5 meetings</h3>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
-              {meetings.length === 0 ? <p className="text-slate-500">No meetings.</p> : meetings.map((m) => <p key={m.id}>{m.title} · {m.status} · {m.startAt.toISOString().slice(0, 10)}</p>)}
+            <h3 className="if-card-title">Last 5 meetings</h3>
+            <div className="mt-2 space-y-1 text-sm text-brand-textSoft">
+              {meetings.length === 0 ? <p className="text-brand-muted">No meetings.</p> : meetings.map((m) => <p key={m.id}>{m.title} - {m.status} - {m.startAt.toISOString().slice(0, 10)}</p>)}
             </div>
           </div>
           <div>
-            <h3 className="font-medium">Organization documents</h3>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
-              {orgDocs.length === 0 ? <p className="text-slate-500">No organization documents uploaded.</p> : orgDocs.slice(0, 8).map((d) => <p key={d.id}>{d.category} · {d.status} · {d.createdAt.toISOString().slice(0, 10)}</p>)}
+            <h3 className="if-card-title">Organization documents</h3>
+            <div className="mt-2 space-y-1 text-sm text-brand-textSoft">
+              {orgDocs.length === 0 ? <p className="text-brand-muted">No organization documents uploaded.</p> : orgDocs.slice(0, 8).map((d) => <p key={d.id}>{d.category} - {d.status} - {d.createdAt.toISOString().slice(0, 10)}</p>)}
             </div>
           </div>
           <div>
-            <h3 className="font-medium">Verification history</h3>
-            <div className="mt-2 space-y-1 text-sm text-slate-700">
-              {verifications.length === 0 ? <p className="text-slate-500">No verification history.</p> : verifications.map((v) => <p key={v.id}>{v.createdAt.toISOString().slice(0, 10)} · {v.status}{v.reason ? ` · ${v.reason}` : ""}</p>)}
+            <h3 className="if-card-title">Verification history</h3>
+            <div className="mt-2 space-y-1 text-sm text-brand-textSoft">
+              {verifications.length === 0 ? <p className="text-brand-muted">No verification history.</p> : verifications.map((v) => <p key={v.id}>{v.createdAt.toISOString().slice(0, 10)} - {v.status}{v.reason ? ` - ${v.reason}` : ""}</p>)}
             </div>
           </div>
         </div>

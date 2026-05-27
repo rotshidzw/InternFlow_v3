@@ -31,11 +31,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/auth/login/page.js"
     ],
-    "/app/student/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/app/student/page.js"
-    ],
     "/hq/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -46,30 +41,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/hq/layout.js"
     ],
-    "/hq/tenants/page": [
+    "/hq/meetings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/hq/tenants/page.js"
-    ],
-    "/hq/users/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/hq/users/page.js"
-    ],
-    "/hq/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/hq/settings/page.js"
+      "static/chunks/app/hq/meetings/page.js"
     ],
     "/hq/approvals/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/hq/approvals/page.js"
-    ],
-    "/hq/meetings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/hq/meetings/page.js"
     ],
     "/hq/support/page": [
       "static/chunks/webpack.js",
@@ -80,6 +60,16 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/hq/observability/page.js"
+    ],
+    "/auth/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/auth/page.js"
+    ],
+    "/hq/settings/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/hq/settings/page.js"
     ]
   }
 }

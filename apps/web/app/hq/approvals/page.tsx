@@ -30,20 +30,30 @@ export default async function HQApprovalsPage() {
     : 0;
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-5 shadow-sm">
-        <h1 className="text-4xl font-semibold tracking-tight">Approvals</h1>
-        <p className="mt-1 text-sm text-slate-600">Review tenant compliance submissions before activating organization access.</p>
-      </div>
+    <div className="if-auth-page gap-5">
+      <section className="if-auth-hero">
+        <p className="if-kicker">Compliance review</p>
+        <h1 className="if-auth-title mt-2">Approvals</h1>
+        <p className="if-auth-subtitle">Review tenant compliance submissions before activating organization access.</p>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm"><p className="text-xs text-slate-500">Pending organizations</p><p className="mt-1 text-2xl font-semibold">{total}</p></div>
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm"><p className="text-xs text-slate-500">Avg compliance readiness</p><p className="mt-1 text-2xl font-semibold">{avgReadiness}%</p></div>
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm"><p className="text-xs text-slate-500">Action goal</p><p className="mt-1 text-2xl font-semibold">48h SLA</p></div>
+      <div className="if-auth-metrics md:grid-cols-3">
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Pending organizations</p>
+          <p className="if-auth-metric-value">{total}</p>
+        </div>
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Avg compliance readiness</p>
+          <p className="if-auth-metric-value">{avgReadiness}%</p>
+        </div>
+        <div className="if-auth-metric">
+          <p className="if-auth-metric-label">Action goal</p>
+          <p className="if-auth-metric-value">48h SLA</p>
+        </div>
       </div>
 
       {pending.length === 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 text-sm text-slate-600 shadow-sm">
+        <div className="if-panel-muted rounded-2xl p-5 text-sm text-brand-muted">
           No pending approvals.
         </div>
       )}
@@ -59,21 +69,21 @@ export default async function HQApprovalsPage() {
         const done = checks.filter(([, value]) => String(value ?? "").toLowerCase() === "uploaded").length;
 
         return (
-          <div key={verification.id} className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm backdrop-blur">
+          <div key={verification.id} className="if-panel rounded-2xl p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">{verification.organization.name}</h2>
-                <p className="text-sm text-slate-600">Submitted: {verification.createdAt.toISOString()}</p>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-text">{verification.organization.name}</h2>
+                <p className="text-sm text-brand-muted">Submitted: {verification.createdAt.toISOString()}</p>
               </div>
-              <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-700">
+              <span className="if-status if-status-pending">
                 Readiness {Math.round((done / checks.length) * 100)}%
               </span>
             </div>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {checks.map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-slate-200 bg-white p-3">
-                  <p className="text-xs text-slate-500">{label}</p>
+                <div key={label} className="if-panel-muted rounded-xl p-3">
+                  <p className="if-meta-text">{label}</p>
                   <p className={`mt-2 inline-flex rounded-full border px-2 py-1 text-xs font-medium ${docStatusTone(value)}`}>
                     {String(value ?? "missing")}
                   </p>
@@ -81,9 +91,9 @@ export default async function HQApprovalsPage() {
               ))}
             </div>
 
-            <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50">
-              <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-700">View raw payload</summary>
-              <pre className="overflow-auto px-3 pb-3 text-xs text-slate-700">{JSON.stringify(verification.docsJson, null, 2)}</pre>
+            <details className="if-panel-muted mt-3 rounded-xl">
+              <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-brand-textSoft">View raw payload</summary>
+              <pre className="overflow-auto px-3 pb-3 text-xs text-brand-textSoft">{JSON.stringify(verification.docsJson, null, 2)}</pre>
             </details>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -100,7 +110,7 @@ export default async function HQApprovalsPage() {
                   name="reason"
                   placeholder="Reason for rejection"
                   required
-                  className="min-w-[260px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  className="min-w-[260px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text"
                 />
                 <button className="rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                   Reject

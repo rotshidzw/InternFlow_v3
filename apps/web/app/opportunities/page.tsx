@@ -37,24 +37,24 @@ export default async function OpportunitiesPage({
   const hasActiveProgram = context.type === "ENROLLED" && context.enrollment.status !== "COMPLETED";
 
   return (
-    <div className="mx-auto mt-10 max-w-6xl space-y-5 rounded-3xl border border-slate-200 bg-white p-8 text-slate-900 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Student opportunities
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold text-slate-900">Opportunities</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Browse and apply only when you are eligible. Active programme students cannot apply to new programmes.
-          </p>
+    <div className="mx-auto mt-10 max-w-6xl space-y-5">
+      <section className="if-panel rounded-3xl p-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="if-kicker">Student opportunities</p>
+            <h1 className="if-page-title mt-1 text-3xl">Opportunities</h1>
+            <p className="if-page-subtitle mt-2">
+              Browse and apply only when you are eligible. Active programme students cannot apply to new programmes.
+            </p>
+          </div>
+          <Link
+            href="/app/student"
+            className="if-btn if-btn-secondary px-4 py-2 text-sm"
+          >
+            Back to student portal
+          </Link>
         </div>
-        <Link
-          href="/app/student"
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50"
-        >
-          Back to student portal
-        </Link>
-      </div>
+      </section>
 
       {hasActiveProgram && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -68,16 +68,16 @@ export default async function OpportunitiesPage({
         </div>
       )}
 
-      <form className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_220px_auto]">
+      <form className="if-panel-muted grid gap-3 rounded-xl p-4 md:grid-cols-[1fr_220px_auto]">
         <input
           name="q"
           placeholder="Search by title or description"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text placeholder:text-brand-muted"
           defaultValue={searchParams?.q ?? ""}
         />
         <select
           name="type"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-brand-text"
           defaultValue={type ?? ""}
         >
           <option value="">All types</option>
@@ -86,7 +86,7 @@ export default async function OpportunitiesPage({
           <option value="MENTORSHIP">Mentorship</option>
           <option value="SKILLS_PROGRAM">Skills Program</option>
         </select>
-        <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button className="if-btn if-btn-primary px-4 py-2 text-sm font-medium">
           Filter
         </button>
       </form>
@@ -96,17 +96,17 @@ export default async function OpportunitiesPage({
           <Link
             key={opp.id}
             href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-            className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-slate-300 hover:bg-white"
+            className="if-panel-muted group rounded-2xl p-5 transition hover:border-brand-accent/45"
           >
-            <p className="text-lg font-semibold text-slate-900 group-hover:text-slate-950">{opp.title}</p>
-            <p className="mt-1 text-sm text-slate-600">
-              {opp.organization.name} · {opp.type}
+            <p className="if-section-title group-hover:text-brand-accentStrong">{opp.title}</p>
+            <p className="mt-1 text-sm text-brand-muted">
+              {opp.organization.name} - {opp.type}
             </p>
-            <p className="mt-3 line-clamp-3 text-sm text-slate-700">{opp.description}</p>
+            <p className="mt-3 line-clamp-3 text-sm text-brand-textSoft">{opp.description}</p>
           </Link>
         ))}
         {opportunities.length === 0 && (
-          <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <p className="if-panel-muted rounded-xl px-4 py-3 text-sm text-brand-muted">
             No opportunities found for this filter.
           </p>
         )}

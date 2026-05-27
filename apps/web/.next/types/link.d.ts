@@ -35,151 +35,151 @@ declare namespace __next_route_internal_types__ {
     | `/app/supervisor`
     | `/app/tickets`
     | `/app/whatsapp-sim`
+    | `/app/provider`
     | `/app/student`
     | `/app/student/documents`
     | `/app/student/profile`
     | `/app/student/profile/edit`
-    | `/app/provider`
-    | `/about`
-    | `/auth`
-    | `/auth/login`
-    | `/auth/setup`
     | `/api/ai/chatbot`
     | `/api/ai/summary`
-    | `/api/documents/upload`
     | `/api/auth/join`
     | `/api/auth/otp`
     | `/api/auth/otp/verify`
+    | `/api/auth/demo-login`
     | `/api/auth/logout`
     | `/api/auth/student-signup`
-    | `/api/auth/demo-login`
     | `/api/explore/posts`
-    | `/api/hq/meetings`
-    | `/api/hq/settings`
     | `/api/hq/observability/export`
+    | `/api/hq/settings`
+    | `/api/hq/meetings`
     | `/api/hq/users`
-    | `/api/onboarding/create-org`
-    | `/api/onboarding/verify-org`
     | `/api/logbook`
     | `/api/logbook/approve`
+    | `/api/documents/upload`
+    | `/api/onboarding/create-org`
+    | `/api/onboarding/verify-org`
     | `/api/org/setup`
-    | `/api/public/contact`
-    | `/api/student/profile-quick`
     | `/api/student/upload-required`
-    | `/api/tenant/students`
+    | `/api/student/profile-quick`
+    | `/api/public/contact`
     | `/api/student-profile`
     | `/api/student-profile/cv-parse`
     | `/api/tickets/summary`
-    | `/api/workspaces/select`
+    | `/api/tenant/students`
     | `/api/whatsapp/messages`
-    | `/explore`
+    | `/api/workspaces/select`
     | `/contact`
     | `/demo`
-    | `/how-it-works`
+    | `/auth`
+    | `/auth/login`
+    | `/auth/setup`
+    | `/about`
+    | `/explore`
     | `/hq`
     | `/hq/approvals`
     | `/hq/dashboard`
-    | `/hq/observability`
     | `/hq/meetings`
+    | `/hq/observability`
     | `/hq/settings`
+    | `/hq/tenants`
     | `/hq/support`
     | `/hq/users`
-    | `/hq/tenants`
+    | `/how-it-works`
+    | `/opportunities`
     | `/onboarding`
     | `/onboarding/create-org`
     | `/onboarding/profile`
     | `/onboarding/verify-org`
-    | `/opportunities`
     | `/platform`
     | `/platform-admin`
     | `/pricing`
-    | `/register-organization`
     | `/security`
     | `/solutions`
+    | `/register-organization`
     | `/student-sign-up`
     | `/tenant/students`
     | `/workspaces`
   type DynamicRoutes<T extends string = string> = 
-    | `/api/applications/${SafeSlug<T>}/status`
     | `/api/applications/${SafeSlug<T>}/placement`
-    | `/api/auth/${CatchAllSlug<T>}`
-    | `/api/enrollments/${SafeSlug<T>}/status`
-    | `/api/enrollments/${SafeSlug<T>}/stipend`
+    | `/api/applications/${SafeSlug<T>}/status`
     | `/api/checklist/items/${SafeSlug<T>}/complete`
-    | `/api/hq/impersonate/${SafeSlug<T>}`
+    | `/api/auth/${CatchAllSlug<T>}`
+    | `/api/enrollments/${SafeSlug<T>}/stipend`
+    | `/api/enrollments/${SafeSlug<T>}/status`
+    | `/api/exports/${SafeSlug<T>}/download`
     | `/api/hq/approvals/${SafeSlug<T>}`
+    | `/api/hq/impersonate/${SafeSlug<T>}`
     | `/api/hq/meetings/${SafeSlug<T>}/remind`
     | `/api/hq/support/${SafeSlug<T>}/action`
-    | `/api/exports/${SafeSlug<T>}/download`
     | `/api/opportunities/${SafeSlug<T>}/apply`
-    | `/api/org/${SafeSlug<T>}/certificates/${SafeSlug<T>}/download`
+    | `/api/opportunity-posts/${SafeSlug<T>}/interest`
     | `/api/org/${SafeSlug<T>}/certificates/issue`
+    | `/api/org/${SafeSlug<T>}/certificates/${SafeSlug<T>}/download`
     | `/api/org/${SafeSlug<T>}/certificates/policy`
-    | `/api/org/${SafeSlug<T>}/cost-capture`
-    | `/api/org/${SafeSlug<T>}/cost-capture/evidence/${SafeSlug<T>}`
-    | `/api/org/${SafeSlug<T>}/exports/${SafeSlug<T>}`
-    | `/api/org/${SafeSlug<T>}/exports/closeout`
-    | `/api/org/${SafeSlug<T>}/exports/closeout/download`
-    | `/api/org/${SafeSlug<T>}/exports/foundation`
     | `/api/org/${SafeSlug<T>}/documents/${SafeSlug<T>}/download`
     | `/api/org/${SafeSlug<T>}/documents/${SafeSlug<T>}/review`
     | `/api/org/${SafeSlug<T>}/documents/${SafeSlug<T>}/ocr`
-    | `/api/org/${SafeSlug<T>}/follow-ups`
+    | `/api/org/${SafeSlug<T>}/cost-capture`
+    | `/api/org/${SafeSlug<T>}/cost-capture/evidence/${SafeSlug<T>}`
     | `/api/org/${SafeSlug<T>}/learner-chat`
-    | `/api/org/${SafeSlug<T>}/opportunities`
+    | `/api/org/${SafeSlug<T>}/exports/${SafeSlug<T>}`
+    | `/api/org/${SafeSlug<T>}/exports/foundation`
+    | `/api/org/${SafeSlug<T>}/exports/closeout`
+    | `/api/org/${SafeSlug<T>}/exports/closeout/download`
     | `/api/org/${SafeSlug<T>}/logbooks/${SafeSlug<T>}/approval`
+    | `/api/org/${SafeSlug<T>}/notifications`
+    | `/api/org/${SafeSlug<T>}/follow-ups`
+    | `/api/org/${SafeSlug<T>}/opportunities`
     | `/api/org/${SafeSlug<T>}/opportunity-posts`
     | `/api/org/${SafeSlug<T>}/programs`
     | `/api/org/${SafeSlug<T>}/settings`
     | `/api/org/${SafeSlug<T>}/staff/invite`
-    | `/api/org/${SafeSlug<T>}/notifications`
     | `/api/org/${SafeSlug<T>}/student-invites`
     | `/api/org/${SafeSlug<T>}/student-invites/${SafeSlug<T>}/revoke`
-    | `/api/org/${SafeSlug<T>}/template-library/${SafeSlug<T>}`
     | `/api/org/${SafeSlug<T>}/registers`
     | `/api/org/${SafeSlug<T>}/registers/${SafeSlug<T>}`
+    | `/api/org/${SafeSlug<T>}/template-library/${SafeSlug<T>}`
     | `/api/org/${SafeSlug<T>}/templates`
-    | `/api/opportunity-posts/${SafeSlug<T>}/interest`
     | `/api/platform/orgs/${SafeSlug<T>}/decision`
     | `/hq/tenants/${SafeSlug<T>}`
+    | `/opportunities/${SafeSlug<T>}/${SafeSlug<T>}`
     | `/org/${SafeSlug<T>}`
+    | `/org/${SafeSlug<T>}/coordinator`
     | `/org/${SafeSlug<T>}/app`
-    | `/org/${SafeSlug<T>}/app/applicants`
     | `/org/${SafeSlug<T>}/app/approvals`
+    | `/org/${SafeSlug<T>}/app/applicants`
+    | `/org/${SafeSlug<T>}/app/costs`
     | `/org/${SafeSlug<T>}/app/certificates`
     | `/org/${SafeSlug<T>}/app/certificates/preview`
-    | `/org/${SafeSlug<T>}/app/dashboard`
     | `/org/${SafeSlug<T>}/app/documents`
-    | `/org/${SafeSlug<T>}/app/costs`
     | `/org/${SafeSlug<T>}/app/enrollments`
     | `/org/${SafeSlug<T>}/app/follow-ups`
     | `/org/${SafeSlug<T>}/app/intakes`
-    | `/org/${SafeSlug<T>}/app/learner-chat`
+    | `/org/${SafeSlug<T>}/app/dashboard`
     | `/org/${SafeSlug<T>}/app/learners`
     | `/org/${SafeSlug<T>}/app/learners/${SafeSlug<T>}`
+    | `/org/${SafeSlug<T>}/app/learner-chat`
     | `/org/${SafeSlug<T>}/app/logbooks`
-    | `/org/${SafeSlug<T>}/app/notifications`
     | `/org/${SafeSlug<T>}/app/opportunities`
     | `/org/${SafeSlug<T>}/app/opportunities/${SafeSlug<T>}`
     | `/org/${SafeSlug<T>}/app/programs`
-    | `/org/${SafeSlug<T>}/app/programs/${SafeSlug<T>}`
-    | `/org/${SafeSlug<T>}/app/registers`
     | `/org/${SafeSlug<T>}/app/progress`
+    | `/org/${SafeSlug<T>}/app/notifications`
+    | `/org/${SafeSlug<T>}/app/programs/${SafeSlug<T>}`
+    | `/org/${SafeSlug<T>}/app/settings`
     | `/org/${SafeSlug<T>}/app/reports`
     | `/org/${SafeSlug<T>}/app/reports/exports`
-    | `/org/${SafeSlug<T>}/app/stipends`
+    | `/org/${SafeSlug<T>}/app/registers`
     | `/org/${SafeSlug<T>}/app/staff`
-    | `/org/${SafeSlug<T>}/app/settings`
+    | `/org/${SafeSlug<T>}/app/stipends`
     | `/org/${SafeSlug<T>}/app/templates`
     | `/org/${SafeSlug<T>}/app/templates/library`
     | `/org/${SafeSlug<T>}/dashboard`
     | `/org/${SafeSlug<T>}/login`
-    | `/org/${SafeSlug<T>}/coordinator`
     | `/org/${SafeSlug<T>}/home`
-    | `/org/${SafeSlug<T>}/provider-admin`
     | `/org/${SafeSlug<T>}/student`
+    | `/org/${SafeSlug<T>}/provider-admin`
     | `/org/${SafeSlug<T>}/supervisor`
-    | `/opportunities/${SafeSlug<T>}/${SafeSlug<T>}`
     | `/workspaces/open/${SafeSlug<T>}`
 
   type RouteImpl<T> = 

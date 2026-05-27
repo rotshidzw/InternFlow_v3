@@ -17,13 +17,13 @@ export function TrendChart({
     .join(" ");
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+    <div className="if-panel rounded-2xl p-4">
+      <h3 className="if-card-title">{title}</h3>
       <svg viewBox="0 0 100 100" className="mt-3 h-36 w-full">
-        <polyline fill="none" stroke="#e2e8f0" strokeWidth="1" points="0,100 100,100" />
+        <polyline fill="none" stroke="rgba(112,104,161,0.45)" strokeWidth="1" points="0,100 100,100" />
         <polyline fill="none" stroke={color} strokeWidth="2.5" points={points} />
       </svg>
-      <div className="mt-2 flex justify-between text-xs text-slate-500">
+      <div className="mt-2 flex justify-between text-xs text-brand-muted">
         <span>{data[0]?.label}</span>
         <span>{data[data.length - 1]?.label}</span>
       </div>
