@@ -2,6 +2,22 @@ import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { getOrgAccess } from "@/lib/org-access";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
+import {
+  applyCertificateReleaseTransitionsWithAudit,
+  ensureFollowUpSchedulesForCompletedEnrollment,
+  isReleaseDue,
+  loadOrganizationCertificatePolicyRecords,
+  loadOrganizationCertificateRecords,
+  resolveCertificateReleaseAt,
+  resolveCertificateReleaseRuleForProgram,
+  resolveEnrollmentCompletionDate,
+  saveOrganizationCertificateRecords,
+  type CertificateRecord,
+} from "@/lib/provider-operations";
+import {
+  TENANT_ROLE_GROUPS,
+  isTenantRoleAllowed,
+} from "@/lib/tenant-api-auth";
 
 function escapePdfText(value: string) {
   return value.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
@@ -16,6 +32,33 @@ function decodeDataUrl(dataUrl: string) {
 
 function sanitizeFileName(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "certificate";
+}
+
+function buildCertificateNumber(orgSlug: string, enrollmentId: string, issueDate: string) {
+  const compactDate = issueDate.replaceAll("-", "");
+  return `${orgSlug.toUpperCase()}-${compactDate}-${enrollmentId.slice(-6).toUpperCase()}`;
+}
+
+async function loadCertificatePdfFromDocument(documentId: string) {
+  const doc = await prisma.document.findUnique({
+    where: { id: documentId },
+    include: { versions: { orderBy: { createdAt: "desc" }, take: 1 }, user: true },
+  });
+  if (!doc || !doc.versions[0]) return null;
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await getStorageAdapter().getBuffer(doc.versions[0].storageKey);
+  } catch {
+    return null;
+  }
+
+  const safeName = (doc.user.name ?? doc.user.email).replace(/[^a-zA-Z0-9._-]+/g, "_");
+  return {
+    bytes,
+    fileName: `${safeName}_Certificate.pdf`,
+    doc,
+  };
 }
 
 function crc32(input: Buffer) {
@@ -224,11 +267,24 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const isStudent = access.membership.role === "STUDENT";
+  const canManageCertificates = isTenantRoleAllowed(
+    access.membership.role,
+    TENANT_ROLE_GROUPS.APP_REVIEW,
+  );
+  const canReadExports = isTenantRoleAllowed(
+    access.membership.role,
+    TENANT_ROLE_GROUPS.EXPORT_READ,
+  );
+
+  if (!isStudent && !canReadExports && !canManageCertificates) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const url = new URL(req.url);
   const programId = (url.searchParams.get("programId") ?? "").trim();
   const enrollmentId = (url.searchParams.get("enrollmentId") ?? "").trim();
 
-  const managerName = access.user.name || "Programme Manager";
   const tenantName = access.membership.organization.name;
 
   if (enrollmentId) {
@@ -240,42 +296,146 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
       return NextResponse.json({ error: "Completed enrollment not found for certificate download." }, { status: 404 });
     }
 
-    const learnerName = enrollment.user.name || enrollment.user.email;
-    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, managerName, false);
-    const fileName = sanitizeFileName(`${learnerName}-${enrollment.program.name}-certificate.pdf`);
-
-    return new Response(pdf, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`
-      }
+    await applyCertificateReleaseTransitionsWithAudit({
+      organizationId: access.membership.organizationId,
+      actorUserId: access.user.id,
     });
+
+    const certificateRecords = await loadOrganizationCertificateRecords(
+      access.membership.organizationId,
+    );
+    const linkedRecord = certificateRecords
+      .filter((record) => record.enrollmentId === enrollment.id)
+      .sort((a, b) => b.issueDate.localeCompare(a.issueDate))[0];
+
+    if (linkedRecord?.documentId) {
+      if (isStudent && linkedRecord.status !== "RELEASED") {
+        return NextResponse.json(
+          {
+            error: "Certificate is issued but still under delayed release policy.",
+            releaseAt: linkedRecord.releaseAt,
+          },
+          { status: 403 },
+        );
+      }
+
+      const stored = await loadCertificatePdfFromDocument(linkedRecord.documentId);
+      if (!stored) {
+        return NextResponse.json({ error: "Certificate file is unavailable" }, { status: 404 });
+      }
+
+      await prisma.auditEvent.create({
+        data: {
+          tenantId: access.membership.organizationId,
+          userId: access.user.id,
+          action: "CERTIFICATE_VIEWED",
+          entityType: "Certificate",
+          entityId: linkedRecord.id,
+          metadata: {
+            enrollmentId: linkedRecord.enrollmentId,
+            certificateNumber: linkedRecord.certificateNumber,
+            status: linkedRecord.status,
+          },
+        },
+      });
+
+      return new Response(stored.bytes as unknown as BodyInit, {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${stored.fileName}"`,
+        },
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Certificate has not been issued yet for this enrollment." },
+      { status: 404 },
+    );
+  }
+
+  if (isStudent) {
+    return NextResponse.json(
+      { error: "Students cannot bulk download certificates." },
+      { status: 403 },
+    );
+  }
+
+  await applyCertificateReleaseTransitionsWithAudit({
+    organizationId: access.membership.organizationId,
+    actorUserId: access.user.id,
+  });
+
+  const certificateRecords = await loadOrganizationCertificateRecords(
+    access.membership.organizationId,
+  );
+  const scopedRecords = certificateRecords.filter(
+    (record) =>
+      Boolean(record.documentId) &&
+      (!programId || record.programId === programId),
+  );
+
+  if (scopedRecords.length === 0) {
+    return NextResponse.json(
+      { error: "No issued certificates found for bulk download." },
+      { status: 404 },
+    );
   }
 
   const enrollments = await prisma.enrollment.findMany({
     where: {
+      id: { in: scopedRecords.map((record) => record.enrollmentId) },
       organizationId: access.membership.organizationId,
-      status: "COMPLETED",
-      ...(programId ? { programId } : {})
     },
     include: { user: true, program: true },
-    take: 500
   });
+  const enrollmentById = new Map(enrollments.map((enrollment) => [enrollment.id, enrollment]));
 
-  if (enrollments.length === 0) {
-    return NextResponse.json({ error: "No completed enrollments found for bulk certificate download." }, { status: 404 });
+  const entriesResolved = await Promise.all(
+    scopedRecords.map(async (record) => {
+      if (!record.documentId) return null;
+      const enrollment = enrollmentById.get(record.enrollmentId);
+      if (!enrollment) return null;
+
+      const stored = await loadCertificatePdfFromDocument(record.documentId);
+      if (!stored) return null;
+
+      const learnerName = enrollment.user.name || enrollment.user.email;
+      const programFolder = sanitizeFileName(enrollment.program.name || "Programme");
+      const learnerFile = sanitizeFileName(
+        `${learnerName}-${record.certificateNumber}.pdf`,
+      );
+
+      return {
+        name: `${programFolder}/${learnerFile}`,
+        data: Buffer.from(stored.bytes),
+      };
+    }),
+  );
+  const entries = entriesResolved.filter((entry) => Boolean(entry)) as Array<{
+    name: string;
+    data: Buffer<ArrayBufferLike>;
+  }>;
+
+  if (entries.length === 0) {
+    return NextResponse.json(
+      { error: "Issued certificate files are unavailable for export." },
+      { status: 404 },
+    );
   }
-
-  const entries = enrollments.map((enrollment) => {
-    const learnerName = enrollment.user.name || enrollment.user.email;
-    const pdf = certificatePdf(tenantName, learnerName, enrollment.program.name, managerName, managerName, false);
-    const programFolder = sanitizeFileName(enrollment.program.name || "Programme");
-    const learnerFile = sanitizeFileName(`${learnerName}-certificate.pdf`);
-    return { name: `${programFolder}/${learnerFile}`, data: pdf };
-  });
 
   const zip = createZipBuffer(entries);
   const filename = sanitizeFileName(`${tenantName}-${programId ? "programme" : "all"}-certificates.zip`);
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: access.membership.organizationId,
+      userId: access.user.id,
+      action: "CERTIFICATE_BULK_EXPORTED",
+      entityType: "Organization",
+      entityId: access.membership.organizationId,
+      metadata: { programId: programId || null, count: entries.length },
+    },
+  });
 
   return new Response(zip, {
     headers: {
@@ -288,6 +448,14 @@ export async function GET(req: Request, { params }: { params: { orgSlug: string 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const canManageCertificates = isTenantRoleAllowed(
+    access.membership.role,
+    TENANT_ROLE_GROUPS.APP_REVIEW,
+  );
+  if (!canManageCertificates) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const contentType = req.headers.get("content-type") ?? "";
   let enrollmentId = "";
@@ -330,6 +498,18 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     include: { user: true, program: true }
   });
   if (!enrollment) return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
+  if (enrollment.status !== "COMPLETED") {
+    return NextResponse.json({ error: "Enrollment must be COMPLETED before issuing certificate." }, { status: 409 });
+  }
+
+  const policyRecords = await loadOrganizationCertificatePolicyRecords(access.membership.organizationId);
+  const releaseRule = resolveCertificateReleaseRuleForProgram(
+    enrollment.programId,
+    policyRecords,
+  );
+  const completionDate = (await resolveEnrollmentCompletionDate(enrollment.id)) ?? new Date();
+  const releaseAtDate = resolveCertificateReleaseAt(completionDate, releaseRule);
+  const certificateStatus = isReleaseDue(releaseAtDate) ? "RELEASED" : "ISSUED";
 
   const managerName = managerNameInput.trim() || access.user.name || "Programme Manager";
   const signature = signatureInput.trim() || managerName;
@@ -372,11 +552,113 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     });
   }
 
+  const existingCertificateRecords = await loadOrganizationCertificateRecords(
+    access.membership.organizationId,
+  );
+  const previousRecord = existingCertificateRecords
+    .filter((record) => record.enrollmentId === enrollment.id)
+    .sort((a, b) => b.issueDate.localeCompare(a.issueDate))[0];
+  const issueDate = new Date().toISOString().slice(0, 10);
+  const certificateRecord: CertificateRecord = {
+    id: previousRecord?.id ?? `cert:${enrollment.id}`,
+    documentId: doc.id,
+    enrollmentId: enrollment.id,
+    userId: enrollment.userId,
+    programId: enrollment.programId,
+    organizationId: access.membership.organizationId,
+    certificateNumber:
+      previousRecord?.certificateNumber ??
+      buildCertificateNumber(params.orgSlug, enrollment.id, issueDate),
+    issueDate,
+    releaseRule,
+    releaseAt: releaseAtDate.toISOString(),
+    status: certificateStatus,
+    issuedByUserId: access.user.id,
+    signatoryName: signature,
+    managerName,
+    releasedAt: certificateStatus === "RELEASED" ? new Date().toISOString() : null,
+    updatedAt: new Date().toISOString(),
+    updatedByUserId: access.user.id,
+  };
+
+  const mergedRecords = existingCertificateRecords.filter(
+    (record) => record.id !== certificateRecord.id,
+  );
+  mergedRecords.push(certificateRecord);
+  await saveOrganizationCertificateRecords(access.membership.organizationId, mergedRecords);
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: access.membership.organizationId,
+      userId: access.user.id,
+      action: previousRecord ? "CERTIFICATE_REISSUED" : "CERTIFICATE_ISSUED",
+      entityType: "Certificate",
+      entityId: certificateRecord.id,
+      metadata: {
+        documentId: doc.id,
+        enrollmentId: enrollment.id,
+        certificateNumber: certificateRecord.certificateNumber,
+        releaseRule: certificateRecord.releaseRule,
+        releaseAt: certificateRecord.releaseAt,
+        status: certificateRecord.status,
+      },
+    },
+  });
+
+  if (certificateRecord.status === "RELEASED") {
+    await prisma.auditEvent.create({
+      data: {
+        tenantId: access.membership.organizationId,
+        userId: access.user.id,
+        action: "CERTIFICATE_RELEASED",
+        entityType: "Certificate",
+        entityId: certificateRecord.id,
+        metadata: {
+          enrollmentId: enrollment.id,
+          certificateNumber: certificateRecord.certificateNumber,
+          releasedAt: certificateRecord.releasedAt,
+        },
+      },
+    });
+  }
+
+  const createdFollowUps = await ensureFollowUpSchedulesForCompletedEnrollment({
+    organizationId: access.membership.organizationId,
+    enrollmentId: enrollment.id,
+    userId: enrollment.userId,
+    programId: enrollment.programId,
+    actorUserId: access.user.id,
+  });
+  for (const followUp of createdFollowUps) {
+    await prisma.auditEvent.create({
+      data: {
+        tenantId: access.membership.organizationId,
+        userId: access.user.id,
+        action: "FOLLOW_UP_CREATED",
+        entityType: "FollowUp",
+        entityId: followUp.id,
+        metadata: {
+          enrollmentId: followUp.enrollmentId,
+          dueMonth: followUp.dueMonth,
+          dueDate: followUp.dueDate,
+        },
+      },
+    });
+  }
+
   const wantsJsonResponse = contentType.includes("application/json") || new URL(req.url).searchParams.get("response") === "json";
 
   if (!wantsJsonResponse) {
     return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/certificates`, req.url));
   }
 
-  return NextResponse.json({ ok: true, documentId: doc.id });
+  return NextResponse.json({
+    ok: true,
+    documentId: doc.id,
+    certificateId: certificateRecord.id,
+    certificateNumber: certificateRecord.certificateNumber,
+    releaseRule: certificateRecord.releaseRule,
+    releaseAt: certificateRecord.releaseAt,
+    status: certificateRecord.status,
+  });
 }

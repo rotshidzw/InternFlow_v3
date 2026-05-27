@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className="bg-brand-bg text-brand-text">
         <ThemeProvider>
           <PageTransition>{children}</PageTransition>
         </ThemeProvider>

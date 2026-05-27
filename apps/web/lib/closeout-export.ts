@@ -3,6 +3,11 @@ import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import {
+  loadOrganizationCostCaptureRecords,
+  loadOrganizationStipendRecords,
+  parseAttendanceRegisterMetadata,
+} from "@/lib/provider-operations";
 
 function sanitize(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
@@ -226,6 +231,10 @@ function createXlsxBuffer(rows: string[][]) {
   return createZipBuffer(entries);
 }
 
+function monthKey(value: Date) {
+  return value.toISOString().slice(0, 7);
+}
+
 function createDocxBuffer(lines: string[]) {
   const paragraphs = lines
     .map((line) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`)
@@ -322,13 +331,20 @@ export async function generateCloseoutZipForJob(jobId: string) {
   const tmpRoot = await mkdtemp(path.join(os.tmpdir(), "internflow-closeout-"));
 
   try {
-    const [enrollments, docs, logoDoc] = await Promise.all([
+    const [enrollments, docs, logoDoc, attendanceRegisters, stipendRecords, costCaptureRecords] = await Promise.all([
       prisma.enrollment.findMany({
         where: { organizationId: job.tenantId, programId: job.programmeId },
         include: { user: { include: { studentProfile: true } }, program: true }
       }),
       prisma.document.findMany({ where: { organizationId: job.tenantId }, include: { versions: true } }),
-      prisma.organizationDocument.findFirst({ where: { orgId: job.tenantId, category: { contains: "LOGO" } } })
+      prisma.organizationDocument.findFirst({ where: { orgId: job.tenantId, category: { contains: "LOGO" } } }),
+      prisma.organizationDocument.findMany({
+        where: { orgId: job.tenantId, category: "ATTENDANCE_REGISTER" },
+        orderBy: { createdAt: "desc" },
+        take: 200
+      }),
+      loadOrganizationStipendRecords(job.tenantId),
+      loadOrganizationCostCaptureRecords(job.tenantId),
     ]);
 
     const learnerIds = enrollments.map((item) => item.userId);
@@ -393,6 +409,205 @@ export async function generateCloseoutZipForJob(jobId: string) {
 
     const xlsxBuffer = createXlsxBuffer(registerRows);
     const learnerProfileXlsxBuffer = createXlsxBuffer(learnerProfileRows);
+    const registerEntries = attendanceRegisters.map((register) => ({
+      register,
+      metadata: parseAttendanceRegisterMetadata(register.notes),
+    }));
+
+    const attendanceRows = [
+      ["Attendance Summary"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      ["Month", monthKey(new Date())],
+      [],
+      [
+        "Learner ID",
+        "Learner Name",
+        "Programme",
+        "Active Enrollment",
+        "Attendance Evidence Count",
+        "Induction Signed",
+        "Trainer Sign-off",
+        "Coordinator Approval",
+        "Source Register File"
+      ],
+      ...enrollments.map((row) => {
+        const learnerRegisters = registerEntries.filter((entry) => {
+          if (entry.metadata?.programmeId && entry.metadata.programmeId !== row.programId) {
+            return false;
+          }
+          if (!entry.metadata?.learnerUserId) return true;
+          return entry.metadata.learnerUserId === row.userId;
+        });
+        const latestRegister = learnerRegisters[0];
+        return [
+          row.userId,
+          row.user.studentProfile?.fullName ?? row.user.name ?? row.user.email,
+          row.program.name,
+          row.status === "ACTIVE" ? "YES" : "NO",
+          String(learnerRegisters.length),
+          learnerRegisters.some((entry) => entry.metadata?.registerType === "INDUCTION")
+            ? "YES"
+            : "NO",
+          latestRegister?.metadata?.trainerSignoffBy ?? "",
+          latestRegister?.metadata?.coordinatorApprovalDecision ?? "",
+          latestRegister?.register.fileKey.split("/").pop() ?? "",
+        ];
+      })
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const paymentRows = [
+      ["Stipend & Payment Evidence"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      ["Payment month", monthKey(new Date())],
+      [],
+      [
+        "Learner ID",
+        "Learner Name",
+        "Email",
+        "Stipend Eligible",
+        "Amount",
+        "Payment Month",
+        "Payment Status",
+        "Exception Reason",
+        "Payslip Document Count",
+        "Proof of Payment Count"
+      ],
+      ...enrollments.map((row) => {
+        const paymentRecord = stipendRecords.find(
+          (record) => record.enrollmentId === row.id,
+        );
+        const learnerDocs = docs.filter((doc) => doc.userId === row.userId);
+        const payslips =
+          paymentRecord?.payslipDocumentIds.length ??
+          learnerDocs.filter((doc) => doc.type === "PAYSLIP").length;
+        const proofOfPayments =
+          paymentRecord?.proofDocumentIds.length ??
+          learnerDocs.filter((doc) =>
+            ["PAYMENT_PROOF", "PROOF_OF_PAYMENT", "BANK_CONFIRMATION"].includes(doc.type)
+          ).length;
+        return [
+          row.userId,
+          row.user.studentProfile?.fullName ?? row.user.name ?? row.user.email,
+          row.user.email,
+          paymentRecord ? (paymentRecord.eligible ? "YES" : "NO") : row.status === "ACTIVE" ? "YES" : "NO",
+          paymentRecord?.stipendAmount === null || paymentRecord?.stipendAmount === undefined
+            ? ""
+            : String(paymentRecord.stipendAmount),
+          paymentRecord?.month ?? row.stipendMonth ?? monthKey(new Date()),
+          paymentRecord?.paymentStatus ?? (row.stipendPaid ? "PAID" : "DUE"),
+          paymentRecord?.exceptionReason ?? "",
+          String(payslips),
+          String(proofOfPayments)
+        ];
+      })
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const relevantCostRecords = costCaptureRecords.filter(
+      (record) => !record.programmeId || record.programmeId === job.programmeId,
+    );
+    const paidStipendTotal = stipendRecords.reduce((sum, record) => {
+      if (record.paymentStatus !== "PAID" || record.stipendAmount === null) return sum;
+      return sum + record.stipendAmount;
+    }, 0);
+
+    if (
+      paidStipendTotal > 0 &&
+      !relevantCostRecords.some((record) => record.category === "STIPEND_TOTALS")
+    ) {
+      relevantCostRecords.push({
+        id: `auto:stipend-totals:${monthKey(new Date())}`,
+        programmeId: job.programmeId,
+        month: monthKey(new Date()),
+        category: "STIPEND_TOTALS",
+        amount: paidStipendTotal,
+        status: "APPROVED",
+        evidenceDocumentIds: [],
+        notes: "Auto-calculated from paid stipend records.",
+        updatedAt: new Date().toISOString(),
+        updatedByUserId: "system",
+      });
+    }
+
+    const costCaptureRows = [
+      ["Programme Cost Capture"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      ["Reporting month", monthKey(new Date())],
+      [],
+      ["Cost Category", "Amount", "Month", "Submitted By", "Approval Status", "Evidence Reference", "Notes"],
+      ...(
+        relevantCostRecords.length > 0
+          ? relevantCostRecords.map((record) => [
+              record.category.replaceAll("_", " "),
+              record.amount.toFixed(2),
+              record.month,
+              record.updatedByUserId,
+              record.status,
+              record.evidenceDocumentIds.join(" | "),
+              record.notes ?? "",
+            ])
+          : [["No costs captured", "", monthKey(new Date()), "", "PENDING", "", ""]]
+      ),
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const outcomeRows = [
+      ["Post-Training Outcomes Tracker"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      [],
+      [
+        "Learner ID",
+        "Learner Name",
+        "3 Month Outcome",
+        "6 Month Outcome",
+        "12 Month Outcome",
+        "Outcome Type",
+        "Evidence File Reference",
+        "Last Follow-up Date",
+        "Follow-up Owner"
+      ],
+      ...enrollments.map((row) => [
+        row.userId,
+        row.user.studentProfile?.fullName ?? row.user.name ?? row.user.email,
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ])
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const documentTrackerRows = [
+      ["Document Tracker"],
+      ["Tenant", job.tenant.name],
+      ["Programme", job.programme.name],
+      [],
+      ["Learner ID", "Learner Name", "Document Type", "Status", "Uploaded At", "Version Count", "Latest Storage Key"],
+      ...docs
+        .filter((doc) => enrollments.some((enrollment) => enrollment.userId === doc.userId))
+        .map((doc) => {
+          const learner = enrollments.find((row) => row.userId === doc.userId);
+          return [
+            doc.userId,
+            learner?.user.studentProfile?.fullName ?? learner?.user.name ?? learner?.user.email ?? doc.userId,
+            doc.type,
+            doc.status,
+            doc.createdAt.toISOString().slice(0, 10),
+            String(doc.versions.length),
+            doc.versions[0]?.storageKey ?? ""
+          ];
+        })
+    ].map((row) => row.map((cell) => String(cell ?? "")));
+
+    const attendanceXlsxBuffer = createXlsxBuffer(attendanceRows);
+    const paymentXlsxBuffer = createXlsxBuffer(paymentRows);
+    const costCaptureXlsxBuffer = createXlsxBuffer(costCaptureRows);
+    const outcomesXlsxBuffer = createXlsxBuffer(outcomeRows);
+    const documentTrackerXlsxBuffer = createXlsxBuffer(documentTrackerRows);
 
     const docsByType = docs.reduce<Record<string, number>>((acc, item) => {
       acc[item.type] = (acc[item.type] ?? 0) + 1;
@@ -416,6 +631,8 @@ export async function generateCloseoutZipForJob(jobId: string) {
       `- Total approved logbook entries: ${approvedLogbooksCount}`,
       `- Document type distribution: ${Object.keys(docsByType).length === 0 ? "No documents uploaded" : Object.entries(docsByType).map(([k, v]) => `${k} (${v})`).join(", ")}`,
       `- Certificates included in learner folders: ${docsByType.CERTIFICATE ?? 0}`,
+      `- Attendance registers uploaded: ${attendanceRegisters.length}`,
+      `- Stipend paid learners: ${enrollments.filter((enrollment) => enrollment.stipendPaid).length}`,
       "",
       "Branding",
       logoDoc ? "- Company logo included in this export bundle under 07_Reports/." : "- Company logo not yet uploaded in InternFlow. Please add the approved logo manually in the section below.",
@@ -444,8 +661,13 @@ export async function generateCloseoutZipForJob(jobId: string) {
       { name: "01_ID/.keep", data: Buffer.from("keep") },
       { name: "02_Attendance_Register/Learner_Register_Designed.xlsx", data: xlsxBuffer },
       { name: "02_Attendance_Register/Learner_Profile_Register.xlsx", data: learnerProfileXlsxBuffer },
+      { name: "02_Attendance_Register/Monthly_Attendance_Summary.xlsx", data: attendanceXlsxBuffer },
       { name: "03_Group_Documents/.keep", data: Buffer.from("keep") },
       { name: "04_Learner_Documents/.keep", data: Buffer.from("keep") },
+      { name: "05_Payment_Evidence/Stipend_Payment_Register.xlsx", data: paymentXlsxBuffer },
+      { name: "06_Cost_Capture/Programme_Cost_Capture.xlsx", data: costCaptureXlsxBuffer },
+      { name: "08_Document_Tracker/Document_Tracker.xlsx", data: documentTrackerXlsxBuffer },
+      { name: "09_FollowUp_Outcomes/FollowUp_Outcomes_Tracker.xlsx", data: outcomesXlsxBuffer },
       { name: "07_Reports/Programme_CloseOut_Report.docx", data: docxBuffer },
       { name: "07_Reports/Programme_CloseOut_Report.pdf", data: pdfBuffer }
     ];

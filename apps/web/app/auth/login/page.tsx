@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpRequestSchema } from "@internflow/shared/src/schemas";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const emailSchema = otpRequestSchema;
 const otpSchema = z.object({
@@ -24,6 +25,7 @@ const demoUsers = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"request" | "verify">("request");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,13 @@ export default function LoginPage() {
     resolver: zodResolver(emailSchema),
   });
   const otpForm = useForm<OtpFormValues>({ resolver: zodResolver(otpSchema) });
+  const prefilledEmail = searchParams.get("email")?.toLowerCase() ?? "";
+  const fromSignup = searchParams.get("from") === "signup";
+
+  useEffect(() => {
+    if (!prefilledEmail) return;
+    emailForm.setValue("email", prefilledEmail);
+  }, [emailForm, prefilledEmail]);
 
   const requestOtp = async (values: EmailFormValues) => {
     setError(null);
@@ -83,121 +92,136 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white/85 p-6 text-slate-900 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-white/10 dark:text-white md:p-8">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
-            Secure access
+    <div className="mx-auto mt-10 max-w-5xl">
+      <div className="if-panel grid overflow-hidden rounded-3xl md:grid-cols-[1fr_1.2fr]">
+        <section className="border-b border-brand-border/70 bg-[#090d21]/92 p-6 md:border-b-0 md:border-r md:p-8">
+          <p className="text-xs uppercase tracking-[0.2em] text-brand-accentStrong">Secure sign-in</p>
+          <h1 className="mt-2 text-3xl font-semibold text-brand-text">Sign In to InternFlow</h1>
+          <p className="mt-3 text-sm text-brand-textSoft">
+            Existing users sign in here using one-time passcode verification and role-aware routing.
           </p>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="inline-flex rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-white/20 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-white/10"
-          >
-            Back to Home
-          </button>
-        </div>
-        <h1 className="mt-2 text-3xl font-semibold">
-          Sign in with one-time passcode
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-200">
-          Organisation teams and students log in here. If you are new, you can
-          continue to organisation setup after verification.
-        </p>
-
-        {step === "request" ? (
-          <form
-            onSubmit={emailForm.handleSubmit(requestOtp)}
-            className="mt-6 space-y-4"
-          >
-            <label className="block text-sm text-slate-600 dark:text-slate-200">
-              Email address
-            </label>
-            <input
-              {...emailForm.register("email")}
-              placeholder="student@demo.com"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2 dark:border-white/20 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-400"
-            />
-            <button
-              disabled={emailForm.formState.isSubmitting}
-              className="w-full rounded-xl bg-emerald-500 py-3 font-medium text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
-            >
-              Send OTP
-            </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={otpForm.handleSubmit(verifySubmittedOtp)}
-            className="mt-6 space-y-4"
-          >
-            <p className="text-sm text-slate-600 dark:text-slate-200">
-              OTP sent to{" "}
-              <span className="font-semibold text-slate-900 dark:text-white">
-                {email}
-              </span>
-              . Check MailHog at{" "}
-              <span className="text-emerald-700 dark:text-emerald-300">
-                http://localhost:8025
-              </span>
-              .
-            </p>
-            <label className="block text-sm text-slate-600 dark:text-slate-200">
-              Enter 6-digit code
-            </label>
-            <input
-              {...otpForm.register("code")}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="123456"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-emerald-400 placeholder:text-slate-500 focus:ring-2 dark:border-white/20 dark:bg-slate-950/40 dark:text-white dark:placeholder:text-slate-400"
-            />
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setStep("request")}
-                className="w-full rounded-xl border border-slate-300 py-3 text-slate-700 dark:border-white/20 dark:text-slate-100"
-              >
-                Change email
-              </button>
-              <button
-                disabled={otpForm.formState.isSubmitting}
-                className="w-full rounded-xl bg-emerald-500 py-3 font-medium text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
-              >
-                Verify OTP
-              </button>
-            </div>
-          </form>
-        )}
-
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/20 dark:bg-slate-950/30">
-          <h2 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-            Demo Login
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-            Use demo accounts. OTP appears in MailHog at http://localhost:8025.
-          </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {demoUsers.map((u) => (
-              <button
-                key={u.email}
-                type="button"
-                onClick={() => loginDemoUser(u.email)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-left text-sm hover:bg-slate-100 dark:border-white/20 dark:hover:bg-white/10"
-              >
-                <span className="font-medium">{u.label}</span>
-                <span className="block text-xs text-slate-500 dark:text-slate-300">
-                  {u.email}
-                </span>
-              </button>
-            ))}
+          <div className="if-panel-muted mt-6 p-4">
+            <p className="text-sm font-semibold text-brand-text">Workspace routing</p>
+            <ul className="mt-2 space-y-1 text-xs text-brand-muted">
+              <li>Tenant users route to organisation or student portals</li>
+              <li>Platform users route to HQ operations console</li>
+              <li>OTP events remain local-dev friendly via MailHog</li>
+            </ul>
           </div>
-        </div>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="if-btn if-btn-secondary px-3 py-1.5 text-xs"
+            >
+              Back to Home
+            </button>
+            <Link href="/student-sign-up" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Student Sign Up
+            </Link>
+            <Link href="/register-organization" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Register Organization
+            </Link>
+          </div>
+        </section>
 
-        {error && (
-          <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
-            {error}
+        <section className="bg-[#070b18]/88 p-6 md:p-8">
+          {fromSignup ? (
+            <p className="if-status-success mb-4 rounded-lg border p-3 text-sm">
+              Account created. Complete sign-in verification to continue onboarding.
+            </p>
+          ) : null}
+          {step === "request" ? (
+            <form
+              onSubmit={emailForm.handleSubmit(requestOtp)}
+              className="space-y-4"
+            >
+              <label className="block text-sm text-brand-textSoft">Email address</label>
+              <input
+                {...emailForm.register("email")}
+                placeholder="student@demo.com"
+                className="w-full px-4 py-3"
+              />
+              <button
+                disabled={emailForm.formState.isSubmitting}
+                className="if-btn if-btn-primary w-full py-3 disabled:opacity-50"
+              >
+                Send Sign-In OTP
+              </button>
+            </form>
+          ) : (
+            <form
+              onSubmit={otpForm.handleSubmit(verifySubmittedOtp)}
+              className="space-y-4"
+            >
+              <p className="text-sm text-brand-textSoft">
+                OTP sent to <span className="font-semibold text-brand-text">{email}</span>. Check
+                MailHog at <span className="text-brand-accentStrong">http://localhost:8025</span>.
+              </p>
+              <label className="block text-sm text-brand-textSoft">Enter 6-digit code</label>
+              <input
+                {...otpForm.register("code")}
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                className="w-full px-4 py-3"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep("request")}
+                  className="if-btn if-btn-secondary w-full py-3"
+                >
+                  Change email
+                </button>
+                <button
+                  disabled={otpForm.formState.isSubmitting}
+                  className="if-btn if-btn-primary w-full py-3 disabled:opacity-50"
+                >
+                  Verify OTP
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="if-panel-muted mt-6 rounded-2xl p-4">
+            <h2 className="text-sm font-semibold text-brand-accentStrong">Demo Sign In</h2>
+            <p className="mt-1 text-xs text-brand-muted">
+              Use demo accounts. OTP appears in MailHog at http://localhost:8025.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {demoUsers.map((u) => (
+                <button
+                  key={u.email}
+                  type="button"
+                  onClick={() => loginDemoUser(u.email)}
+                  className="rounded-lg border border-brand-border px-3 py-2 text-left text-sm transition hover:border-brand-accent hover:bg-brand-surface"
+                >
+                  <span className="font-medium text-brand-text">{u.label}</span>
+                  <span className="block text-xs text-brand-muted">{u.email}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs text-brand-muted">
+            New student?{" "}
+            <Link href="/student-sign-up" className="text-brand-accentStrong hover:text-brand-text">
+              Start Student Sign Up
+            </Link>
+            . Need organisation access?{" "}
+            <Link href="/register-organization" className="text-brand-accentStrong hover:text-brand-text">
+              Register Organization
+            </Link>
+            .
           </p>
-        )}
+
+          {error && (
+            <p className="if-status-error mt-4 rounded-lg border p-3 text-sm">
+              {error}
+            </p>
+          )}
+        </section>
       </div>
     </div>
   );

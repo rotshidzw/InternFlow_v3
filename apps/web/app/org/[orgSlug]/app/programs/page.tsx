@@ -17,58 +17,68 @@ export default async function ProgramsPage({
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Programs</h1>
+    <div className="if-auth-page">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Programme Setup</p>
+        <h1 className="if-auth-title mt-2">Programs</h1>
+        <p className="if-auth-subtitle">
+          Create and maintain structured training tracks used by opportunities, enrollments, and compliance workflows.
+        </p>
+      </section>
+
       <form
         action={`/api/org/${params.orgSlug}/programs`}
         method="post"
-        className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-5"
+        className="if-auth-form if-filter-grid md:grid-cols-5"
       >
         <input
           required
           name="name"
           placeholder="Program name"
-          className="rounded border border-slate-300 px-2 py-2 text-sm md:col-span-2"
+          className="rounded px-2 py-2 text-sm md:col-span-2"
         />
         <input
           name="setaCetaName"
           placeholder="SETA/CETA"
-          className="rounded border border-slate-300 px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         />
         <input
           name="startDate"
           type="date"
-          className="rounded border border-slate-300 px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         />
         <input
           name="endDate"
           type="date"
-          className="rounded border border-slate-300 px-2 py-2 text-sm"
+          className="rounded px-2 py-2 text-sm"
         />
         <textarea
           name="description"
           placeholder="Description"
-          className="rounded border border-slate-300 px-2 py-2 text-sm md:col-span-4"
+          className="rounded px-2 py-2 text-sm md:col-span-4"
         />
-        <button className="rounded bg-slate-900 px-3 py-2 text-sm text-white">
+        <button className="if-btn if-btn-primary px-3 py-2 text-sm">
           Create Program
         </button>
       </form>
+
       <div className="space-y-2">
-        {programs.map((p: any) => (
+        {programs.map((program: any) => (
           <Link
-            key={p.id}
-            href={`/org/${params.orgSlug}/app/programs/${p.id}`}
-            className="block rounded-xl border border-slate-200 bg-white p-3"
+            key={program.id}
+            href={`/org/${params.orgSlug}/app/programs/${program.id}`}
+            className="if-panel-muted block rounded-xl border border-brand-border/55 p-3 transition hover:border-brand-accent/40 hover:bg-brand-surface"
           >
-            <p className="font-medium">{p.name}</p>
-            <p className="text-sm text-slate-600">{p.description}</p>
-            <p className="text-xs text-slate-500">
-              Opportunities: {p._count.opportunities} · Enrollments:{" "}
-              {p._count.enrollments}
+            <p className="font-medium text-brand-text">{program.name}</p>
+            <p className="text-sm text-brand-textSoft">{program.description || "No description provided."}</p>
+            <p className="text-xs text-brand-muted">
+              Opportunities: {program._count.opportunities} - Enrollments: {program._count.enrollments}
             </p>
           </Link>
         ))}
+        {programs.length === 0 ? (
+          <p className="if-empty-state text-sm">No programmes created yet. Add your first programme above.</p>
+        ) : null}
       </div>
     </div>
   );

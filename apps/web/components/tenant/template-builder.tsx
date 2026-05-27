@@ -32,7 +32,7 @@ const defaultItem = (): ChecklistItem => ({
 });
 
 function statusTone(status: TemplateStatus) {
-  return status === "PUBLISHED" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200";
+  return status === "PUBLISHED" ? "if-status if-status-success" : "if-status if-status-draft";
 }
 
 export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; templates: ExistingTemplate[] }) {
@@ -98,7 +98,7 @@ export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; t
 
   return (
     <div className="space-y-4">
-      <form action={`/api/org/${orgSlug}/templates`} method="post" className="space-y-4 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+      <form action={`/api/org/${orgSlug}/templates`} method="post" className="if-auth-form space-y-4">
         <input type="hidden" name="templateId" value={templateId} readOnly />
 
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,15 +108,15 @@ export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; t
           </div>
           <div className="flex gap-2">
             {templateId ? (
-              <button type="button" onClick={resetForm} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+              <button type="button" onClick={resetForm} className="if-action-chip">
                 Create new template
               </button>
             ) : null}
-            <button type="button" onClick={() => applyPreset("onboarding")} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={() => applyPreset("onboarding")} className="if-action-chip">
               <Sparkles className="mr-1 inline h-3.5 w-3.5" />
               Onboarding preset
             </button>
-            <button type="button" onClick={() => applyPreset("monthlyLogbook")} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={() => applyPreset("monthlyLogbook")} className="if-action-chip">
               <Sparkles className="mr-1 inline h-3.5 w-3.5" />
               Logbook preset
             </button>
@@ -134,21 +134,21 @@ export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; t
         </div>
 
         <div className="grid gap-2 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">Total items: <span className="font-semibold">{items.length}</span></div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">Required items: <span className="font-semibold">{requiredItems}</span></div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">Optional items: <span className="font-semibold">{items.length - requiredItems}</span></div>
+          <div className="if-auth-metric">Total items: <span className="font-semibold">{items.length}</span></div>
+          <div className="if-auth-metric">Required items: <span className="font-semibold">{requiredItems}</span></div>
+          <div className="if-auth-metric">Optional items: <span className="font-semibold">{items.length - requiredItems}</span></div>
         </div>
 
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+        <div className="if-panel-muted space-y-2 rounded-xl p-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-800">Template items</p>
-            <button type="button" onClick={() => setItems((prev) => [...prev, defaultItem()])} className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+            <button type="button" onClick={() => setItems((prev) => [...prev, defaultItem()])} className="if-btn if-btn-secondary px-2.5 py-1 text-xs font-medium">
               <Plus className="mr-1 inline h-3.5 w-3.5" /> Add item
             </button>
           </div>
 
           {items.map((item, index) => (
-            <div key={index} className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-[2fr_130px_130px_130px_auto]">
+            <div key={index} className="if-panel grid gap-2 rounded-xl p-3 md:grid-cols-[2fr_130px_130px_130px_auto]">
               <input value={item.label} onChange={(event) => setItems((prev) => prev.map((x, i) => (i === index ? { ...x, label: event.target.value } : x)))} placeholder="Item label" className="rounded-lg border border-slate-300 px-2 py-2 text-sm" />
               <input type="number" min={0} value={item.expiryDays} onChange={(event) => setItems((prev) => prev.map((x, i) => (i === index ? { ...x, expiryDays: Number(event.target.value || 0) } : x)))} placeholder="Expiry days" className="rounded-lg border border-slate-300 px-2 py-2 text-sm" />
               <input type="number" min={0} value={item.dueDaysFromStart} onChange={(event) => setItems((prev) => prev.map((x, i) => (i === index ? { ...x, dueDaysFromStart: Number(event.target.value || 0) } : x)))} placeholder="Due days" className="rounded-lg border border-slate-300 px-2 py-2 text-sm" />
@@ -158,7 +158,7 @@ export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; t
                   <input type="checkbox" checked={item.required} onChange={(event) => setItems((prev) => prev.map((x, i) => (i === index ? { ...x, required: event.target.checked } : x)))} />
                   Required
                 </label>
-                <button type="button" disabled={items.length === 1} onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} className="rounded-lg border border-rose-200 px-2 py-1 text-rose-600 disabled:cursor-not-allowed disabled:opacity-40">
+                <button type="button" disabled={items.length === 1} onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} className="if-btn if-btn-secondary rounded-lg px-2 py-1 text-rose-300 disabled:cursor-not-allowed disabled:opacity-40">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -169,42 +169,42 @@ export function TemplateBuilderForm({ orgSlug, templates }: { orgSlug: string; t
         <textarea readOnly name="json" value={JSON.stringify(payload)} className="hidden" />
 
         <div className="grid gap-2 md:grid-cols-2">
-          <button name="status" value="DRAFT" className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-100">
+          <button name="status" value="DRAFT" className="if-btn if-btn-secondary w-full px-3 py-2.5 text-sm font-medium">
             Save as draft
           </button>
-          <button name="status" value="PUBLISHED" className="w-full rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800">
+          <button name="status" value="PUBLISHED" className="if-btn if-btn-primary w-full px-3 py-2.5 text-sm font-medium">
             Publish template
           </button>
         </div>
       </form>
 
-      <section className="space-y-2 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+      <section className="if-panel space-y-2 rounded-2xl p-4">
         <h2 className="text-lg font-semibold text-slate-900">Saved templates</h2>
         {templates.length ? (
           <div className="grid gap-3 lg:grid-cols-2">
             {templates.map((t) => (
-              <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-3">
+              <div key={t.id} className="if-panel-muted rounded-xl p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="font-medium text-slate-900">{t.name}</p>
-                  <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusTone(t.status)}`}>{t.status}</span>
+                  <span className={statusTone(t.status)}>{t.status}</span>
                 </div>
-                <p className="text-xs text-slate-600">{t.type} · SETA/CETA: {t.setaCetaName || "n/a"}</p>
+                <p className="text-xs text-slate-600">{t.type} - SETA/CETA: {t.setaCetaName || "n/a"}</p>
                 <div className="mt-2 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-2">
                   {t.items.slice(0, 3).map((item, index) => (
                     <p key={index} className="flex items-center gap-1 text-xs text-slate-700">
                       {item.required ? <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" /> : <span className="ml-[18px]" />}
-                      {item.label} · due {item.dueDaysFromStart}d · expires {item.expiryDays}d
+                      {item.label} - due {item.dueDaysFromStart}d - expires {item.expiryDays}d
                     </p>
                   ))}
                 </div>
-                <button type="button" onClick={() => startEditing(t)} className="mt-3 inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                <button type="button" onClick={() => startEditing(t)} className="if-btn if-btn-secondary mt-3 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium">
                   <Pencil className="h-3.5 w-3.5" /> Edit template
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-8 text-center text-sm text-slate-500">No templates yet. Create your first compliance template above.</p>
+          <p className="if-empty-state px-3 py-8 text-center text-sm">No templates yet. Create your first compliance template above.</p>
         )}
       </section>
     </div>

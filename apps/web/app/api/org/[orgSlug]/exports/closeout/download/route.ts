@@ -1,33 +1,25 @@
 import { prisma } from "@internflow/db/src";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextRequest, NextResponse } from "next/server";
-
-async function getTenantContext(req: NextRequest, orgSlug: string) {
-  const email = req.cookies.get("if_user")?.value;
-  if (!email) return null;
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return null;
-
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: orgSlug } },
-    include: { organization: true }
-  });
-
-  if (!membership) return null;
-  return { user, membership };
-}
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {
-  const context = await getTenantContext(req, params.orgSlug);
-  if (!context) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("jobId");
   if (!jobId) return NextResponse.json({ error: "jobId is required" }, { status: 400 });
 
   const job = await prisma.programmeExportJob.findFirst({
-    where: { id: jobId, tenantId: context.membership.organizationId }
+    where: { id: jobId, tenantId: actor.actor.membership.organizationId },
   });
 
   if (!job || !job.zipObsKey || job.status !== "DONE") {
@@ -38,13 +30,13 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: context.membership.organizationId,
-      userId: context.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "EXPORT_DOWNLOADED",
       entityType: "ProgrammeExportJob",
       entityId: job.id,
-      metadata: { zipObsKey: job.zipObsKey }
-    }
+      metadata: { zipObsKey: job.zipObsKey },
+    },
   });
 
   return NextResponse.json({ url: signedUrl });

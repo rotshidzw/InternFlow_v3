@@ -1,616 +1,553 @@
 import Link from "next/link";
-import {
-  Bell,
-  Briefcase,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
-  FileText,
-  FolderOpen,
-  MessageSquare,
-  User,
-  UserCircle2,
-} from "lucide-react";
+import { Bell, CheckCircle2, Clock3, FileText, MessageSquare, UserCircle2 } from "lucide-react";
 import { prisma } from "@internflow/db/src";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import {
+  getDocumentDisplayName,
+  resolveProgrammeDocumentPlan,
+} from "@/lib/student-document-requirements";
+import {
+  applyCertificateReleaseTransitionsWithAudit,
+  loadOrganizationCertificateRecords,
+  loadOrganizationFollowUpRecords,
+} from "@/lib/provider-operations";
+import { deriveStudentLifecycle } from "@/lib/student-lifecycle";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
-
-function pct(value: number, total: number) {
-  return total === 0 ? 0 : Math.round((value / total) * 100);
-}
-
-function initials(name: string | null, email: string) {
-  if (!name) return email.slice(0, 2).toUpperCase();
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
+import { BrandImagePanel } from "@/components/visual/brand-image-panel";
+import { brandImagery } from "@/lib/brand-imagery";
 
 type StudentPortalProps = {
   searchParams?: Record<string, string | string[] | undefined>;
 };
 
-export default async function StudentPortalPage({
-  searchParams,
-}: StudentPortalProps) {
+function docStatusLabel(status: string) {
+  switch (status) {
+    case "SCAN_PENDING":
+      return "OCR/scan started";
+    case "SCAN_OK":
+      return "Parsed - verification pending";
+    case "APPROVED":
+      return "Verified";
+    case "REJECTED":
+      return "Rejected";
+    case "SCAN_FAILED":
+      return "Action needed";
+    case "SUBMITTED":
+      return "Uploaded";
+    default:
+      return status;
+  }
+}
+
+function applicationStatusLabel(status: string) {
+  if (status === "not_started") return "Not started";
+  if (status === "draft") return "Draft saved";
+  if (status === "submitted") return "Submitted";
+  if (status === "under_review") return "Under review";
+  if (status === "accepted") return "Accepted";
+  if (status === "rejected") return "Rejected";
+  return status.replace("_", " ");
+}
+
+function placementStatusLabel(status: string) {
+  if (status === "unassigned") return "Placement not assigned yet";
+  if (status === "shortlisted") return "Under review";
+  if (status === "assigned") return "Assigned - awaiting programme start";
+  if (status === "active") return "Assigned and active";
+  if (status === "completed") return "Placement completed";
+  return status.replace("_", " ");
+}
+
+function isoDate(value: string | Date | null | undefined) {
+  if (!value) return "n/a";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "n/a";
+  return date.toISOString().slice(0, 10);
+}
+
+export default async function StudentPortalPage({ searchParams }: StudentPortalProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth");
 
+  const memberships = await prisma.membership.findMany({
+    where: { userId: user.id },
+    include: { organization: true },
+  });
+  const hasStudentMembership = memberships.some((m) => m.role === "STUDENT");
+  const nonStudentMembership = memberships.find((m) => m.role !== "STUDENT");
+  if (!hasStudentMembership && nonStudentMembership) {
+    redirect(`/org/${nonStudentMembership.organization.slug}/app/dashboard`);
+  }
+
   const context = await resolveStudentTenantContext(user.id);
-
-  const studentProfileDelegate = (
-    prisma as unknown as {
-      studentProfile?: {
-        findUnique: (args: { where: { userId: string } }) => Promise<{
-          skills: string[];
-          education: unknown;
-        } | null>;
-      };
-    }
-  ).studentProfile;
-
-  const [
-    profile,
-    studentProfile,
-    docs,
-    applications,
-    opportunities,
-    logbooks,
-    threads,
-    payslips,
-  ] = await Promise.all([
-    prisma.profile.findUnique({ where: { userId: user.id } }),
-    studentProfileDelegate?.findUnique({ where: { userId: user.id } }) ?? null,
-    prisma.document.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-    prisma.application.findMany({
-      where: { userId: user.id },
-      include: {
-        opportunity: { include: { organization: true } },
-        checklist: { include: { items: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-    prisma.opportunity.findMany({
-      where: { status: "PUBLISHED" },
-      include: { organization: true },
-      orderBy: { id: "desc" },
-      take: 8,
-    }),
-    prisma.logbookEntry.findMany({
-      where: { userId: user.id },
-      include: { approvals: { orderBy: { createdAt: "desc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
-      take: 12,
-    }),
-    prisma.chatThread.findMany({
-      where: { userId: user.id },
-      include: { messages: { orderBy: { createdAt: "desc" }, take: 3 } },
-      orderBy: { createdAt: "desc" },
-      take: 2,
-    }),
-    prisma.document.count({ where: { userId: user.id, type: "PAYSLIP" } }),
-  ]);
-
-  const hasCv = docs.some((doc) => doc.type === "CV");
-
-  const profileSignals = [
-    Boolean(user.name),
-    Boolean(profile?.phone),
-    Boolean(profile?.education || studentProfile?.education),
-    Boolean(profile?.emergencyContact),
-    hasCv,
-  ];
-  const employabilityScore = Math.round(
-    (profileSignals.filter(Boolean).length / profileSignals.length) * 100,
-  );
-
-  const now = new Date();
-  const expiringSoon = docs.filter(
-    (d) =>
-      d.expirationDate &&
-      d.expirationDate > now &&
-      d.expirationDate.getTime() - now.getTime() <= 90 * 24 * 60 * 60 * 1000,
-  ).length;
-  const expired = docs.filter(
-    (d) => d.expirationDate && d.expirationDate < now,
-  ).length;
-
-  const submitted = applications.filter((a) =>
-    ["APPLIED", "SUBMITTED", "DRAFT", "REVIEW"].includes(a.status),
-  ).length;
-  const shortlisted = applications.filter(
-    (a) => a.status === "SHORTLISTED",
-  ).length;
-  const accepted = applications.filter((a) => a.status === "ACCEPTED").length;
-
-  const latestChecklist = applications.find((app) => app.checklist)?.checklist;
-  const checklistItems = latestChecklist?.items ?? [];
-  const checklistDone = checklistItems.filter(
-    (item) => item.status === "DONE",
-  ).length;
-  const checklistProgress =
-    latestChecklist?.progress ?? pct(checklistDone, checklistItems.length);
-  const nextActions = checklistItems
-    .filter((item) => item.status !== "DONE")
-    .slice(0, 4);
-  const dueSoonItems = checklistItems.filter(
-    (item) =>
-      item.dueDate &&
-      item.status !== "DONE" &&
-      item.dueDate.getTime() - now.getTime() <= 5 * 24 * 60 * 60 * 1000,
-  ).length;
-
-  const approvedLogs = logbooks.filter(
-    (entry) => entry.approvals[0]?.status === "APPROVED",
-  ).length;
-
+  const programmeName =
+    context.type === "ENROLLED"
+      ? context.enrollment.programName
+      : context.type === "APPLICATION"
+        ? context.application.opportunityTitle
+        : null;
+  const docPlan = resolveProgrammeDocumentPlan(programmeName);
+  const enrollmentStatus = context.type === "ENROLLED" ? context.enrollment.status : null;
   const programWorkspaceUrl =
     context.type === "ENROLLED"
       ? `/org/${context.enrollment.organizationSlug}/student`
       : context.type === "APPLICATION"
         ? `/org/${context.application.organizationSlug}/student`
         : null;
+  const hasWorkspaceMembership =
+    context.type === "ENROLLED"
+      ? memberships.some(
+          (membership) =>
+            membership.organization.slug === context.enrollment.organizationSlug,
+        )
+      : context.type === "APPLICATION"
+        ? memberships.some(
+            (membership) =>
+              membership.organization.slug === context.application.organizationSlug,
+          )
+        : false;
+  const contextOrganizationId =
+    context.type === "ENROLLED" ? context.enrollment.organizationId : null;
+  const contextOrganizationSlug =
+    context.type === "ENROLLED"
+      ? context.enrollment.organizationSlug
+      : context.type === "APPLICATION"
+        ? context.application.organizationSlug
+        : null;
+  const contextEnrollmentId =
+    context.type === "ENROLLED" ? context.enrollment.id : null;
 
-  const recentMessages = threads
-    .flatMap((thread) => thread.messages)
-    .slice(0, 3);
+  if (contextOrganizationId) {
+    await applyCertificateReleaseTransitionsWithAudit({
+      organizationId: contextOrganizationId,
+      actorUserId: user.id,
+    });
+  }
+
+  const [
+    profile,
+    documents,
+    notifications,
+    threadCount,
+    recentThreads,
+    payslips,
+    latestApplication,
+    certificateRecords,
+    followUpRecords,
+  ] = await Promise.all([
+    prisma.profile.findUnique({ where: { userId: user.id } }),
+    prisma.document.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    prisma.chatThread.count({ where: { userId: user.id } }),
+    prisma.chatThread.findMany({
+      where: { userId: user.id },
+      include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+    prisma.document.count({ where: { userId: user.id, type: "PAYSLIP" } }),
+    prisma.application.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ submittedAt: "desc" }, { createdAt: "desc" }],
+      include: { opportunity: true },
+    }),
+    contextOrganizationId
+      ? loadOrganizationCertificateRecords(contextOrganizationId)
+      : Promise.resolve([]),
+    contextOrganizationId
+      ? loadOrganizationFollowUpRecords(contextOrganizationId)
+      : Promise.resolve([]),
+  ]);
+
+  const latestByType = new Map<string, (typeof documents)[number]>();
+  for (const doc of documents) {
+    if (!latestByType.has(doc.type)) latestByType.set(doc.type, doc);
+  }
+  const requiredDone = docPlan.required.filter((type) => latestByType.has(type)).length;
+  const requiredProgress = docPlan.required.length
+    ? Math.round((requiredDone / docPlan.required.length) * 100)
+    : 0;
+  const recentDocumentUpdates = documents.slice(0, 4);
 
   const showApplied = searchParams?.applied === "1";
-  const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
-  const showProfileUpdated = searchParams?.notice === "profile-updated";
-  const showCvUploaded = searchParams?.notice === "cv-uploaded";
-  const showMissingFile = searchParams?.error === "missing-file";
+  const showDraftSaved = searchParams?.notice === "draft-saved";
+  const showActiveEnrollmentError = searchParams?.error === "active-enrollment";
 
-  const profileChecklist = [
-    { label: "Upload CV", done: hasCv },
-    {
-      label: "Add education history",
-      done: Boolean(profile?.education || studentProfile?.education),
-    },
-    { label: "Add skills", done: Boolean(studentProfile?.skills.length) },
-    { label: "Verify contact details", done: Boolean(profile?.phone) },
-  ];
-
-  const topNotifications = [
-    recentMessages[0]
-      ? "New message from Program Manager"
-      : "No new messages yet",
-    dueSoonItems > 0
-      ? `Application deadline items due in ${Math.min(5, dueSoonItems)} day(s)`
-      : "No urgent checklist deadlines",
-  ];
+  const profileChecks = [Boolean(user.name), Boolean(profile?.phone), Boolean(profile?.education)];
+  const profileCompletion = Math.round(
+    (profileChecks.filter(Boolean).length / profileChecks.length) * 100,
+  );
+  const lifecycle = deriveStudentLifecycle({
+    hasUser: true,
+    hasProfileCore: profileCompletion >= 100,
+    docs: documents.map((d) => ({ status: d.status, type: d.type })),
+    requiredDocumentTypes: docPlan.required,
+    latestApplicationStatus: latestApplication?.status ?? null,
+    latestApplicationSubmittedAt: latestApplication?.submittedAt ?? null,
+    enrollmentStatus,
+  });
+  const documentsReady = requiredDone === docPlan.required.length && docPlan.required.length > 0;
+  const shouldShowApplyNow = ["not_started", "draft", "rejected"].includes(lifecycle.applicationStatus);
+  const canOpenProgramWorkspace =
+    hasWorkspaceMembership &&
+    ["assigned", "active", "completed"].includes(lifecycle.placementStatus);
+  const studentCertificateRecord = contextEnrollmentId
+    ? certificateRecords.find(
+        (record) =>
+          record.enrollmentId === contextEnrollmentId && record.userId === user.id,
+      ) ?? null
+    : null;
+  const studentFollowUps = contextEnrollmentId
+    ? followUpRecords
+        .filter((record) => record.enrollmentId === contextEnrollmentId)
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    : [];
+  const now = new Date();
+  const nextDueFollowUp =
+    studentFollowUps.find((record) => record.status === "DUE") ?? null;
+  const overdueFollowUpCount = studentFollowUps.filter(
+    (record) => record.status === "DUE" && new Date(record.dueDate) <= now,
+  ).length;
+  const completedFollowUpCount = studentFollowUps.filter(
+    (record) => record.status === "COMPLETED",
+  ).length;
+  const certificateDownloadHref =
+    contextOrganizationSlug &&
+    studentCertificateRecord?.documentId &&
+    studentCertificateRecord.status === "RELEASED"
+      ? `/api/org/${contextOrganizationSlug}/certificates/${studentCertificateRecord.documentId}/download`
+      : null;
+  const certificateStatusText =
+    context.type !== "ENROLLED"
+      ? "Certificate status starts after programme placement and completion."
+      : enrollmentStatus !== "COMPLETED"
+        ? "Not eligible yet. Certificate eligibility starts once programme status is completed."
+        : !studentCertificateRecord
+          ? "Eligible. Waiting for provider/coordinator issuance."
+          : studentCertificateRecord.status === "RELEASED"
+            ? "Certificate available now."
+            : `Issued with delayed release. Available from ${isoDate(studentCertificateRecord.releaseAt)}.`;
+  const followUpStatusText =
+    context.type !== "ENROLLED" || enrollmentStatus !== "COMPLETED"
+      ? "Follow-up tracking starts after programme completion."
+      : studentFollowUps.length === 0
+        ? "Follow-up schedule is not created yet."
+        : nextDueFollowUp
+          ? `Next follow-up: ${nextDueFollowUp.dueMonth}-month due ${isoDate(nextDueFollowUp.dueDate)}.`
+          : "All scheduled follow-ups are completed.";
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] space-y-6 rounded-3xl border border-slate-200/80 bg-slate-50 p-4 shadow-[0_12px_32px_rgba(15,23,42,0.08)] md:p-6">
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-sky-700">
-              Student Portal Dashboard
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold text-slate-900 md:text-3xl">
-              Welcome back, {user.name ?? "Student"} 👋
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Here’s an overview of your applications and progress.
-            </p>
-            <p className="mt-2 text-xs text-slate-500">
-              Progress summary: profile {checklistProgress}% complete ·
-              employability score {employabilityScore}%
-            </p>
-          </div>
-          <div className="w-full space-y-3 md:w-[370px]">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
-                {initials(user.name, user.email)}
-              </div>
+    <div className="if-auth-page min-h-[calc(100vh-7rem)] p-4 md:p-6">
+      <section className="if-panel p-4 md:p-5">
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="if-panel-muted space-y-4 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {user.name ?? "Student"}
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Student Dashboard
                 </p>
-                <p className="text-xs text-slate-500">{user.email}</p>
+                <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+                  Welcome, {user.name ?? "Student"}
+                </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  {["assigned", "active", "completed"].includes(lifecycle.placementStatus) && programmeName
+                    ? `Programme: ${programmeName}`
+                    : "Placement not assigned yet. Complete profile, documents, and application steps to move forward."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <form action="/api/auth/logout" method="post">
+                  <button className="if-btn if-btn-secondary if-btn-nav text-xs">
+                    Log out
+                  </button>
+                </form>
+                <Link href="/app/student/documents" className="if-btn if-btn-primary if-btn-nav text-xs">
+                  Upload documents
+                </Link>
+                <Link href="/app/whatsapp-sim" className="if-btn if-btn-secondary if-btn-nav text-xs">
+                  Ask for support
+                </Link>
+                <a
+                  href={canOpenProgramWorkspace ? (programWorkspaceUrl ?? "/app/student") : "/app/student"}
+                  className="if-btn if-btn-secondary if-btn-nav text-xs"
+                >
+                  Check programme status
+                </a>
               </div>
             </div>
-            <section className="rounded-xl border border-slate-200 bg-white p-3">
-              <h2 className="text-sm font-semibold text-slate-900">
-                Profile Actions (Quick Update)
-              </h2>
-              <p className="mt-1 text-xs text-slate-600">
-                Update profile items from here under your profile card.
-              </p>
-              <form
-                action="/api/student/profile-quick"
-                method="post"
-                className="mt-3 space-y-2"
-              >
-                <input
-                  name="phone"
-                  defaultValue={profile?.phone ?? ""}
-                  placeholder="Verify contact details (phone)"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="education"
-                  defaultValue={profile?.education ?? ""}
-                  placeholder="Add education history"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="skills"
-                  defaultValue={studentProfile?.skills.join(", ") ?? ""}
-                  placeholder="Add skills (comma separated)"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <input
-                  name="emergencyContact"
-                  defaultValue={profile?.emergencyContact ?? ""}
-                  placeholder="Emergency contact"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <button className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
-                  Save profile updates
-                </button>
-              </form>
 
-              <form
-                action="/api/student/upload-required"
-                method="post"
-                encType="multipart/form-data"
-                className="mt-3 space-y-2"
-              >
-                <p className="text-xs font-semibold text-slate-800">
-                  Upload CV
-                </p>
-                <input
-                  name="file"
-                  type="file"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"
-                />
-                <button className="w-full rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">
-                  Upload CV
-                </button>
-              </form>
-            </section>
+            {(showApplied || showAlreadyApplied || showDraftSaved || showActiveEnrollmentError) && (
+              <div className="grid gap-2">
+                {showApplied && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    Application submitted successfully.
+                  </div>
+                )}
+                {showDraftSaved && (
+                  <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                    Application draft saved. Submit when ready.
+                  </div>
+                )}
+                {showAlreadyApplied && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                    You already submitted this application.
+                  </div>
+                )}
+                {showActiveEnrollmentError && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    You already have an active enrollment in another organization.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          <BrandImagePanel
+            image={brandImagery.studentJourney}
+            eyebrow="Learner Journey"
+            title="Track your progress clearly"
+            description="Profile, documents, application, placement, and programme outcomes are separated so you always know your real status."
+            imageClassName="h-full min-h-[18rem]"
+          />
         </div>
       </section>
 
-      {(showApplied || showAlreadyApplied || showActiveEnrollmentError) && (
-        <div className="grid gap-2">
-          {showApplied && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Application submitted. Track progress below.
-            </div>
-          )}
-          {showAlreadyApplied && (
-            <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-              You already applied for this opportunity.
-            </div>
-          )}
-          {showActiveEnrollmentError && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              You already have an active enrollment in another organization.
-            </div>
-          )}
-          {showProfileUpdated && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Profile updated successfully.
-            </div>
-          )}
-          {showCvUploaded && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              CV uploaded successfully.
-            </div>
-          )}
-          {showMissingFile && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-              Please choose a CV file before uploading.
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Profile Completion – {checklistProgress}%
-            </h2>
-            <UserCircle2 className="h-5 w-5 text-slate-400" />
-          </div>
-          <div className="mt-3 h-2 rounded-full bg-slate-100">
-            <div
-              className="h-2 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500"
-              style={{ width: `${Math.min(100, checklistProgress)}%` }}
-            />
-          </div>
-          <div className="mt-4 space-y-2">
-            {profileChecklist.map((item) => (
-              <p
-                key={item.label}
-                className="flex items-center gap-2 text-sm text-slate-700"
-              >
-                <span
-                  className={`inline-block h-2.5 w-2.5 rounded-full ${item.done ? "bg-emerald-500" : "bg-amber-400"}`}
-                />
-                {item.label}
-              </p>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Your Next Steps
-          </h2>
-          <div className="mt-3 space-y-2 text-sm text-slate-700">
-            <p>✔ Complete profile</p>
-            <p>
-              {applications.length > 0 ? "✔" : "⬜"} Apply for first opportunity
-            </p>
-            <p>{docs.length > 0 ? "✔" : "⬜"} Upload documents</p>
-          </div>
-          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
-              Primary action
-            </p>
-            <p className="mt-1 text-sm text-indigo-900">
-              Find opportunities that match your profile and interests.
-            </p>
-            <Link
-              href="/opportunities"
-              className="mt-3 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-            >
-              Explore Marketplace <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/onboarding/profile"
-              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Edit Full Profile
-            </Link>
-          </div>
-        </section>
-      </div>
-
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <Briefcase className="h-4 w-4 text-sky-600" />
-            Applications
+            <FileText className="h-4 w-4 text-sky-600" />
+            Required docs
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {applications.length}
+          <p className="mt-2 text-3xl font-semibold text-slate-900">
+            {requiredDone}/{docPlan.required.length}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-amber-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <p className="text-xs text-slate-500">{requiredProgress}% complete</p>
+        </article>
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <Clock3 className="h-4 w-4 text-amber-600" />
-            In Pipeline
+            Profile completion
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {submitted + shortlisted}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-emerald-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            Accepted
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {accepted}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{profileCompletion}%</p>
+        </article>
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
             <MessageSquare className="h-4 w-4 text-violet-600" />
-            Messages
+            Discussions
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {recentMessages.length}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{threadCount}</p>
+        </article>
+        <article className="if-panel-muted rounded-xl p-4">
           <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <FolderOpen className="h-4 w-4 text-violet-600" />
-            Documents
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            Payments & Certificate
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {docs.length}
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{payslips}</p>
+          <p className="text-xs text-slate-500">Payslips on file</p>
+          <p className="mt-1 text-xs text-slate-600">{certificateStatusText}</p>
+        </article>
+        <article className="if-panel-muted rounded-xl p-4">
+          <p className="text-sm text-slate-600">Application</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">
+            {applicationStatusLabel(lifecycle.applicationStatus)}
           </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-violet-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <FileText className="h-4 w-4 text-violet-600" />
-            Concerns / Payslips
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {payslips}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-amber-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <Clock3 className="h-4 w-4 text-amber-600" />
-            Due Soon Actions
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {dueSoonItems}
-          </p>
-        </div>
-        <div className="rounded-2xl border-l-4 border-sky-500 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <User className="h-4 w-4 text-sky-600" />
-            Logbook Approvals
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {approvedLogs}/{logbooks.length}
-          </p>
-        </div>
+          {documentsReady && shouldShowApplyNow && (
+            <p className="mt-1 text-xs text-emerald-700">Documents ready - application not submitted</p>
+          )}
+        </article>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Application Journey
-          </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            {[
-              "Apply for opportunity",
-              "Application screening",
-              "Acceptance",
-              "Enrollment activated",
-            ].map((step, index) => (
-              <div
-                key={step}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
-              >
-                <p className="text-xs font-semibold text-indigo-600">
-                  Step {index + 1}
+      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="if-panel rounded-2xl p-5 xl:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900">Lifecycle status</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
+          </div>
+          {shouldShowApplyNow && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              <span>{documentsReady ? "Documents ready - submit your application to continue." : "Complete required documents, then submit your application."}</span>
+              <Link href="/opportunities" className="if-btn if-btn-primary px-3 py-1.5 text-xs">
+                Submit application
+              </Link>
+            </div>
+          )}
+          {lifecycle.applicationStatus === "under_review" && (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Application under review. You can still update documents if requested.
+            </p>
+          )}
+          {lifecycle.applicationStatus === "accepted" && (
+            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              Application accepted. Placement remains separate and appears only once assigned.
+            </p>
+          )}
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Certificate</p>
+              <p>{certificateStatusText}</p>
+              {studentCertificateRecord && (
+                <p className="mt-1 text-xs text-slate-600">
+                  Certificate number: {studentCertificateRecord.certificateNumber} - Issue date:{" "}
+                  {studentCertificateRecord.issueDate}
                 </p>
-                <p className="mt-1">{step}</p>
-              </div>
-            ))}
+              )}
+              {certificateDownloadHref && (
+                <a
+                  href={certificateDownloadHref}
+                  className="if-btn if-btn-secondary mt-2 inline-block px-2 py-1 text-xs"
+                >
+                  Download certificate
+                </a>
+              )}
+            </div>
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
+              <p className="font-medium text-slate-900">Post-training follow-up</p>
+              <p>{followUpStatusText}</p>
+              {studentFollowUps.length > 0 && (
+                <p className="mt-1 text-xs text-slate-600">
+                  Completed: {completedFollowUpCount}/{studentFollowUps.length} - Overdue:{" "}
+                  {overdueFollowUpCount}
+                </p>
+              )}
+            </div>
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+        <section className="if-panel rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Required document checklist</h2>
+            <Link
+              href="/app/student/documents"
+              className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
+            >
+              Go to Documents
+            </Link>
+          </div>
+          <div className="mt-3 grid gap-2">
+            {docPlan.required.map((type) => {
+              const current = latestByType.get(type);
+              return (
+                <div
+                  key={type}
+                  className="flex items-center justify-between if-panel-muted rounded-lg px-3 py-2 text-sm"
+                >
+                  <span className="font-medium text-slate-700">{getDocumentDisplayName(type)}</span>
+                  <span className="text-xs text-slate-600">
+                    {current ? docStatusLabel(current.status) : "Not uploaded"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="if-panel rounded-2xl p-5">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
             <Bell className="h-5 w-5 text-amber-500" />
-            Notifications
+            Recent updates
           </h2>
           <div className="mt-3 space-y-2 text-sm">
-            {topNotifications.map((note) => (
+            {recentDocumentUpdates.map((doc) => (
               <p
-                key={note}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700"
+                key={doc.id}
+                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
               >
-                {note}
+                {getDocumentDisplayName(doc.type)} - {docStatusLabel(doc.status)}
+                {doc.rejectionReason ? ` - ${doc.rejectionReason}` : ""}
+              </p>
+            ))}
+            {recentDocumentUpdates.length === 0 && (
+              <p className="if-panel-muted rounded-lg px-3 py-2 text-slate-600">
+                No document updates yet.
+              </p>
+            )}
+            {notifications.map((n) => (
+              <p
+                key={n.id}
+                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
+              >
+                {n.title}: {n.body}
               </p>
             ))}
           </div>
         </section>
       </div>
 
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Recommended Marketplace Opportunities
-          </h2>
+      <section className="if-panel rounded-2xl p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">Discussions & support</h2>
           <Link
-            href="/opportunities"
-            className="text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+            href="/app/whatsapp-sim"
+            className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
           >
-            View all
+            Open support
           </Link>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {opportunities.slice(0, 6).map((opp) => (
-            <article
-              key={opp.id}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition hover:-translate-y-0.5 hover:shadow-md"
+        <p className="mt-2 text-sm text-slate-600">
+          Use support for questions, status clarification, and help requests. Uploads happen in the Documents page.
+        </p>
+        <div className="mt-3 grid gap-2">
+          {recentThreads.length === 0 && (
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-600">
+              No discussion history yet.
+            </p>
+          )}
+          {recentThreads.map((thread) => (
+            <div
+              key={thread.id}
+              className="if-panel-muted rounded-lg px-3 py-2"
             >
-              <h3 className="font-semibold text-slate-900">{opp.title}</h3>
-              <p className="mt-1 text-xs text-slate-600">
-                {opp.type === "INTERNSHIP" ? "Internship" : "Skills Program"} ·{" "}
-                {opp.organization.name}
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {thread.title}
               </p>
-              <p className="mt-2 text-sm text-slate-600">
-                {opp.description.slice(0, 110)}
-                {opp.description.length > 110 ? "…" : ""}
+              <p className="mt-1 text-sm text-slate-700">
+                {thread.messages[0]?.body ?? "No messages in this thread yet."}
               </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Location: {opp.organization.name}
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Link
-                  href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  View Details
-                </Link>
-                <Link
-                  href={`/opportunities/${opp.organization.slug}/${opp.slug}`}
-                  className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-400"
-                >
-                  Apply
-                </Link>
-              </div>
-            </article>
+            </div>
           ))}
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Checklist Actions
-          </h2>
-          <div className="mt-3 space-y-2">
-            {nextActions.map((item) => (
-              <form
-                key={item.id}
-                action={`/api/checklist/items/${item.id}/complete`}
-                method="post"
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-              >
-                <span className="text-slate-700">
-                  {item.label} · {item.status}
-                </span>
-                <button className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-xs font-medium text-emerald-700">
-                  Complete
-                </button>
-              </form>
-            ))}
-            {nextActions.length === 0 && (
-              <p className="text-sm text-slate-500">
-                No pending checklist actions.
-              </p>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
-          <h2 className="text-lg font-semibold text-slate-900">Quick Access</h2>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+      <section className="if-panel rounded-2xl p-5">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/app/student/profile"
+            className="if-btn if-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-sm font-medium"
+          >
+            <UserCircle2 className="h-4 w-4" />
+            View profile
+          </Link>
+          <Link
+            href="/app/student/profile/edit"
+            className="if-btn if-btn-secondary px-3 py-2 text-sm font-medium"
+          >
+            Edit profile
+          </Link>
+          {(lifecycle.programmeStatus === "completed" || payslips > 0) && (
             <Link
               href="/app/whatsapp-sim"
-              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-violet-700"
+              className="if-btn if-btn-primary px-3 py-2 text-sm font-medium"
             >
-              Messages
+              Request certificate or payslip
             </Link>
-            <Link
-              href="/app/whatsapp-sim"
-              className="rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-2 text-fuchsia-700"
-            >
-              Concerns
-            </Link>
-            {programWorkspaceUrl && (
-              <Link
-                href={programWorkspaceUrl}
-                className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-indigo-700"
-              >
-                Program Workspace
-              </Link>
-            )}
-          </div>
-          <p className="mt-3 text-sm text-slate-600">
-            Compliance alerts: {expiringSoon + expired} · Active applications:{" "}
-            {applications.length}
-          </p>
-        </section>
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

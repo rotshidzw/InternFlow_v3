@@ -1,10 +1,19 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.CONTENT_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
+
   const form = await req.formData();
-  const org = await prisma.organization.findUnique({ where: { slug: params.orgSlug } });
-  if (!org) return NextResponse.redirect(new URL("/workspaces", req.url));
 
   const name = String(form.get("name") ?? "").trim();
   const description = String(form.get("description") ?? "Program setup").trim();
@@ -14,15 +23,26 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
 
   if (!name) return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/programs`, req.url));
 
-  await prisma.program.create({
+  const program = await prisma.program.create({
     data: {
-      organizationId: org.id,
+      organizationId: actor.actor.membership.organizationId,
       name,
       description,
       rulesJson: { setaCetaName },
       startDate,
       endDate
     }
+  });
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
+      action: "PROGRAM_CREATED",
+      entityType: "Program",
+      entityId: program.id,
+      metadata: { name, startDate, endDate },
+    },
   });
 
   return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/programs`, req.url));

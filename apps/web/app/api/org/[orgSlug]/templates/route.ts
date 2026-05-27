@@ -1,9 +1,17 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
-  const org = await prisma.organization.findUnique({ where: { slug: params.orgSlug } });
-  if (!org) return NextResponse.redirect(new URL("/workspaces", req.url));
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.CONTENT_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const form = await req.formData();
   const templateId = String(form.get("templateId") ?? "").trim();
@@ -24,18 +32,29 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
 
   if (templateId) {
     await prisma.settings.updateMany({
-      where: { id: templateId, organizationId: org.id, key: { startsWith: "template_" } },
+      where: { id: templateId, organizationId: actor.actor.membership.organizationId, key: { startsWith: "template_" } },
       data: { value }
     });
   } else {
     await prisma.settings.create({
       data: {
-        organizationId: org.id,
+        organizationId: actor.actor.membership.organizationId,
         key: `template_${Date.now()}`,
         value
       }
     });
   }
+
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
+      action: "TEMPLATE_SAVED",
+      entityType: "Settings",
+      entityId: templateId || "new_template",
+      metadata: { name, type, status },
+    },
+  });
 
   return NextResponse.redirect(new URL(`/org/${params.orgSlug}/app/templates`, req.url));
 }

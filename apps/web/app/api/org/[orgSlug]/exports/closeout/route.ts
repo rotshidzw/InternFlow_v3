@@ -1,71 +1,52 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest, NextResponse } from "next/server";
 import { generateCloseoutZipForJob } from "@/lib/closeout-export";
-
-async function getTenantContext(req: NextRequest, orgSlug: string) {
-  const email = req.cookies.get("if_user")?.value;
-  if (!email) return null;
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return null;
-
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: orgSlug } },
-    include: { organization: true }
-  });
-
-  if (!membership) return null;
-  return { user, membership };
-}
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(req: NextRequest, { params }: { params: { orgSlug: string } }) {
-  const context = await getTenantContext(req, params.orgSlug);
-  if (!context) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (!["COORDINATOR", "PROVIDER_ADMIN"].includes(context.membership.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.CONTENT_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const payload = await req.json();
   const programmeId = String(payload.programmeId ?? "");
   const exportTemplateId = String(payload.exportTemplateId ?? "");
 
   const programme = await prisma.program.findFirst({
-    where: { id: programmeId, organizationId: context.membership.organizationId }
+    where: { id: programmeId, organizationId: actor.actor.membership.organizationId },
   });
   if (!programme) return NextResponse.json({ error: "Programme not found" }, { status: 404 });
 
   const template = await prisma.exportTemplate.findFirst({
-    where: { id: exportTemplateId, tenantId: context.membership.organizationId }
+    where: { id: exportTemplateId, tenantId: actor.actor.membership.organizationId },
   });
   if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-  console.info("[closeout-export] creating job", {
-    tenantId: context.membership.organizationId,
-    programmeId,
-    exportTemplateId,
-    userId: context.user.id
-  });
-
   const job = await prisma.programmeExportJob.create({
     data: {
-      tenantId: context.membership.organizationId,
+      tenantId: actor.actor.membership.organizationId,
       programmeId: programme.id,
       exportTemplateId: template.id,
-      createdByUserId: context.user.id,
-      status: "QUEUED"
-    }
+      createdByUserId: actor.actor.user.id,
+      status: "QUEUED",
+    },
   });
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: context.membership.organizationId,
-      userId: context.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "EXPORT_JOB_CREATED",
       entityType: "ProgrammeExportJob",
       entityId: job.id,
-      metadata: { programmeId, exportTemplateId }
-    }
+      metadata: { programmeId, exportTemplateId },
+    },
   });
 
   try {
@@ -79,15 +60,18 @@ export async function POST(req: NextRequest, { params }: { params: { orgSlug: st
 }
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {
-  const context = await getTenantContext(req, params.orgSlug);
-  if (!context) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("jobId");
   if (jobId) {
     const job = await prisma.programmeExportJob.findFirst({
-      where: { id: jobId, tenantId: context.membership.organizationId },
-      include: { programme: true, exportTemplate: true }
+      where: { id: jobId, tenantId: actor.actor.membership.organizationId },
+      include: { programme: true, exportTemplate: true },
     });
 
     if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -95,10 +79,10 @@ export async function GET(req: NextRequest, { params }: { params: { orgSlug: str
   }
 
   const jobs = await prisma.programmeExportJob.findMany({
-    where: { tenantId: context.membership.organizationId },
+    where: { tenantId: actor.actor.membership.organizationId },
     include: { programme: true, exportTemplate: true },
     orderBy: { createdAt: "desc" },
-    take: 25
+    take: 25,
   });
 
   return NextResponse.json({ jobs });

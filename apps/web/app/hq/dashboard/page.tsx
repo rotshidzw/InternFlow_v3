@@ -18,10 +18,10 @@ function buildLastNDays(n: number) {
 }
 
 function activityTone(action: string) {
-  if (action.includes("RESOLVE") || action.includes("APPROVE")) return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (action.includes("ESCALATE") || action.includes("REJECT")) return "border-amber-200 bg-amber-50 text-amber-700";
-  if (action.includes("LOGIN") || action.includes("VIEWED")) return "border-blue-200 bg-blue-50 text-blue-700";
-  return "border-slate-200 bg-slate-50 text-slate-700";
+  if (action.includes("RESOLVE") || action.includes("APPROVE")) return "if-status if-status-success";
+  if (action.includes("ESCALATE") || action.includes("REJECT")) return "if-status if-status-warning";
+  if (action.includes("LOGIN") || action.includes("VIEWED")) return "if-status if-status-pending";
+  return "if-status if-status-draft";
 }
 
 function activityLabel(action: string) {
@@ -73,29 +73,46 @@ export default async function HQDashboardPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-semibold">HQ Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        {[['Total tenants', tenantCount], ['Pending approvals', pendingApprovals], ['Open tickets', openTickets], ['Meetings today', meetingsToday], ['Active users (7d)', users7d._sum.activeUsers ?? 0], ['Docs uploaded (7d)', docs7d._sum.docsUploaded ?? 0]].map(([label, value]) => (
-          <div key={label as string} className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur"><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold">{value as number}</p></div>
+    <div className="if-auth-page gap-5">
+      <section className="if-auth-hero">
+        <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">InternFlow HQ</p>
+        <h1 className="if-auth-title mt-2">Platform command center</h1>
+        <p className="if-auth-subtitle max-w-3xl">
+          Track tenant health, compliance throughput, support demand, and platform activity in one oversight workspace.
+        </p>
+      </section>
+
+      <div className="if-auth-metrics md:grid-cols-3 xl:grid-cols-6">
+        {[
+          ["Total tenants", tenantCount],
+          ["Pending approvals", pendingApprovals],
+          ["Open tickets", openTickets],
+          ["Meetings today", meetingsToday],
+          ["Active users (7d)", users7d._sum.activeUsers ?? 0],
+          ["Docs uploaded (7d)", docs7d._sum.docsUploaded ?? 0],
+        ].map(([label, value]) => (
+          <div key={label as string} className="if-auth-metric">
+            <p className="if-auth-metric-label">{label}</p>
+            <p className="if-auth-metric-value">{value as number}</p>
+          </div>
         ))}
       </div>
 
       <HQDashboardCharts activeSeries={activeSeries} docsSeries={docsSeries} />
 
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
+      <div className="if-panel rounded-2xl p-4">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Recent Activity</h2>
-          <p className="text-xs text-slate-500">Last {recent.length} platform actions</p>
+          <h2 className="text-lg font-semibold text-brand-text">Recent activity</h2>
+          <p className="text-xs text-brand-muted">Last {recent.length} platform actions</p>
         </div>
         <div className="mt-3 space-y-2 text-sm">
           {recent.map((a) => (
-            <div key={a.id} className="rounded-xl border border-slate-200 bg-white p-3">
+            <div key={a.id} className="if-panel-muted rounded-xl border border-brand-border/55 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={`rounded-full border px-2 py-1 text-xs font-medium ${activityTone(a.action)}`}>{activityLabel(a.action)}</span>
-                <span className="text-xs text-slate-500">{a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC</span>
+                <span className={activityTone(a.action)}>{activityLabel(a.action)}</span>
+                <span className="text-xs text-brand-muted">{a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC</span>
               </div>
-              <p className="mt-2 text-slate-700">{a.actor?.email ?? "System"}</p>
+              <p className="mt-2 text-brand-textSoft">{a.actor?.email ?? "System"}</p>
             </div>
           ))}
         </div>

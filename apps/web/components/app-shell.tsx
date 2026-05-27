@@ -1,65 +1,142 @@
-import Link from "next/link";
-import { PropsWithChildren } from "react";
+"use client";
 
-const roleNav: Record<string, { href: string; label: string }[]> = {
+import { type ComponentType, type PropsWithChildren } from "react";
+import { usePathname } from "next/navigation";
+import {
+  BadgeCheck,
+  BellRing,
+  Building2,
+  Compass,
+  GraduationCap,
+  LayoutGrid,
+  LifeBuoy,
+  MessageSquare,
+  ShieldAlert,
+  ShieldCheck,
+  UserCircle2,
+  Users,
+} from "lucide-react";
+
+type NavItem = { href: string; label: string; icon: ComponentType<{ className?: string }> };
+
+const roleNav: Record<string, NavItem[]> = {
   STUDENT: [
-    { href: "student", label: "Dashboard" },
-    { href: "student#applications", label: "Applications" },
-    { href: "student#checklist", label: "Checklist" },
-    { href: "student#documents", label: "Documents" },
-    { href: "student#growth", label: "Growth" }
+    { href: "student", label: "Dashboard", icon: LayoutGrid },
+    { href: "student/profile", label: "Profile", icon: UserCircle2 },
+    { href: "student/profile/edit", label: "Edit profile", icon: UserCircle2 },
+    { href: "student#overview", label: "Overview", icon: Compass },
+    { href: "student#applications", label: "Applications", icon: GraduationCap },
   ],
   COORDINATOR: [
-    { href: "coordinator", label: "Cohorts" },
-    { href: "coordinator", label: "Compliance" },
-    { href: "coordinator", label: "Approvals" }
+    { href: "coordinator", label: "Cohorts", icon: Users },
+    { href: "app/dashboard", label: "Operations", icon: LayoutGrid },
+    { href: "app/approvals", label: "Approvals", icon: ShieldAlert },
   ],
   PROVIDER_ADMIN: [
-    { href: "provider-admin", label: "Org Profile" },
-    { href: "provider-admin", label: "Opportunities" },
-    { href: "provider-admin", label: "People" }
+    { href: "provider-admin", label: "Org profile", icon: Building2 },
+    { href: "app/opportunities", label: "Opportunities", icon: GraduationCap },
+    { href: "app/staff", label: "People", icon: Users },
   ],
   SUPERVISOR: [
-    { href: "supervisor", label: "Learners" },
-    { href: "supervisor", label: "Logbooks" }
-  ]
+    { href: "supervisor", label: "Learners", icon: Users },
+    { href: "app/logbooks", label: "Logbooks", icon: BadgeCheck },
+    { href: "app/approvals", label: "Approvals", icon: ShieldCheck },
+  ],
 };
 
-export function AppShell({ children, orgSlug, role, orgName }: PropsWithChildren<{ orgSlug: string; role: string; orgName: string }>) {
+export function AppShell({
+  children,
+  orgSlug,
+  role,
+  orgName,
+}: PropsWithChildren<{ orgSlug: string; role: string; orgName: string }>) {
+  const pathname = usePathname() ?? "";
   const items = roleNav[role] ?? [];
+  const navItemClass = (href: string) => {
+    const sectionPath = href.split("#")[0];
+    const basePath = `/org/${orgSlug}/${sectionPath}`;
+    const isActive =
+      pathname === basePath || (sectionPath.length > 0 && pathname.startsWith(`${basePath}/`));
+
+    return `group flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm transition ${
+      isActive
+        ? "border-brand-accent/45 bg-brand-surface text-brand-text shadow-[0_0_0_1px_rgba(168,85,247,0.2)]"
+        : "border-transparent text-brand-muted hover:border-brand-border hover:bg-brand-surface hover:text-brand-text"
+    }`;
+  };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#0f766e_0%,#0f172a_40%,#020617_100%)] text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen bg-brand-bg text-brand-text">
+      <header className="sticky top-0 z-20 border-b border-brand-border/70 bg-[#090a1a]/88 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[76px] max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
-            <img src="/icon.svg" alt="InternFlow" className="h-8 w-8 rounded-lg" />
+            <img
+              src="/internflow-logo.png"
+              alt="InternFlow"
+              className="h-8 w-auto drop-shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+            />
             <div>
-              <p className="text-sm font-semibold">{orgName}</p>
-              <p className="text-xs text-emerald-300">Workspace · {role.replace("_", " ")}</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">InternFlow workspace</p>
+              <p className="text-sm font-semibold text-brand-text">{orgName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            {role === "SYSTEM_ADMIN" && <Link href="/hq/dashboard">HQ</Link>}
-            {role !== "SYSTEM_ADMIN" && <Link href="/app/whatsapp-sim">WhatsApp</Link>}
-            {role !== "STUDENT" && <Link href="/workspaces">Switch workspace</Link>}
-            <span className="rounded-full border border-white/20 px-3 py-1 text-xs">{orgSlug}</span>
+          <div className="flex items-center gap-2 text-xs text-brand-muted">
+            <span className="if-badge">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {role.replace("_", " ")}
+            </span>
+            <span className="if-badge">{orgSlug}</span>
+            <form action="/api/auth/logout" method="post">
+              <button className="if-btn if-btn-secondary if-btn-nav text-xs">
+                Log out
+              </button>
+            </form>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[240px_1fr]">
-        <aside className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-slate-300">Navigation</p>
-          <nav className="space-y-2 text-sm">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:grid-cols-[272px_1fr]">
+        <aside className="if-panel p-4">
+          <p className="mb-3 text-xs uppercase tracking-[0.15em] text-brand-muted">
+            Role workspace
+          </p>
+          <nav className="space-y-1.5 text-sm">
             {items.map((item) => (
-              <Link key={item.label} href={`/org/${orgSlug}/${item.href}`} className="block rounded-lg border border-white/10 px-3 py-2 hover:bg-white/10">
-                {item.label}
-              </Link>
+              <a
+                key={item.label}
+                href={`/org/${orgSlug}/${item.href}`}
+                className={navItemClass(item.href)}
+              >
+                <item.icon className="h-4 w-4 shrink-0 text-brand-muted transition group-hover:text-brand-accentStrong" />
+                <span>{item.label}</span>
+              </a>
             ))}
           </nav>
+
+          <div className="if-panel-muted mt-4 space-y-2 p-3 text-xs text-brand-muted">
+            <p className="flex items-center gap-1.5 font-semibold text-brand-text">
+              <Compass className="h-3.5 w-3.5 text-brand-accentStrong" />
+              Quick actions
+            </p>
+            <a href="/app/student" className="flex items-center gap-1.5 hover:text-brand-text">
+              <Building2 className="h-3.5 w-3.5" /> Global student portal
+            </a>
+            <a href="/app/whatsapp-sim" className="flex items-center gap-1.5 hover:text-brand-text">
+              <MessageSquare className="h-3.5 w-3.5" /> Messages
+            </a>
+            <a href="/app/student/documents" className="flex items-center gap-1.5 hover:text-brand-text">
+              <Building2 className="h-3.5 w-3.5" /> Upload documents
+            </a>
+            <a href="/app/tickets" className="flex items-center gap-1.5 hover:text-brand-text">
+              <LifeBuoy className="h-3.5 w-3.5" /> Support tickets
+            </a>
+            <p className="flex items-center gap-1.5">
+              <BellRing className="h-3.5 w-3.5 text-brand-accentStrong" /> Stay on checklist deadlines
+            </p>
+          </div>
         </aside>
-        <main className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">{children}</main>
+
+        <main className="if-panel p-5 md:p-6">{children}</main>
       </div>
     </div>
   );
