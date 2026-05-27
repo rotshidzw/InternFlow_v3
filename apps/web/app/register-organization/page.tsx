@@ -113,7 +113,7 @@ export default function RegisterOrganizationPage() {
             </div>
           </div>
           <BrandImagePanel
-            image={brandImagery.providerControlRoom}
+            image={brandImagery.onboardingCollaboration}
             eyebrow="Onboarding Path"
             title="Professional setup, not a generic signup"
             description="We align programme structure, governance expectations, and team roles before platform activation."

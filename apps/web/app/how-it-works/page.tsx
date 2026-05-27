@@ -57,7 +57,7 @@ export default function HowItWorksPage() {
             />
           </div>
           <BrandImagePanel
-            image={brandImagery.providerControlRoom}
+            image={brandImagery.implementationLifecycle}
             eyebrow="Operational Flow"
             title="Designed for repeatable execution"
             description="Each stage of programme delivery maps to explicit controls, responsibilities, and evidence checkpoints."

@@ -5,8 +5,6 @@ import { SectionHeading } from "@/components/marketing/section-heading";
 import { BrandImagePanel } from "@/components/visual/brand-image-panel";
 import { brandImagery } from "@/lib/brand-imagery";
 
-const founderImagePath = "/founder-placeholder.svg";
-
 const principles = [
   "Operational clarity over fragmented administration",
   "Evidence-first workflow design for audit confidence",
@@ -89,8 +87,8 @@ export default function AboutPage() {
         <section className="if-panel grid gap-6 p-6 md:grid-cols-[120px_1fr] md:items-center">
           <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
             <img
-              src={founderImagePath}
-              alt="Founder placeholder"
+              src={brandImagery.founderPortrait.src}
+              alt={brandImagery.founderPortrait.alt}
               className="h-full w-full object-cover"
             />
           </div>

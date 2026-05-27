@@ -5,31 +5,67 @@ export type BrandImageSpec = {
 
 export const brandImagery = {
   heroOps: {
-    src: "https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1600&q=80",
-    alt: "Engineers managing enterprise systems infrastructure with data visualizations",
+    src: "/brand/internflow/hero-programme-workflow-operations.png",
+    alt: "Programme workflow operations visual linking intake, evidence, and compliance outputs",
   },
   workflowIntelligence: {
-    src: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1600&q=80",
-    alt: "Cybersecurity operations screen with workflow and monitoring overlays",
+    src: "/brand/internflow/operations-intelligence-command-center.png",
+    alt: "Operations intelligence command center dashboard with learner, payment, and compliance telemetry",
   },
   complianceEvidence: {
-    src: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1600&q=80",
-    alt: "Technical workstation displaying compliance and workflow documentation systems",
+    src: "/brand/internflow/evidence-documents-cloud-vault.png",
+    alt: "Evidence and document vault visual with OCR, policy checks, versioning, and audit trail",
   },
   modernTeam: {
-    src: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1600&q=80",
-    alt: "Professional operations team collaborating around enterprise dashboards",
+    src: "/brand/internflow/facilitator-learner-group-session.png",
+    alt: "Facilitator-led learner group session in a professional programme delivery environment",
   },
   studentJourney: {
-    src: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80",
-    alt: "Learners collaborating in a digital-first training environment",
+    src: "/brand/internflow/student-journey-interest-to-impact.png",
+    alt: "Student lifecycle progression visual from sign up through placement and active learning",
   },
   providerControlRoom: {
-    src: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80",
-    alt: "Enterprise operations dashboard on multiple displays in a control room setup",
+    src: "/brand/internflow/provider-programme-operations-dashboard.png",
+    alt: "Provider operations dashboard covering attendance, registers, sessions, and cohort progress",
   },
   trustAndGovernance: {
-    src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80",
-    alt: "Global digital network visualizing governance, trust, and secure operations",
+    src: "/brand/internflow/compliance-audit-readiness-controls.png",
+    alt: "Compliance and audit readiness control view showing validation gates and evidence timeline",
+  },
+  roleBasedOperations: {
+    src: "/brand/internflow/unified-role-dashboard-overview.png",
+    alt: "Unified platform view showing student, coordinator, provider, finance, facilitator, and auditor perspectives",
+  },
+  implementationLifecycle: {
+    src: "/brand/internflow/lifecycle-platform-overview.png",
+    alt: "End-to-end platform lifecycle map across onboarding, payments, certificates, and audit readiness",
+  },
+  supportAssistant: {
+    src: "/brand/internflow/omnichannel-support-assistant.png",
+    alt: "Omnichannel support assistant visual connecting chat, email, WhatsApp, and ticket routing",
+  },
+  financeControls: {
+    src: "/brand/internflow/finance-stipend-payroll-workflow.png",
+    alt: "Operational stipend and payroll workflow with payment readiness, payslip generation, and proof controls",
+  },
+  postTrainingOutcomes: {
+    src: "/brand/internflow/post-training-outcomes-lifecycle.png",
+    alt: "Post-training outcomes visual covering certificate release milestones and long-term impact tracking",
+  },
+  onboardingCollaboration: {
+    src: "/brand/internflow/organization-onboarding-collaboration.png",
+    alt: "Organization onboarding collaboration scene with team members aligning setup details",
+  },
+  mentorshipSupport: {
+    src: "/brand/internflow/mentor-learner-guidance-session.png",
+    alt: "Mentorship support conversation between learner and facilitator reviewing onboarding documents",
+  },
+  founderPortrait: {
+    src: "/brand/internflow/founder-professional-portrait.png",
+    alt: "Founder portrait of Mavhungu Rotshidzwa Chester",
+  },
+  manualAdminBurden: {
+    src: "/brand/internflow/manual-admin-paperwork-burden.png",
+    alt: "Manual paperwork overload representing fragmented administrative operations",
   },
 } as const satisfies Record<string, BrandImageSpec>;

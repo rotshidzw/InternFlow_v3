@@ -125,7 +125,7 @@ export default function ContactPage() {
             </div>
           </div>
           <BrandImagePanel
-            image={brandImagery.workflowIntelligence}
+            image={brandImagery.supportAssistant}
             eyebrow="Discovery First"
             title="Demo sessions are tailored to your workflow"
             description="We align on programme operations, compliance expectations, and team structure before opening demo paths."

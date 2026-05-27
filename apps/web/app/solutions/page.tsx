@@ -53,7 +53,7 @@ export default function SolutionsPage() {
             />
           </div>
           <BrandImagePanel
-            image={brandImagery.workflowIntelligence}
+            image={brandImagery.roleBasedOperations}
             eyebrow="Systems Coordination"
             title="One platform for each operational function"
             description="Delivery teams gain consistent controls and clear accountability across monthly programme execution."

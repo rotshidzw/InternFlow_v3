@@ -59,7 +59,7 @@ export default function PricingPage() {
             />
           </div>
           <BrandImagePanel
-            image={brandImagery.providerControlRoom}
+            image={brandImagery.financeControls}
             eyebrow="Commercial Alignment"
             title="Pricing built around operational complexity"
             description="Engagement models are designed for practical rollout, governance confidence, and delivery maturity."

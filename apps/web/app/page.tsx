@@ -354,7 +354,7 @@ export default function HomePage() {
               </div>
             </div>
             <BrandImagePanel
-              image={brandImagery.modernTeam}
+              image={brandImagery.mentorshipSupport}
               eyebrow="Contact Path"
               title="Discovery conversation before demo access"
               description="We tailor the walkthrough based on your learner volume, evidence obligations, and operating model."
