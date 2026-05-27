@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    command: ["pnpm", "--filter", "@internflow/db", "db:migrate:deploy"]
+    profiles: ["migrate"]
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["cheap"]
+    environment:
+      POSTGRES_USER: internflow
+      POSTGRES_PASSWORD: internflow
+      POSTGRES_DB: internflow
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+
+volumes:
+  pg_data:

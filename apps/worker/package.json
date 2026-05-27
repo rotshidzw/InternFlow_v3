@@ -1,0 +1,21 @@
+{
+  "name": "@internflow/worker",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@internflow/db": "0.0.1",
+    "bullmq": "^5.12.15",
+    "ioredis": "^5.4.1",
+    "@internflow/shared": "0.0.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

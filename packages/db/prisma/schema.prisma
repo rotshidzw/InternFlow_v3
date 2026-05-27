@@ -1,0 +1,657 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  SUPERVISOR
+  COORDINATOR
+  PROVIDER_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum PlatformRole {
+  PLATFORM_ADMIN
+  PLATFORM_SALES
+  PLATFORM_SUPPORT
+  PLATFORM_OPS
+  PLATFORM_FINANCE
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  GENERAL
+  BILLING
+  TECHNICAL
+  ONBOARDING
+}
+
+enum AuditScope {
+  PLATFORM
+  ORG
+}
+
+enum OrganizationType {
+  COMPANY
+  TRAINING_PROVIDER
+  NGO
+  UNIVERSITY
+  GOVERNMENT_PROGRAM
+}
+
+enum OrganizationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocumentReviewStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum DocStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SCAN_PENDING
+  SCAN_OK
+  SCAN_FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  APPLIED
+  SUBMITTED
+  REVIEW
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+}
+
+enum OpportunityType {
+  INTERNSHIP
+  LEARNERSHIP
+  MENTORSHIP
+  SKILLS_PROGRAM
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum InviteTokenRole {
+  LEARNER
+}
+
+enum OpportunityVisibility {
+  PUBLIC
+  TENANT_ONLY
+  PROGRAMME_ONLY
+}
+
+enum ProgrammeExportStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String?
+  role           Role
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  memberships    Membership[]
+  profile        Profile?
+  applications   Application[]
+  enrollments    Enrollment[]
+  documents      Document[]
+  logbookEntries LogbookEntry[]
+  tickets        Ticket[]
+  chatMessages   ChatMessage[]
+  auditLogs      AuditLog[]
+  createdOrgs    Organization[] @relation("OrganizationCreator")
+  platformMemberships PlatformMembership[]
+  createdTickets Ticket[] @relation("TicketCreator")
+  auditActorLogs AuditLog[] @relation("AuditActor")
+  meetingsOwned Meeting[] @relation("MeetingOwner")
+  studentProfile StudentProfile?
+  createdInviteTokens InviteToken[] @relation("InviteTokenCreator")
+  opportunityPosts OpportunityPost[]
+  auditEvents AuditEvent[]
+  interests Interest[]
+  createdExportJobs ProgrammeExportJob[] @relation("ProgrammeExportJobCreator")
+}
+
+model Organization {
+  id               String                @id @default(cuid())
+  name             String
+  slug             String                @unique
+  type             OrganizationType      @default(COMPANY)
+  status           OrganizationStatus    @default(PENDING_REVIEW)
+  country          String?
+  province         String?
+  contactPerson    String?
+  rejectionReason  String?
+  createdBy        String?
+  createdAt        DateTime              @default(now())
+  memberships      Membership[]
+  invites          Invite[]
+  programs         Program[]
+  cohorts          Cohort[]
+  settings         Settings[]
+  opportunities    Opportunity[]
+  enrollments      Enrollment[]
+  orgDocuments     OrganizationDocument[]
+  verifications    OrganizationVerification[]
+  meetings         Meeting[]
+  tickets          Ticket[]
+  usageMetrics     UsageMetricsDaily[]
+  auditLogs        AuditLog[]
+  creator          User?                 @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  inviteTokens     InviteToken[]
+  opportunityPosts OpportunityPost[]
+  auditEvents      AuditEvent[]
+  exportTemplates  ExportTemplate[]
+  exportJobs       ProgrammeExportJob[]
+}
+
+model OrganizationDocument {
+  id          String                @id @default(cuid())
+  orgId       String
+  category    String
+  fileKey     String
+  status      DocumentReviewStatus  @default(PENDING_REVIEW)
+  notes       String?
+  createdAt   DateTime              @default(now())
+  organization Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+
+model PlatformMembership {
+  id        String       @id @default(cuid())
+  userId    String
+  role      PlatformRole
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model OrganizationVerification {
+  id          String            @id @default(cuid())
+  orgId        String
+  submittedBy  String?
+  docsJson     Json
+  status       VerificationStatus @default(PENDING)
+  reason       String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status])
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  title       String
+  orgId       String
+  startAt     DateTime
+  endAt       DateTime
+  meetingUrl  String?
+  notes       String?
+  agenda      String?
+  status      MeetingStatus @default(SCHEDULED)
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  owner       User?        @relation("MeetingOwner", fields: [createdBy], references: [id], onDelete: SetNull)
+}
+
+model UsageMetricsDaily {
+  id                 String   @id @default(cuid())
+  orgId              String
+  date               DateTime
+  activeUsers        Int      @default(0)
+  logbooksSubmitted  Int      @default(0)
+  docsUploaded       Int      @default(0)
+  applicationsCreated Int     @default(0)
+  createdAt          DateTime @default(now())
+  organization       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, date])
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Invite {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  role           Role
+  token          String       @unique
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  phone            String?
+  education        String?
+  bankingDetails   String?
+  emergencyContact String?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Program {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  description    String
+  rulesJson      Json?
+  startDate      DateTime
+  endDate        DateTime
+  opportunities  Opportunity[]
+  enrollments    Enrollment[]
+  templates      ChecklistTemplate[]
+  cohorts        Cohort[]
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviteTokens   InviteToken[]
+  opportunityPosts OpportunityPost[]
+  exportJobs     ProgrammeExportJob[]
+}
+
+model Opportunity {
+  id               String            @id @default(cuid())
+  organizationId   String
+  programId        String?
+  type             OpportunityType   @default(INTERNSHIP)
+  title            String
+  slug             String
+  description      String
+  requirementsJson Json?
+  capacity         Int               @default(0)
+  status           OpportunityStatus @default(DRAFT)
+  applications     Application[]
+  program          Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
+}
+
+model Application {
+  id            String             @id @default(cuid())
+  userId         String
+  opportunityId  String
+  status         ApplicationStatus @default(DRAFT)
+  notes          String?
+  submittedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  checklist      ChecklistInstance?
+}
+
+model Cohort {
+  id             String       @id @default(cuid())
+  organizationId String
+  programId      String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  enrollments    Enrollment[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  program        Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+}
+
+model Enrollment {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  programId      String
+  cohortId       String?
+  status         EnrollmentStatus @default(PENDING)
+  stipendPaid    Boolean          @default(false)
+  stipendMonth   String?
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program        Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  cohort         Cohort?          @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistTemplate {
+  id        String                  @id @default(cuid())
+  programId String
+  name      String
+  items     ChecklistItemTemplate[]
+  program   Program                 @relation(fields: [programId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistItemTemplate {
+  id          String            @id @default(cuid())
+  templateId   String
+  label        String
+  required     Boolean           @default(true)
+  expiryDays   Int?
+  template     ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistInstance {
+  id            String                  @id @default(cuid())
+  applicationId String                  @unique
+  progress      Int                     @default(0)
+  items         ChecklistItemInstance[]
+  application   Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model ChecklistItemInstance {
+  id            String            @id @default(cuid())
+  checklistId   String
+  label         String
+  status        String            @default("PENDING")
+  actionType    String?
+  completedAt   DateTime?
+  dueDate       DateTime?
+  checklist     ChecklistInstance @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id               String            @id @default(cuid())
+  userId           String
+  organizationId   String?
+  type             String
+  status           DocStatus         @default(SUBMITTED)
+  rejectionReason  String?
+  selfCertifiedAt  DateTime?
+  expirationDate   DateTime?
+  createdAt        DateTime          @default(now())
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions         DocumentVersion[]
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  storageKey  String
+  mimeType    String
+  sizeBytes   Int
+  createdAt   DateTime @default(now())
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model GeneratedDocument {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  storageKey String
+  createdAt  DateTime @default(now())
+}
+
+model LogbookEntry {
+  id          String            @id @default(cuid())
+  userId      String
+  weekStart   DateTime
+  summary     String
+  evidenceKey String?
+  createdAt   DateTime          @default(now())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvals   LogbookApproval[]
+}
+
+model LogbookApproval {
+  id          String      @id @default(cuid())
+  entryId      String
+  reviewerId   String
+  status       String
+  comment      String?
+  createdAt    DateTime   @default(now())
+  entry        LogbookEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Ticket {
+  id              String        @id @default(cuid())
+  userId          String
+  orgId           String?
+  createdByUserId String?
+  title           String
+  summary         String
+  status          TicketStatus  @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  category        TicketCategory @default(GENERAL)
+  createdAt       DateTime      @default(now())
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdBy       User?         @relation("TicketCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  organization    Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  events          TicketEvent[]
+}
+
+model TicketEvent {
+  id        String   @id @default(cuid())
+  ticketId  String
+  actorId   String?
+  type      String
+  payload   Json?
+  event     String
+  createdAt DateTime @default(now())
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model ChatThread {
+  id        String        @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime      @default(now())
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  senderId  String?
+  role      String
+  body      String
+  createdAt DateTime @default(now())
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  actorUserId String?
+  scope       AuditScope @default(ORG)
+  orgId       String?
+  action      String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actor       User?     @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+}
+
+model InviteToken {
+  id              String          @id @default(cuid())
+  token           String          @unique
+  tenantId        String
+  programmeId     String?
+  role            InviteTokenRole @default(LEARNER)
+  expiresAt       DateTime
+  maxUses         Int             @default(1)
+  usedCount       Int             @default(0)
+  createdByUserId String
+  createdAt       DateTime        @default(now())
+  tenant          Organization    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programme       Program?        @relation(fields: [programmeId], references: [id], onDelete: SetNull)
+  creator         User            @relation("InviteTokenCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, expiresAt])
+}
+
+model StudentProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  fullName       String
+  phone          String?
+  location       String?
+  bio            String?
+  skills         String[] @default([])
+  education      Json?
+  experience     Json?
+  isDiscoverable Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isDiscoverable])
+}
+
+model OpportunityPost {
+  id              String                @id @default(cuid())
+  tenantId        String
+  title           String
+  description     String
+  visibility      OpportunityVisibility @default(TENANT_ONLY)
+  programmeId     String?
+  closesAt        DateTime?
+  createdByUserId String
+  createdAt       DateTime              @default(now())
+  tenant          Organization          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programme       Program?              @relation(fields: [programmeId], references: [id], onDelete: SetNull)
+  creator         User                  @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  interests       Interest[]
+
+  @@index([visibility, closesAt])
+}
+
+model Interest {
+  id        String          @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime        @default(now())
+  post      OpportunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model AuditEvent {
+  id         String       @id @default(cuid())
+  tenantId   String?
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime     @default(now())
+  tenant     Organization? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, action])
+  @@index([userId, createdAt])
+}
+
+model ExportTemplate {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  description      String?
+  structureJson    Json
+  includeRulesJson Json
+  createdAt        DateTime @default(now())
+  tenant           Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs             ProgrammeExportJob[]
+
+  @@index([tenantId, name])
+}
+
+model ProgrammeExportJob {
+  id               String               @id @default(cuid())
+  tenantId         String
+  programmeId      String
+  exportTemplateId String
+  status           ProgrammeExportStatus @default(QUEUED)
+  zipObsKey        String?
+  reportPdfObsKey  String?
+  createdByUserId  String
+  createdAt        DateTime             @default(now())
+  finishedAt       DateTime?
+  errorMessage     String?
+  tenant           Organization         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programme        Program              @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  exportTemplate   ExportTemplate       @relation(fields: [exportTemplateId], references: [id], onDelete: Cascade)
+  createdBy        User                 @relation("ProgrammeExportJobCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([programmeId, createdAt])
+}
+
+model Settings {
+  id             String       @id @default(cuid())
+  organizationId String?
+  key            String
+  value          Json
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
