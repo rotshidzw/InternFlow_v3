@@ -1,0 +1,20 @@
+  ▲ Next.js 14.2.14
+  - Local:        http://localhost:3010
+  - Experiments (use with caution):
+    · typedRoutes
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling /api/public/contact ...
+ ✓ Compiled /api/public/contact in 936ms (124 modules)
+[DEV MAIL] to=hello@internflow.co.za,sales@internflow.com,admin@internflow.com,support@internflow.com,ops@internflow.com subject=[InternFlow] Website demo request (cmpm7rdhm0003t945q5siwf6d) message=A new public contact request has been submitted.
+Ticket ID: cmpm7rdhm0003t945q5siwf6d
+Intent: demo
+Name: Codex QA
+Email: qa-contact2@example.com
+Topic: QA
+Source: local-verification
+Message:
+Second verification of public contact endpoint.
+ POST /api/public/contact 200 in 69008ms

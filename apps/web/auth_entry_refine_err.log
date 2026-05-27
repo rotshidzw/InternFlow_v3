@@ -1,0 +1,9 @@
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: Unable to snapshot resolve dependencies
+[mailer] Failed to send OTP email to qa-student-signup@example.com Error: queryA ETIMEOUT localhost
+    at QueryReqWrap.onresolve [as oncomplete] (node:internal/dns/callback_resolver:45:19) {
+  errno: undefined,
+  code: 'EDNS',
+  syscall: 'queryA',
+  hostname: 'localhost',
+  command: 'CONN'
+}

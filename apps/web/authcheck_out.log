@@ -1,0 +1,11 @@
+  ▲ Next.js 14.2.14
+  - Local:        http://localhost:3010
+  - Experiments (use with caution):
+    · typedRoutes
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 6s
+ ○ Compiling /auth ...
+ ✓ Compiled /auth in 4.6s (1216 modules)
+ GET /auth 200 in 4909ms

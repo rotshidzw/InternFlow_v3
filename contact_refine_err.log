@@ -1,0 +1,4 @@
+Error: > Couldn't find any `pages` or `app` directory. Please create one under the project root
+    at findPagesDir (C:\Users\user\Downloads\Internflow\InternFlow_v3\node_modules\next\dist\lib\find-pages-dir.js:42:15)
+    at initialize (C:\Users\user\Downloads\Internflow\InternFlow_v3\node_modules\next\dist\server\lib\router-server.js:76:69)
+    at async Server.<anonymous> (C:\Users\user\Downloads\Internflow\InternFlow_v3\node_modules\next\dist\server\lib\start-server.js:249:36)

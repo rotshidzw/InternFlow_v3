@@ -1,0 +1,11 @@
+  ▲ Next.js 14.2.14
+  - Local:        http://localhost:3010
+  - Experiments (use with caution):
+    · typedRoutes
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 2.6s
+ ○ Compiling /api/public/contact ...
+ ✓ Compiled /api/public/contact in 1113ms (124 modules)
+ POST /api/public/contact 200 in 13811ms

@@ -1,0 +1,15 @@
+  ▲ Next.js 14.2.14
+  - Local:        http://localhost:3010
+  - Experiments (use with caution):
+    · typedRoutes
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 3.3s
+ ○ Compiling /api/auth/student-signup ...
+ ✓ Compiled /api/auth/student-signup in 1342ms (124 modules)
+ POST /api/auth/student-signup 200 in 15067ms
+ POST /api/auth/student-signup 409 in 195ms
+ ○ Compiling /api/auth/otp ...
+ ✓ Compiled /api/auth/otp in 2.5s (127 modules)
+ POST /api/auth/otp 200 in 17577ms

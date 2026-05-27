@@ -1,0 +1,24 @@
+
+> @internflow/web@0.0.1 dev
+> next dev --port 3010
+
+  ▲ Next.js 14.2.14
+  - Local:        http://localhost:3010
+  - Experiments (use with caution):
+    · typedRoutes
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 4.7s (1308 modules)
+ GET / 200 in 4983ms
+ ○ Compiling /contact ...
+ ✓ Compiled /contact in 1996ms (1302 modules)
+ GET /contact 200 in 2097ms
+ GET /contact?intent=demo 200 in 90ms
+ ✓ Compiled /about in 384ms (1313 modules)
+ GET /about 200 in 534ms
+ ✓ Compiled /security in 288ms (1315 modules)
+ GET /security 200 in 372ms
+ GET / 200 in 78ms
