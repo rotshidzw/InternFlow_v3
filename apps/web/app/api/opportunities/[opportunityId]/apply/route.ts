@@ -171,6 +171,7 @@ export async function POST(
         await prisma.document.create({
           data: {
             userId: actor.id,
+            organizationId: opportunity.organizationId,
             type: "APPLICATION_SUPPORTING_DOC",
             status: "SUBMITTED",
             versions: {

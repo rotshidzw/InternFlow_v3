@@ -1,8 +1,9 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { requirePlatformApiUserWithRole } from "@/lib/hq/api-auth";
+import type { Prisma } from "@prisma/client";
 
-async function upsertGlobalSetting(key: string, value: unknown) {
+async function upsertGlobalSetting(key: string, value: Prisma.InputJsonValue) {
   const existing = await prisma.settings.findFirst({ where: { organizationId: null, key } });
   if (existing) {
     await prisma.settings.update({ where: { id: existing.id }, data: { value } });

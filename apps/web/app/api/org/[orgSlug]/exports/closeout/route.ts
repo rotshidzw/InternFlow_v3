@@ -1,11 +1,16 @@
 import { prisma } from "@internflow/db/src";
 import { NextRequest, NextResponse } from "next/server";
-import { generateCloseoutZipForJob } from "@/lib/closeout-export";
+import { Queue } from "bullmq";
+import { createRedisClient } from "@/lib/redis-queue";
 import {
   TENANT_ROLE_GROUPS,
   resolveTenantApiActor,
   tenantApiAuthErrorResponse,
 } from "@/lib/tenant-api-auth";
+
+const closeoutQueue = new Queue("programme-closeout-export", {
+  connection: createRedisClient("api-closeout-export"),
+});
 
 export async function POST(req: NextRequest, { params }: { params: { orgSlug: string } }) {
   const actor = await resolveTenantApiActor({
@@ -50,13 +55,27 @@ export async function POST(req: NextRequest, { params }: { params: { orgSlug: st
   });
 
   try {
-    await generateCloseoutZipForJob(job.id);
+    await closeoutQueue.add("generate-closeout-export", { jobId: job.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to generate export";
-    return NextResponse.json({ error: "Close-out export generation failed", detail: message, jobId: job.id }, { status: 500 });
+    await prisma.programmeExportJob.update({
+      where: { id: job.id },
+      data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) },
+    });
+    await prisma.auditEvent.create({
+      data: {
+        tenantId: actor.actor.membership.organizationId,
+        userId: actor.actor.user.id,
+        action: "EXPORT_JOB_QUEUE_FAILED",
+        entityType: "ProgrammeExportJob",
+        entityId: job.id,
+        metadata: { error: message },
+      },
+    });
+    return NextResponse.json({ error: "Close-out export queue failed", detail: message, jobId: job.id }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, jobId: job.id, status: "DONE" });
+  return NextResponse.json({ ok: true, jobId: job.id, status: "QUEUED" });
 }
 
 export async function GET(req: NextRequest, { params }: { params: { orgSlug: string } }) {

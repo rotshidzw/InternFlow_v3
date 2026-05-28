@@ -1,10 +1,29 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import {
   TENANT_ROLE_GROUPS,
   resolveTenantApiActor,
   tenantApiAuthErrorResponse,
 } from "@/lib/tenant-api-auth";
+
+function toInputJson(value: unknown): Prisma.InputJsonValue {
+  if (value === null) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => toInputJson(item));
+  }
+  if (typeof value === "object") {
+    const obj: Record<string, Prisma.InputJsonValue> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+      obj[key] = toInputJson(nested);
+    }
+    return obj as Prisma.InputJsonObject;
+  }
+  return String(value);
+}
 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
   const actor = await resolveTenantApiActor({
@@ -28,7 +47,13 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     parsedJson = {};
   }
 
-  const value = { name, type, status, setaCetaName, config: parsedJson };
+  const value: Prisma.InputJsonObject = {
+    name,
+    type,
+    status,
+    setaCetaName,
+    config: toInputJson(parsedJson),
+  };
 
   if (templateId) {
     await prisma.settings.updateMany({

@@ -15,13 +15,11 @@ export async function POST(
   const decision = String(form.get("decision") ?? "");
   const reason = String(form.get("reason") ?? "").trim();
 
-  const tenantUserIds = await prisma.membership.findMany({
-    where: { organizationId: actor.membership.organizationId },
-    select: { userId: true },
-  });
-
   const document = await prisma.document.findFirst({
-    where: { id: params.documentId, userId: { in: tenantUserIds.map((m) => m.userId) } },
+    where: {
+      id: params.documentId,
+      organizationId: actor.membership.organizationId,
+    },
   });
   if (!document) {
     return NextResponse.json({ ok: false, error: "Document not found" }, { status: 404 });

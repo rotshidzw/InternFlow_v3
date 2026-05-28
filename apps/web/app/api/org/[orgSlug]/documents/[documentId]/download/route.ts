@@ -25,10 +25,7 @@ export async function GET(
   const document = await prisma.document.findFirst({
     where: {
       id: params.documentId,
-      OR: [
-        { organizationId: orgId },
-        { user: { memberships: { some: { organizationId: orgId } } } },
-      ],
+      organizationId: orgId,
     },
     include: {
       versions: { orderBy: { createdAt: "desc" }, take: 1 },

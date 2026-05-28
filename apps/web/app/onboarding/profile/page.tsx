@@ -128,11 +128,16 @@ export default function StudentProfileOnboardingPage() {
           emergencyContact?: string;
         };
 
-        if (data.email) setEmail((prev) => prev || data.email);
-        if (data.fullName) setFullName((prev) => prev || data.fullName);
-        if (data.phone) setPhone((prev) => prev || data.phone);
-        if (data.location) setLocation((prev) => prev || data.location);
-        if (data.bio) setBio((prev) => prev || data.bio);
+        const existingEmail = data.email;
+        if (existingEmail) setEmail((prev) => prev || existingEmail);
+        const existingFullName = data.fullName;
+        if (existingFullName) setFullName((prev) => prev || existingFullName);
+        const existingPhone = data.phone;
+        if (existingPhone) setPhone((prev) => prev || existingPhone);
+        const existingLocation = data.location;
+        if (existingLocation) setLocation((prev) => prev || existingLocation);
+        const existingBio = data.bio;
+        if (existingBio) setBio((prev) => prev || existingBio);
         if (data.skills?.length)
           setSkillsInput((prev) => prev || data.skills!.join(", "));
 

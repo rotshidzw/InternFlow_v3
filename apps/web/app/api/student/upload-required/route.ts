@@ -22,9 +22,19 @@ export async function POST(req: Request) {
     file.type || "application/octet-stream",
   );
 
+  const activeEnrollment = await prisma.enrollment.findFirst({
+    where: {
+      userId: user.id,
+      status: { in: ["PENDING", "ACTIVE", "COMPLETED"] },
+    },
+    orderBy: { id: "desc" },
+    select: { organizationId: true },
+  });
+
   await prisma.document.create({
     data: {
       userId: user.id,
+      organizationId: activeEnrollment?.organizationId ?? null,
       type: "CV",
       status: "SUBMITTED",
       versions: {

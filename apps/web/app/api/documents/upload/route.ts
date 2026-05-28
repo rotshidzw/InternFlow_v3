@@ -3,6 +3,7 @@ import { documentUploadSchema } from "@internflow/shared/src/schemas";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
+import { cookies } from "next/headers";
 import { createRedisClient } from "@/lib/redis-queue";
 import { getCurrentUser } from "@/lib/session";
 
@@ -28,30 +29,73 @@ function computeExpiration(type: string) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-async function resolveUserId(inputUserId: string | undefined, actorUserId: string) {
-  if (!inputUserId || inputUserId === actorUserId) return actorUserId;
+type DocumentTargetContext = {
+  userId: string;
+  organizationId: string | null;
+};
 
+async function resolveDocumentTargetContext(
+  inputUserId: string | undefined,
+  actorUserId: string,
+): Promise<DocumentTargetContext | null> {
+  const workspaceSlug = cookies().get("if_workspace")?.value ?? null;
   const actorMemberships = await prisma.membership.findMany({
-    where: { userId: actorUserId },
-    select: { organizationId: true, role: true },
+    where: { userId: actorUserId, organization: { status: "APPROVED" } },
+    include: { organization: { select: { slug: true } } },
   });
+  const actorOrgIds = actorMemberships.map((membership) => membership.organizationId);
+  const workspaceMembership = workspaceSlug
+    ? actorMemberships.find((membership) => membership.organization.slug === workspaceSlug)
+    : null;
+
+  const targetUserId = !inputUserId || inputUserId === actorUserId ? actorUserId : inputUserId;
+
+  if (targetUserId === actorUserId) {
+    const activeEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        userId: actorUserId,
+        status: { in: ["PENDING", "ACTIVE", "COMPLETED"] },
+      },
+      orderBy: { id: "desc" },
+      select: { organizationId: true },
+    });
+
+    return {
+      userId: actorUserId,
+      organizationId:
+        activeEnrollment?.organizationId ??
+        workspaceMembership?.organizationId ??
+        (actorMemberships.length === 1 ? actorMemberships[0].organizationId : null),
+    };
+  }
 
   const canUploadForOthers = actorMemberships.some((membership) =>
     ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR", "TRAINER", "FACILITATOR", "SYSTEM_ADMIN"].includes(
       membership.role,
     ),
   );
-  if (!canUploadForOthers) return null;
+  if (!canUploadForOthers || actorOrgIds.length === 0) return null;
 
-  const sharedMembership = await prisma.membership.findFirst({
+  const targetMemberships = await prisma.membership.findMany({
     where: {
-      userId: inputUserId,
-      organizationId: { in: actorMemberships.map((membership) => membership.organizationId) },
+      userId: targetUserId,
+      organizationId: { in: actorOrgIds },
+      organization: { status: "APPROVED" },
     },
-    select: { id: true },
+    select: { organizationId: true },
   });
+  if (targetMemberships.length === 0) return null;
 
-  return sharedMembership ? inputUserId : null;
+  const resolvedOrganizationId =
+    workspaceMembership &&
+    targetMemberships.some((membership) => membership.organizationId === workspaceMembership.organizationId)
+      ? workspaceMembership.organizationId
+      : targetMemberships[0].organizationId;
+
+  return {
+    userId: targetUserId,
+    organizationId: resolvedOrganizationId,
+  };
 }
 
 async function enqueueScanOrFallback(args: {
@@ -115,16 +159,17 @@ export async function POST(req: Request) {
 
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-    const targetUserId = await resolveUserId(parsed.data.userId, actor.id);
-    if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
+    const target = await resolveDocumentTargetContext(parsed.data.userId, actor.id);
+    if (!target) return NextResponse.json({ error: "Missing user context" }, { status: 403 });
 
-    const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;
+    const storageKey = `uploads/${target.userId}/${Date.now()}-${parsed.data.fileName}`;
     const bytes = Buffer.from(await file.arrayBuffer());
     await storage.put(storageKey, bytes, parsed.data.mimeType);
 
     const document = await prisma.document.create({
       data: {
-        userId: targetUserId,
+        userId: target.userId,
+        organizationId: target.organizationId,
         type: parsed.data.type,
         status: "SCAN_PENDING",
         expirationDate: computeExpiration(parsed.data.type),
@@ -145,14 +190,14 @@ export async function POST(req: Request) {
       mimeType: parsed.data.mimeType,
       sizeBytes: parsed.data.sizeBytes,
       fileName: parsed.data.fileName,
-      userId: targetUserId,
-      tenantId: document.organizationId,
+      userId: target.userId,
+      tenantId: target.organizationId,
     });
 
     await prisma.auditEvent.create({
       data: {
-        userId: targetUserId,
-        tenantId: document.organizationId ?? undefined,
+        userId: target.userId,
+        tenantId: target.organizationId ?? undefined,
         action: "DOCUMENT_UPLOADED",
         entityType: "Document",
         entityId: document.id,
@@ -184,15 +229,16 @@ export async function POST(req: Request) {
 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const targetUserId = await resolveUserId(parsed.data.userId, actor.id);
-  if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
+  const target = await resolveDocumentTargetContext(parsed.data.userId, actor.id);
+  if (!target) return NextResponse.json({ error: "Missing user context" }, { status: 403 });
 
-  const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;
+  const storageKey = `uploads/${target.userId}/${Date.now()}-${parsed.data.fileName}`;
   await storage.put(storageKey, Buffer.from("InternFlow placeholder file"), parsed.data.mimeType);
 
   const document = await prisma.document.create({
     data: {
-      userId: targetUserId,
+      userId: target.userId,
+      organizationId: target.organizationId,
       type: parsed.data.type,
       status: "SCAN_PENDING",
       expirationDate: computeExpiration(parsed.data.type),
@@ -213,14 +259,14 @@ export async function POST(req: Request) {
     mimeType: parsed.data.mimeType,
     sizeBytes: parsed.data.sizeBytes,
     fileName: parsed.data.fileName,
-    userId: targetUserId,
-    tenantId: document.organizationId,
+    userId: target.userId,
+    tenantId: target.organizationId,
   });
 
   await prisma.auditEvent.create({
     data: {
-      userId: targetUserId,
-      tenantId: document.organizationId ?? undefined,
+      userId: target.userId,
+      tenantId: target.organizationId ?? undefined,
       action: "DOCUMENT_UPLOADED",
       entityType: "Document",
       entityId: document.id,

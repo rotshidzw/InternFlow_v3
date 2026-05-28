@@ -21,8 +21,12 @@ const defaultRules = [
 
 export default async function DocumentsPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
-  const memberIds = await prisma.membership.findMany({ where: { organizationId: access.membership.organizationId }, select: { userId: true } });
-  const docs = await prisma.document.findMany({ where: { userId: { in: memberIds.map((m) => m.userId) } }, include: { user: true, versions: { orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, take: 100 });
+  const docs = await prisma.document.findMany({
+    where: { organizationId: access.membership.organizationId },
+    include: { user: true, versions: { orderBy: { createdAt: "desc" }, take: 1 } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
 
   return (
     <div className="space-y-4">

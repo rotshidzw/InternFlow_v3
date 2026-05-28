@@ -27,6 +27,7 @@ const required = [
   "DATABASE_URL",
   "NEXTAUTH_URL",
   "NEXTAUTH_SECRET",
+  "AUTH_SESSION_SECRET",
   "REDIS_URL",
   "SMTP_HOST",
   "SMTP_PORT",

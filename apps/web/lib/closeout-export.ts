@@ -1,8 +1,5 @@
 import { prisma } from "@internflow/db/src";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import {
   loadOrganizationCostCaptureRecords,
   loadOrganizationStipendRecords,
@@ -327,8 +324,6 @@ export async function generateCloseoutZipForJob(jobId: string) {
     where: { id: jobId },
     data: { status: "RUNNING", errorMessage: null }
   });
-
-  const tmpRoot = await mkdtemp(path.join(os.tmpdir(), "internflow-closeout-"));
 
   try {
     const [enrollments, docs, logoDoc, attendanceRegisters, stipendRecords, costCaptureRecords] = await Promise.all([
@@ -752,16 +747,18 @@ export async function generateCloseoutZipForJob(jobId: string) {
     const zipBuffer = createZipBuffer(zipEntries);
 
     const zipName = buildDownloadFileName(job.tenant.name, job.programme.name);
-    const zipPath = path.join(tmpRoot, zipName);
+    const zipObsKey = `exports/${job.tenantId}/${job.programmeId}/${job.id}/${zipName}`;
+    const reportPdfObsKey = `exports/${job.tenantId}/${job.programmeId}/${job.id}/Programme_CloseOut_Report.pdf`;
 
-    console.info("[closeout-export] writing zip", { jobId, zipPath });
-    await writeFile(zipPath, zipBuffer);
+    await getStorageAdapter().put(zipObsKey, zipBuffer, "application/zip");
+    await getStorageAdapter().put(reportPdfObsKey, pdfBuffer, "application/pdf");
 
     await prisma.programmeExportJob.update({
       where: { id: jobId },
       data: {
         status: "DONE",
-        zipObsKey: `localtmp:${zipPath}`,
+        zipObsKey,
+        reportPdfObsKey,
         finishedAt: new Date(),
         errorMessage: null
       }
@@ -775,8 +772,9 @@ export async function generateCloseoutZipForJob(jobId: string) {
         entityType: "ProgrammeExportJob",
         entityId: job.id,
         metadata: {
-          mode: "localtmp",
-          zipPath,
+          mode: "object_storage",
+          zipObsKey,
+          reportPdfObsKey,
           learnerCount: enrollments.length,
           documentCount: docs.length,
           logbookCount: actualLogbooks.length,
@@ -785,8 +783,8 @@ export async function generateCloseoutZipForJob(jobId: string) {
       }
     });
 
-    console.info("[closeout-export] generation completed", { jobId, zipPath });
-    return { zipPath, zipName };
+    console.info("[closeout-export] generation completed", { jobId, zipObsKey });
+    return { zipObsKey, zipName };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown export failure";
     await prisma.programmeExportJob.update({
@@ -794,7 +792,6 @@ export async function generateCloseoutZipForJob(jobId: string) {
       data: { status: "FAILED", finishedAt: new Date(), errorMessage: message.slice(0, 2000) }
     });
     console.error("[closeout-export] generation failed", { jobId, message });
-    await rm(tmpRoot, { recursive: true, force: true });
     throw error;
   }
 }
@@ -805,10 +802,8 @@ export async function readZipFromJob(jobId: string) {
     include: { tenant: true, programme: true }
   });
   if (!job || job.status !== "DONE" || !job.zipObsKey) return null;
-  if (!job.zipObsKey.startsWith("localtmp:")) return null;
 
-  const zipPath = job.zipObsKey.replace("localtmp:", "");
-  const bytes = await readFile(zipPath);
+  const bytes = await getStorageAdapter().getBuffer(job.zipObsKey);
   const fileName = buildDownloadFileName(job.tenant.name, job.programme.name);
   return { bytes, fileName, job };
 }

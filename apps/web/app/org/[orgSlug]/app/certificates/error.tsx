@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 export default function CertificatesError({ reset }: { reset: () => void }) {
   return (
     <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">
@@ -17,12 +15,13 @@ export default function CertificatesError({ reset }: { reset: () => void }) {
         >
           Retry
         </button>
-        <Link
-          href="./"
+        <button
+          type="button"
+          onClick={() => window.history.back()}
           className="rounded border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700"
         >
           Back to certificates
-        </Link>
+        </button>
       </div>
     </div>
   );

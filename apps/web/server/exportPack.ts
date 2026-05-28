@@ -1,13 +1,16 @@
 import { prisma } from "@internflow/db/src";
-import { generateCloseoutZipForJob } from "@/lib/closeout-export";
-import { obsCreateSignedDownloadUrl } from "@/lib/obs";
+import { getStorageAdapter } from "@internflow/shared/src/storage";
 
 export async function buildAndStoreExportPack(jobId: string, actorUserId?: string) {
-  const zipBuffer = await generateCloseoutZipForJob(jobId);
-  const job = await prisma.programmeExportJob.findUnique({ where: { id: jobId } });
-  if (!job?.zipObsKey) {
-    throw new Error("Export ZIP key missing after generation");
+  const job = await prisma.programmeExportJob.findUnique({
+    where: { id: jobId },
+    select: { id: true, tenantId: true, zipObsKey: true, reportPdfObsKey: true, status: true },
+  });
+  if (!job || job.status !== "DONE" || !job.zipObsKey) {
+    throw new Error("Export ZIP is not ready yet");
   }
+
+  const zipBuffer = await getStorageAdapter().getBuffer(job.zipObsKey);
 
   if (actorUserId) {
     await prisma.auditEvent.create({
@@ -26,7 +29,7 @@ export async function buildAndStoreExportPack(jobId: string, actorUserId?: strin
     });
   }
 
-  const signedUrl = await obsCreateSignedDownloadUrl(job.zipObsKey, 60 * 10);
+  const signedUrl = await getStorageAdapter().getSignedUrl(job.zipObsKey);
   return {
     jobId,
     zipObsKey: job.zipObsKey,

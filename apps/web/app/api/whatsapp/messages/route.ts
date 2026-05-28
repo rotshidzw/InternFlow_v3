@@ -115,6 +115,7 @@ export async function POST(req: Request) {
       const document = await prisma.document.create({
         data: {
           userId: user.id,
+          organizationId: userMembership?.organizationId ?? null,
           type: docType,
           status: "SCAN_PENDING",
           expirationDate: computeExpiration(docType),

@@ -28,6 +28,7 @@ const required = [
   "APP_URL",
   "DATABASE_URL",
   "NEXTAUTH_SECRET",
+  "AUTH_SESSION_SECRET",
   "REDIS_URL",
   "STORAGE_PROVIDER",
   "OBS_BUCKET",
