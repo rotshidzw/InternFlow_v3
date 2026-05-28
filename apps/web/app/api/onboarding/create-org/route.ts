@@ -2,6 +2,7 @@ import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -12,11 +13,8 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.flatten() }, { status: 400 });

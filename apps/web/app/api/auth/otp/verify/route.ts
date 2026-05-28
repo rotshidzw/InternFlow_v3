@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyOtp } from "@/lib/otp-store";
 import { z } from "zod";
+import { setAuthenticatedSessionCookies } from "@/lib/auth-session";
 
 const verifySchema = z.object({
   email: z.string().email(),
@@ -86,11 +87,7 @@ export async function POST(req: Request) {
     requiresOrgSetup: !user,
   });
 
-  response.cookies.set("if_user", email, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
+  setAuthenticatedSessionCookies(response, email);
   if (singleMembership) {
     response.cookies.set("if_workspace", singleMembership.organization.slug, {
       sameSite: "lax",

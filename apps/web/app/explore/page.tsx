@@ -1,15 +1,10 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
 export default async function ExplorePage() {
-  const email = cookies().get("if_user")?.value;
-  if (!email) redirect("/auth");
-
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const user = await getCurrentUser();
   if (!user) redirect("/auth");
 
   const posts = await prisma.opportunityPost.findMany({

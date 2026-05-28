@@ -1,15 +1,13 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { z } from "zod";
+import { requirePlatformApiUserWithRole } from "@/lib/hq/api-auth";
 
 const schema = z.object({ action: z.enum(["APPROVED", "REJECTED"]), notes: z.string().optional() });
 
 export async function POST(req: Request, { params }: { params: { orgId: string } }) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.json({ ok: false }, { status: 401 });
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || user.role !== "SYSTEM_ADMIN") return NextResponse.json({ ok: false }, { status: 403 });
+  const actor = await requirePlatformApiUserWithRole(["PLATFORM_ADMIN"]);
+  if (!actor) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
   const ct=req.headers.get("content-type")??"";
   const payload = ct.includes("application/json") ? await req.json() : Object.fromEntries(await req.formData());
@@ -22,6 +20,15 @@ export async function POST(req: Request, { params }: { params: { orgId: string }
       status: parsed.data.action,
       rejectionReason: parsed.data.action === "REJECTED" ? parsed.data.notes ?? "Rejected by platform admin" : null
     }
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      userId: actor.user.id,
+      orgId: params.orgId,
+      action: `ORG_STATUS_${parsed.data.action}`,
+      metadata: { notes: parsed.data.notes ?? null },
+    },
   });
 
   if (!ct.includes("application/json")) {

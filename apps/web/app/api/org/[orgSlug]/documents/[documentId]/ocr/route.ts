@@ -1,16 +1,29 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { getOrgAccess } from "@/lib/org-access";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { runHuaweiGeneralTextOcr } from "@/lib/huaweiOcr";
+import type { Prisma } from "@prisma/client";
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
+  if (value === undefined) return null;
+  return value as Prisma.InputJsonValue;
+}
 
 export async function GET(_: Request, { params }: { params: { orgSlug: string; documentId: string } }) {
-  const access = await getOrgAccess(params.orgSlug);
-  if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.EXPORT_READ,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const event = await prisma.auditEvent.findFirst({
     where: {
-      tenantId: access.membership.organizationId,
+      tenantId: actor.actor.membership.organizationId,
       entityType: "Document",
       entityId: params.documentId,
       action: { in: ["OCR_SUCCESS", "OCR_FAILED"] }
@@ -22,15 +35,23 @@ export async function GET(_: Request, { params }: { params: { orgSlug: string; d
     return NextResponse.json({ ok: true, ocrStatus: "NOT_RUN" });
   }
 
-  return NextResponse.json({ ok: true, ...(event.metadata as Record<string, unknown>), at: event.createdAt });
+  const metadata =
+    event.metadata && typeof event.metadata === "object"
+      ? (event.metadata as Record<string, unknown>)
+      : {};
+
+  return NextResponse.json({ ok: true, ...metadata, at: event.createdAt });
 }
 
 export async function POST(_: Request, { params }: { params: { orgSlug: string; documentId: string } }) {
-  const access = await getOrgAccess(params.orgSlug);
-  if ("error" in access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.CHECKLIST_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const document = await prisma.document.findFirst({
-    where: { id: params.documentId, organizationId: access.membership.organizationId },
+    where: { id: params.documentId, organizationId: actor.actor.membership.organizationId },
     include: { versions: { orderBy: { createdAt: "desc" }, take: 1 } }
   });
 
@@ -40,8 +61,8 @@ export async function POST(_: Request, { params }: { params: { orgSlug: string; 
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: access.membership.organizationId,
-      userId: access.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "OCR_REQUESTED",
       entityType: "Document",
       entityId: document.id,
@@ -59,15 +80,15 @@ export async function POST(_: Request, { params }: { params: { orgSlug: string; 
     await prisma.document.update({ where: { id: document.id }, data: { status: "SCAN_OK" } });
     await prisma.auditEvent.create({
       data: {
-        tenantId: access.membership.organizationId,
-        userId: access.user.id,
+        tenantId: actor.actor.membership.organizationId,
+        userId: actor.actor.user.id,
         action: "OCR_SUCCESS",
         entityType: "Document",
         entityId: document.id,
         metadata: {
           ocrStatus: "SUCCESS",
           ocrText: result.text,
-          ocrJson: result.json,
+          ocrJson: toJsonValue(result.json),
           ocrError: null
         }
       }
@@ -79,15 +100,15 @@ export async function POST(_: Request, { params }: { params: { orgSlug: string; 
   await prisma.document.update({ where: { id: document.id }, data: { status: "SCAN_FAILED", rejectionReason: result.error ?? "OCR failed" } });
   await prisma.auditEvent.create({
     data: {
-      tenantId: access.membership.organizationId,
-      userId: access.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "OCR_FAILED",
       entityType: "Document",
       entityId: document.id,
       metadata: {
         ocrStatus: "FAILED",
         ocrText: "",
-        ocrJson: result.json,
+        ocrJson: toJsonValue(result.json),
         ocrError: result.error ?? "Unknown OCR error"
       }
     }

@@ -1,7 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import type { Role } from "@prisma/client";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 export const TENANT_ROLE = {
   STUDENT: "STUDENT",
@@ -82,13 +82,19 @@ export const TENANT_ROLE_GROUPS = {
   ],
 } as const;
 
-export const PERSISTED_TENANT_ROLES: readonly Role[] = [
+export const PERSISTED_TENANT_ROLES = [
   "STUDENT",
   "SUPERVISOR",
   "COORDINATOR",
   "PROVIDER_ADMIN",
+  "TRAINER",
+  "FACILITATOR",
+  "FINANCE",
+  "PAYROLL",
+  "AUDITOR",
+  "READ_ONLY",
   "SYSTEM_ADMIN",
-];
+] as const;
 
 type TenantActor = {
   user: Awaited<ReturnType<typeof prisma.user.findUnique>> extends infer T
@@ -133,13 +139,13 @@ export function isTenantRoleAllowed(role: string, allowedRoles: readonly string[
 }
 
 export function isPersistedTenantRole(role: string): role is Role {
-  return PERSISTED_TENANT_ROLES.includes(role as Role);
+  return (PERSISTED_TENANT_ROLES as readonly string[]).includes(role);
 }
 
 export async function getApiUserFromCookie() {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) return null;
-  return prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  return prisma.user.findUnique({ where: { email } });
 }
 
 export async function resolveTenantApiActor({

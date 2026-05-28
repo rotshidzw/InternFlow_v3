@@ -2,14 +2,26 @@ import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/session";
 
 export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
+  const actor = await getCurrentUser();
   const slug = cookies().get("if_workspace")?.value;
-  if (!email || !slug) return NextResponse.json({ ok: false, error: "Missing session/workspace" }, { status: 401 });
+  if (!actor || !slug) return NextResponse.json({ ok: false, error: "Missing session/workspace" }, { status: 401 });
 
-  const org = await prisma.organization.findUnique({ where: { slug } });
-  if (!org) return NextResponse.json({ ok: false, error: "Organization not found" }, { status: 404 });
+  const membership = await prisma.membership.findFirst({
+    where: {
+      userId: actor.id,
+      organization: { slug },
+      role: { in: ["PROVIDER_ADMIN", "COORDINATOR", "SYSTEM_ADMIN"] },
+    },
+    include: { organization: true },
+  });
+
+  if (!membership) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  if (membership.organization.status === "REJECTED") {
+    return NextResponse.json({ ok: false, error: "Organization is rejected" }, { status: 409 });
+  }
 
   const form = await req.formData();
   const storage = getStorageAdapter();
@@ -25,11 +37,11 @@ export async function POST(req: Request) {
   uploads.push({ category: "POPIA_CONTACT", file: new File([String(form.get("popiaContact") ?? "")], "popia-contact.txt", { type: "text/plain" }) });
 
   for (const upload of uploads) {
-    const key = `org-docs/${org.id}/${Date.now()}-${upload.file.name}`;
+    const key = `org-docs/${membership.organizationId}/${Date.now()}-${upload.file.name}`;
     await storage.put(key, Buffer.from(await upload.file.arrayBuffer()), upload.file.type || "application/octet-stream");
     await prisma.organizationDocument.create({
       data: {
-        orgId: org.id,
+        orgId: membership.organizationId,
         category: upload.category,
         fileKey: key,
         status: "PENDING_REVIEW"
@@ -37,6 +49,17 @@ export async function POST(req: Request) {
     });
   }
 
-  await prisma.organization.update({ where: { id: org.id }, data: { status: "PENDING_REVIEW" } });
+  await prisma.organization.update({ where: { id: membership.organizationId }, data: { status: "PENDING_REVIEW" } });
+  await prisma.auditEvent.create({
+    data: {
+      tenantId: membership.organizationId,
+      userId: actor.id,
+      action: "ORG_VERIFICATION_DOCS_SUBMITTED",
+      entityType: "Organization",
+      entityId: membership.organizationId,
+      metadata: { uploads: uploads.map((upload) => upload.category) },
+    },
+  });
+
   return NextResponse.json({ ok: true });
 }

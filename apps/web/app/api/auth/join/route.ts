@@ -1,7 +1,7 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 const schema = z.object({ token: z.string().min(6) });
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) {
     if (!wantsJson(req)) return redirectResponse("error", "login-required");
     return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { email },
   });
   if (!user) {
     if (!wantsJson(req)) return redirectResponse("error", "account-not-found");

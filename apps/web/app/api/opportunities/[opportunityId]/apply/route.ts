@@ -1,7 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/session";
 
 const ACTIVE_ENROLLMENT_STATUSES = ["PENDING", "ACTIVE"] as const;
 
@@ -10,12 +10,7 @@ export async function POST(
   { params }: { params: { opportunityId: string } },
 ) {
   try {
-    const sessionEmail = cookies().get("if_user")?.value;
-    if (!sessionEmail) return NextResponse.redirect(new URL("/auth", req.url));
-
-    const actor = await prisma.user.findUnique({
-      where: { email: sessionEmail },
-    });
+    const actor = await getCurrentUser();
     if (!actor) return NextResponse.redirect(new URL("/auth", req.url));
 
     const opportunity = await prisma.opportunity.findUnique({

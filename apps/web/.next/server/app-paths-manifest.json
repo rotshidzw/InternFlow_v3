@@ -1,13 +1,9 @@
 {
+  "/about/page": "app/about/page.js",
   "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
-  "/api/auth/demo-login/route": "app/api/auth/demo-login/route.js",
+  "/page": "app/page.js",
   "/auth/login/page": "app/auth/login/page.js",
-  "/auth/page": "app/auth/page.js",
-  "/api/auth/logout/route": "app/api/auth/logout/route.js",
-  "/hq/meetings/page": "app/hq/meetings/page.js",
-  "/hq/support/page": "app/hq/support/page.js",
-  "/hq/dashboard/page": "app/hq/dashboard/page.js",
-  "/hq/settings/page": "app/hq/settings/page.js",
-  "/hq/approvals/page": "app/hq/approvals/page.js",
-  "/hq/observability/page": "app/hq/observability/page.js"
+  "/solutions/page": "app/solutions/page.js",
+  "/pricing/page": "app/pricing/page.js",
+  "/contact/page": "app/contact/page.js"
 }

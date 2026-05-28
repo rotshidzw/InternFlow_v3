@@ -1,17 +1,12 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/session";
 
 export async function POST(
   req: Request,
   { params }: { params: { postId: string } },
 ) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const user = await getCurrentUser();
   if (!user) return NextResponse.redirect(new URL("/auth", req.url));
 
   const post = await prisma.opportunityPost.findUnique({

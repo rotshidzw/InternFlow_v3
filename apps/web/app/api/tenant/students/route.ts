@@ -1,29 +1,30 @@
 import { prisma } from "@internflow/db/src";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getApiUserFromCookie } from "@/lib/tenant-api-auth";
 
-const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
+const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR", "SYSTEM_ADMIN"]);
 
 export async function GET(req: Request) {
-  const email = cookies().get("if_user")?.value;
   const workspaceSlug = cookies().get("if_workspace")?.value;
-  if (!email || !workspaceSlug)
+  if (!workspaceSlug)
     return NextResponse.json(
       { ok: false, error: "Missing session" },
       { status: 401 },
     );
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
-  if (!user)
+  const actor = await getApiUserFromCookie();
+  if (!actor)
     return NextResponse.json(
-      { ok: false, error: "User not found" },
-      { status: 404 },
+      { ok: false, error: "Unauthorized" },
+      { status: 401 },
     );
 
   const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: workspaceSlug } },
+    where: {
+      userId: actor.id,
+      organization: { slug: workspaceSlug, status: "APPROVED" },
+    },
   });
   if (!membership || !ALLOWED_ROLES.has(membership.role)) {
     return NextResponse.json(

@@ -1,9 +1,12 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendPlatformEmail } from "@/lib/mailer";
 import { runProfileAiEnrichment } from "@/lib/openrouter-ai";
+import {
+  getAuthenticatedEmailFromCookies,
+  setAuthenticatedSessionCookies,
+} from "@/lib/auth-session";
 
 const schema = z.object({
   email: z.string().email().optional(),
@@ -49,7 +52,7 @@ const schema = z.object({
 });
 
 export async function GET() {
-  const cookieEmail = cookies().get("if_user")?.value?.toLowerCase();
+  const cookieEmail = getAuthenticatedEmailFromCookies();
   if (!cookieEmail) {
     return NextResponse.json(
       { ok: false, error: "Login required." },
@@ -98,7 +101,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const cookieEmail = cookies().get("if_user")?.value;
+  const cookieEmail = getAuthenticatedEmailFromCookies();
   const sourceEmail = cookieEmail ?? body.data.email;
   if (!sourceEmail) {
     return NextResponse.json(
@@ -427,10 +430,7 @@ export async function POST(req: Request) {
     joinedViaInvite: Boolean(inviteTokenRecord),
   });
 
-  response.cookies.set("if_user", normalizedEmail, {
-    sameSite: "lax",
-    path: "/",
-  });
+  setAuthenticatedSessionCookies(response, normalizedEmail);
 
   if (workspaceSlug) {
     response.cookies.set("if_workspace", workspaceSlug, {

@@ -1,9 +1,9 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 export async function GET() {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email)
     return NextResponse.json(
       { ok: false, error: "Unauthenticated" },

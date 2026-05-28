@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { resolveStudentTenantContext } from "@/lib/student-tenant-context";
+import { getCurrentUser } from "@/lib/session";
 
 function applicationStatusLabel(status?: string | null) {
   if (!status) return "Not started";
@@ -37,10 +37,7 @@ export default async function OpportunityDetail({
     );
   }
 
-  const email = cookies().get("if_user")?.value;
-  const user = email
-    ? await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
-    : null;
+  const user = await getCurrentUser();
   const context = user ? await resolveStudentTenantContext(user.id) : { type: "NONE" as const };
 
   const studentProfileDelegate = (

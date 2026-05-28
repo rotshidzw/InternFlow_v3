@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@internflow/db/src";
+import { setAuthenticatedSessionCookies } from "@/lib/auth-session";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -50,11 +51,7 @@ export async function POST(req: Request) {
             : "/workspaces";
 
   const res = NextResponse.json({ ok: true, redirectTo });
-  res.cookies.set("if_user", email, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
+  setAuthenticatedSessionCookies(res, email);
   if (single)
     res.cookies.set("if_workspace", single.organization.slug, {
       sameSite: "lax",

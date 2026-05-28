@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateChatbotAssistance } from "@/lib/openrouter-ai";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 const schema = z.object({
   message: z.string().min(1).max(2000),
@@ -16,7 +16,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) {
     return NextResponse.json(
       { ok: false, error: "Unauthenticated" },

@@ -1,8 +1,8 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 export async function getOrgAccess(orgSlug: string) {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) return { error: "unauthenticated" as const };
 
   const user = await prisma.user.findUnique({ where: { email } });

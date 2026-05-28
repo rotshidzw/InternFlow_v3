@@ -4,15 +4,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BrandImagePanel } from "@/components/visual/brand-image-panel";
 import { brandImagery } from "@/lib/brand-imagery";
+import { getCurrentUser } from "@/lib/session";
 
 export default async function WorkspacesPage() {
-  const email = cookies().get("if_user")?.value;
-  if (!email) {
+  const actor = await getCurrentUser();
+  if (!actor) {
     return <div className="p-8 text-brand-text">Please sign in at <Link href="/auth/login" className="underline">/auth/login</Link>.</div>;
   }
 
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { id: actor.id },
     include: { memberships: { include: { organization: true } } }
   });
 

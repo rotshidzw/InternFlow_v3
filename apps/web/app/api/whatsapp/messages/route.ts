@@ -1,10 +1,10 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { Queue } from "bullmq";
 import { createRedisClient } from "@/lib/redis-queue";
 import { generateChatbotAssistance } from "@/lib/openrouter-ai";
+import { getCurrentUser } from "@/lib/session";
 import {
   applyCertificateReleaseTransitionsWithAudit,
   loadOrganizationCertificateRecords,
@@ -53,10 +53,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const email = cookies().get("if_user")?.value;
-    if (!email) return NextResponse.redirect(new URL("/auth", req.url));
-
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await getCurrentUser();
     if (!user) return NextResponse.redirect(new URL("/auth", req.url));
 
     const platformMembership = await prisma.platformMembership.findFirst({

@@ -6,8 +6,22 @@ import { redirect } from "next/navigation";
 export default async function SupervisorPage({ params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) redirect(access.error === "unauthenticated" ? "/auth" : "/workspaces");
+  if (
+    !["SUPERVISOR", "COORDINATOR", "PROVIDER_ADMIN", "TRAINER", "FACILITATOR", "SYSTEM_ADMIN"].includes(
+      access.membership.role,
+    )
+  ) {
+    redirect(`/org/${params.orgSlug}/app`);
+  }
 
   const logbooks = await prisma.logbookEntry.findMany({
+    where: {
+      user: {
+        memberships: {
+          some: { organizationId: access.membership.organizationId },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
     include: { user: true },
@@ -26,8 +40,7 @@ export default async function SupervisorPage({ params }: { params: { orgSlug: st
           {logbooks.map((entry) => (
             <div key={entry.id} className="if-panel-muted rounded-lg border border-brand-border/60 p-3 text-sm">
               <p className="text-brand-textSoft">{entry.user.email} - {entry.summary}</p>
-              <form action="/api/logbook/approve" method="post" className="if-filter-grid mt-2 md:grid-cols-[180px_1fr_auto]">
-                <input type="hidden" name="entryId" value={entry.id} />
+              <form action={`/api/org/${params.orgSlug}/logbooks/${entry.id}/approval`} method="post" className="if-filter-grid mt-2 md:grid-cols-[180px_1fr_auto]">
                 <select name="status" className="rounded px-2 py-1 text-sm">
                   <option value="APPROVED">Approve</option>
                   <option value="REJECTED">Reject</option>

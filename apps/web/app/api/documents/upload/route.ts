@@ -3,8 +3,8 @@ import { documentUploadSchema } from "@internflow/shared/src/schemas";
 import { getStorageAdapter } from "@internflow/shared/src/storage";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
-import { cookies } from "next/headers";
 import { createRedisClient } from "@/lib/redis-queue";
+import { getCurrentUser } from "@/lib/session";
 
 const expiryByType: Record<string, number | null> = {
   ID: 3650,
@@ -28,12 +28,30 @@ function computeExpiration(type: string) {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
-async function resolveUserId(inputUserId: string | undefined) {
-  if (inputUserId) return inputUserId;
-  const email = cookies().get("if_user")?.value;
-  if (!email) return null;
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-  return user?.id ?? null;
+async function resolveUserId(inputUserId: string | undefined, actorUserId: string) {
+  if (!inputUserId || inputUserId === actorUserId) return actorUserId;
+
+  const actorMemberships = await prisma.membership.findMany({
+    where: { userId: actorUserId },
+    select: { organizationId: true, role: true },
+  });
+
+  const canUploadForOthers = actorMemberships.some((membership) =>
+    ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR", "TRAINER", "FACILITATOR", "SYSTEM_ADMIN"].includes(
+      membership.role,
+    ),
+  );
+  if (!canUploadForOthers) return null;
+
+  const sharedMembership = await prisma.membership.findFirst({
+    where: {
+      userId: inputUserId,
+      organizationId: { in: actorMemberships.map((membership) => membership.organizationId) },
+    },
+    select: { id: true },
+  });
+
+  return sharedMembership ? inputUserId : null;
 }
 
 async function enqueueScanOrFallback(args: {
@@ -74,6 +92,8 @@ async function enqueueScanOrFallback(args: {
 export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
   const storage = getStorageAdapter();
+  const actor = await getCurrentUser();
+  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
@@ -95,7 +115,7 @@ export async function POST(req: Request) {
 
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-    const targetUserId = await resolveUserId(parsed.data.userId);
+    const targetUserId = await resolveUserId(parsed.data.userId, actor.id);
     if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
 
     const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;
@@ -164,7 +184,7 @@ export async function POST(req: Request) {
 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const targetUserId = await resolveUserId(parsed.data.userId);
+  const targetUserId = await resolveUserId(parsed.data.userId, actor.id);
   if (!targetUserId) return NextResponse.json({ error: "Missing user context" }, { status: 401 });
 
   const storageKey = `uploads/${targetUserId}/${Date.now()}-${parsed.data.fileName}`;

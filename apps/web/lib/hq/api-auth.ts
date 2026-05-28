@@ -1,9 +1,9 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import type { PlatformRole } from "@prisma/client";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 export async function requirePlatformApiUser() {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) return null;
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return null;

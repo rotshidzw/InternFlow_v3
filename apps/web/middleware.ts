@@ -8,10 +8,11 @@ export function middleware(request: NextRequest) {
   const isPublicOrgRoute = /^\/org\/[^/]+(\/login)?$/.test(pathname);
   const isProtected = !isPublicOrgRoute && PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const user = request.cookies.get("if_user")?.value;
+  const session = request.cookies.get("if_session")?.value;
   const workspace = request.cookies.get("if_workspace")?.value;
 
-  if (isProtected && !user) {
-    return NextResponse.redirect(new URL("/auth", request.url));
+  if (isProtected && (!user || !session)) {
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   if (pathname === "/app" && user && !workspace) {

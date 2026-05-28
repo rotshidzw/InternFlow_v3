@@ -1,30 +1,20 @@
 import { prisma } from "@internflow/db/src";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-
-const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(
   req: Request,
   { params }: { params: { orgSlug: string } },
 ) {
-  const email = cookies().get("if_user")?.value;
-  if (!email) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.CONTENT_MANAGE,
   });
-  if (!user) return NextResponse.redirect(new URL("/auth", req.url));
-
-  const membership = await prisma.membership.findFirst({
-    where: { userId: user.id, organization: { slug: params.orgSlug } },
-  });
-  if (!membership || !ALLOWED_ROLES.has(membership.role)) {
-    return NextResponse.json(
-      { ok: false, error: "Forbidden" },
-      { status: 403 },
-    );
-  }
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const form = await req.formData();
   const title = String(form.get("title") ?? "").trim();
@@ -44,20 +34,20 @@ export async function POST(
 
   const post = await prisma.opportunityPost.create({
     data: {
-      tenantId: membership.organizationId,
+      tenantId: actor.actor.membership.organizationId,
       title,
       description,
       visibility: visibility as any,
       programmeId,
       closesAt: closesAtRaw ? new Date(closesAtRaw) : null,
-      createdByUserId: user.id,
+      createdByUserId: actor.actor.user.id,
     },
   });
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: membership.organizationId,
-      userId: user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "OPPORTUNITY_POST_CREATED",
       entityType: "OpportunityPost",
       entityId: post.id,

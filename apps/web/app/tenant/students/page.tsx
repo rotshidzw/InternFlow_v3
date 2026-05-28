@@ -1,6 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 
 const ALLOWED_ROLES = new Set(["PROVIDER_ADMIN", "COORDINATOR"]);
 
@@ -9,13 +10,10 @@ export default async function TenantStudentsPage({
 }: {
   searchParams?: { skills?: string; location?: string; keyword?: string };
 }) {
-  const email = cookies().get("if_user")?.value;
   const workspaceSlug = cookies().get("if_workspace")?.value;
-  if (!email || !workspaceSlug) redirect("/workspaces");
+  if (!workspaceSlug) redirect("/workspaces");
 
-  const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-  });
+  const user = await getCurrentUser();
   if (!user) redirect("/auth");
 
   const membership = await prisma.membership.findFirst({

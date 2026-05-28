@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { extractCandidateProfileFromCv } from "@/lib/openrouter-ai";
+import { getAuthenticatedEmailFromCookies } from "@/lib/auth-session";
 
 const COMMON_SKILLS = [
   "communication",
@@ -60,7 +60,7 @@ function extractFieldsFallback(text: string) {
 }
 
 export async function POST(req: Request) {
-  const email = cookies().get("if_user")?.value;
+  const email = getAuthenticatedEmailFromCookies();
   if (!email) {
     return NextResponse.json(
       { ok: false, error: "Unauthenticated" },
