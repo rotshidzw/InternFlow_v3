@@ -1,6 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 function weekKey(value: Date) {
   const d = new Date(value);
@@ -11,10 +12,18 @@ function weekKey(value: Date) {
 export default async function ProgressPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
   const orgId = access.membership.organizationId;
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(orgId);
 
   const [enrollments, logbooks, checklists] = await Promise.all([
     prisma.enrollment.findMany({ where: { organizationId: orgId }, include: { user: true, program: true }, take: 100 }),
-    prisma.logbookEntry.findMany({ where: { user: { memberships: { some: { organizationId: orgId } } } }, include: { user: true }, orderBy: { weekStart: "desc" }, take: 500 }),
+    boundEntryIds.length
+      ? prisma.logbookEntry.findMany({
+          where: { id: { in: boundEntryIds } },
+          include: { user: true },
+          orderBy: { weekStart: "desc" },
+          take: 500,
+        })
+      : Promise.resolve([]),
     prisma.checklistInstance.findMany({ where: { application: { opportunity: { organizationId: orgId } } }, include: { application: { include: { user: true } }, items: true }, orderBy: { applicationId: "desc" }, take: 200 }),
   ]);
 

@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { requireTenantAccess } from "@/lib/tenant-portal";
 import { BrandImagePanel } from "@/components/visual/brand-image-panel";
 import { brandImagery } from "@/lib/brand-imagery";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 function pct(value: number, total: number) {
   return total === 0 ? 0 : Math.round((value / total) * 100);
@@ -16,6 +17,7 @@ function clamp(value: number, min = 0, max = 100) {
 export default async function TenantDashboardPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
   const orgId = access.membership.organizationId;
+  const boundLogbookEntryIds = await listTenantBoundLogbookEntryIds(orgId);
 
   const [
     programs,
@@ -45,26 +47,28 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
       where: { organizationId: orgId },
       select: { status: true, expirationDate: true },
     }),
-    prisma.logbookApproval.count({
-      where: {
-        status: "PENDING",
-        entry: {
-          user: { memberships: { some: { organizationId: orgId } } },
-        },
-      },
-    }),
+    boundLogbookEntryIds.length
+      ? prisma.logbookApproval.count({
+          where: {
+            status: "PENDING",
+            entryId: { in: boundLogbookEntryIds },
+          },
+        })
+      : Promise.resolve(0),
     prisma.application.findMany({
       where: { opportunity: { organizationId: orgId } },
       include: { user: true, opportunity: true },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
-    prisma.logbookEntry.findMany({
-      where: { user: { memberships: { some: { organizationId: orgId } } } },
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    }),
+    boundLogbookEntryIds.length
+      ? prisma.logbookEntry.findMany({
+          where: { id: { in: boundLogbookEntryIds } },
+          include: { user: true },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+        })
+      : Promise.resolve([]),
     prisma.auditLog.findMany({
       where: { orgId },
       orderBy: { createdAt: "desc" },

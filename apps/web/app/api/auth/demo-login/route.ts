@@ -5,8 +5,15 @@ import { prisma } from "@internflow/db/src";
 import { setAuthenticatedSessionCookies } from "@/lib/auth-session";
 
 const schema = z.object({ email: z.string().email() });
+const demoLoginEnabled =
+  process.env.NODE_ENV !== "production" ||
+  process.env.ENABLE_DEMO_LOGIN === "true";
 
 export async function POST(req: Request) {
+  if (!demoLoginEnabled) {
+    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
   const payload = schema.safeParse(await req.json());
   if (!payload.success)
     return NextResponse.json({ ok: false }, { status: 400 });

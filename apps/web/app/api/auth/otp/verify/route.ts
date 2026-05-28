@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const check = verifyOtp(email, parsed.data.code);
+  const check = await verifyOtp(email, parsed.data.code);
   if (!check.ok) {
     return NextResponse.json(
       { ok: false, error: check.reason },

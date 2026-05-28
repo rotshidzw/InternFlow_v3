@@ -1,18 +1,23 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
-
-const ALLOWED_ROLES = ["PROVIDER_ADMIN", "COORDINATOR"] as const;
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(
   req: Request,
   { params }: { params: { orgSlug: string; inviteId: string } },
 ) {
-  const actor = await requireTenantApiActor(params.orgSlug, [...ALLOWED_ROLES]);
-  if (!actor) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.STAFF_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const invite = await prisma.inviteToken.findFirst({
-    where: { id: params.inviteId, tenantId: actor.membership.organizationId },
+    where: { id: params.inviteId, tenantId: actor.actor.membership.organizationId },
   });
 
   if (!invite) {
@@ -26,8 +31,8 @@ export async function POST(
     }),
     prisma.auditEvent.create({
       data: {
-        tenantId: actor.membership.organizationId,
-        userId: actor.user.id,
+        tenantId: actor.actor.membership.organizationId,
+        userId: actor.actor.user.id,
         action: "INVITE_REVOKED",
         entityType: "InviteToken",
         entityId: invite.id,

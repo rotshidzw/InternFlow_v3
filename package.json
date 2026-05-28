@@ -18,7 +18,8 @@
     "predev": "node scripts/ensure-deps.mjs",
     "check:prod-env": "node scripts/validate-production-env.mjs",
     "check:local-env": "node scripts/validate-local-env.mjs",
-    "test:ai": "vitest run apps/web/lib/openrouter-ai.test.ts"
+    "test:ai": "vitest run apps/web/lib/openrouter-ai.test.ts",
+    "verify:mvp:seeded": "node scripts/mvp-seeded-uat.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",

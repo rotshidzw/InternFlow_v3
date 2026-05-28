@@ -1,21 +1,25 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 export default async function TenantApprovalsPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(access.membership.organizationId);
   const [verification, pendingLogbookApprovals] = await Promise.all([
     prisma.organizationVerification.findFirst({
       where: { orgId: access.membership.organizationId },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.logbookApproval.findMany({
-      where: {
-        status: "PENDING",
-        entry: { user: { memberships: { some: { organizationId: access.membership.organizationId } } } },
-      },
-      include: { entry: { include: { user: true } } },
-      take: 50,
-    }),
+    boundEntryIds.length
+      ? prisma.logbookApproval.findMany({
+          where: {
+            status: "PENDING",
+            entryId: { in: boundEntryIds },
+          },
+          include: { entry: { include: { user: true } } },
+          take: 50,
+        })
+      : Promise.resolve([]),
   ]);
 
   return (

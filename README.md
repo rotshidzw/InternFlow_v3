@@ -113,6 +113,15 @@ Rules:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
+### Seeded MVP UAT smoke
+After seeding and starting the app, run:
+
+```bash
+npm run verify:mvp:seeded -- --base-url=http://localhost:3000
+```
+
+This verifies core public/auth checks, role-protected API behavior, tenant-bound logbook flow, and key student/coordinator/HQ paths against seeded demo users.
+
 ---
 
 ## 4) Production setup (Huawei ECS target)

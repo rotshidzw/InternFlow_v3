@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   });
 
   const code = generateOtp();
-  saveOtp(email, code);
+  await saveOtp(email, code);
   const mailResult = await withTimeout(
     sendOtpEmail(email, code),
     12_000,

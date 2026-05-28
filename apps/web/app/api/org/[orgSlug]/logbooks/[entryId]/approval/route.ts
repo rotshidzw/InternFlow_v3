@@ -5,6 +5,7 @@ import {
   resolveTenantApiActor,
   tenantApiAuthErrorResponse,
 } from "@/lib/tenant-api-auth";
+import { resolveTenantBoundLogbookEntry } from "@/lib/logbook-tenant-binding";
 
 const APPROVAL_STATUSES = new Set(["PENDING", "APPROVED", "REJECTED"]);
 
@@ -22,20 +23,21 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     return NextResponse.json({ ok: false, error: "Invalid approval status" }, { status: 400 });
   }
 
-  const entry = await prisma.logbookEntry.findFirst({
-    where: {
-      id: params.entryId,
-      user: {
-        memberships: {
-          some: { organizationId: actor.actor.membership.organizationId },
-        },
-      },
-    },
+  const entry = await prisma.logbookEntry.findUnique({
+    where: { id: params.entryId },
     select: { id: true, userId: true },
   });
 
   if (!entry) {
     return NextResponse.json({ ok: false, error: "Logbook entry not found" }, { status: 404 });
+  }
+
+  const boundTenant = await resolveTenantBoundLogbookEntry({
+    entryId: entry.id,
+    organizationIds: [actor.actor.membership.organizationId],
+  });
+  if (!boundTenant) {
+    return NextResponse.json({ ok: false, error: "Logbook entry not found in this organization" }, { status: 404 });
   }
 
   await prisma.logbookApproval.create({

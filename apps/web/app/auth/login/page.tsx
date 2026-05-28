@@ -22,6 +22,9 @@ const demoUsers = [
   { label: "Demo Provider Admin", email: "provider@demo.com" },
   { label: "Demo Platform Admin", email: "admin@internflow.com" },
 ];
+const demoLoginEnabled =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -184,25 +187,27 @@ export default function LoginPage() {
             </form>
           )}
 
-          <div className="if-panel-muted mt-6 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-brand-accentStrong">Demo Sign In</h2>
-            <p className="mt-1 text-xs text-brand-muted">
-              Use demo accounts. OTP appears in MailHog at http://localhost:8025.
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {demoUsers.map((u) => (
-                <button
-                  key={u.email}
-                  type="button"
-                  onClick={() => loginDemoUser(u.email)}
-                  className="rounded-lg border border-brand-border px-3 py-2 text-left text-sm transition hover:border-brand-accent hover:bg-brand-surface"
-                >
-                  <span className="font-medium text-brand-text">{u.label}</span>
-                  <span className="block text-xs text-brand-muted">{u.email}</span>
-                </button>
-              ))}
+          {demoLoginEnabled ? (
+            <div className="if-panel-muted mt-6 rounded-2xl p-4">
+              <h2 className="text-sm font-semibold text-brand-accentStrong">Demo Sign In</h2>
+              <p className="mt-1 text-xs text-brand-muted">
+                Use demo accounts. OTP appears in MailHog at http://localhost:8025.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {demoUsers.map((u) => (
+                  <button
+                    key={u.email}
+                    type="button"
+                    onClick={() => loginDemoUser(u.email)}
+                    className="rounded-lg border border-brand-border px-3 py-2 text-left text-sm transition hover:border-brand-accent hover:bg-brand-surface"
+                  >
+                    <span className="font-medium text-brand-text">{u.label}</span>
+                    <span className="block text-xs text-brand-muted">{u.email}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <p className="mt-4 text-xs text-brand-muted">
             New student?{" "}

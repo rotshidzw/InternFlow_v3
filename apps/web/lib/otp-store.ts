@@ -1,13 +1,26 @@
-const OTP_TTL_MS = 10 * 60 * 1000;
+import { createHash, timingSafeEqual } from "node:crypto";
+import { createRedisClient } from "@/lib/redis-queue";
+
+const parsedTtlSeconds = Number(process.env.OTP_TTL_SECONDS ?? "600");
+const OTP_TTL_SECONDS =
+  Number.isFinite(parsedTtlSeconds) && parsedTtlSeconds > 0
+    ? Math.min(parsedTtlSeconds, 60 * 60)
+    : 600;
+const OTP_TTL_MS = OTP_TTL_SECONDS * 1000;
+const OTP_STORE_BACKEND = (process.env.OTP_STORE_BACKEND ?? "auto").toLowerCase();
+const OTP_REDIS_KEY_PREFIX = process.env.OTP_REDIS_KEY_PREFIX ?? "internflow:otp:";
 
 type OtpRecord = {
-  code: string;
-  email: string;
+  digest: string;
   expiresAt: number;
 };
 
 declare global {
   var __internflowOtpStore: Map<string, OtpRecord> | undefined;
+  var __internflowOtpRedisClient:
+    | ReturnType<typeof createRedisClient>
+    | undefined;
+  var __internflowOtpRedisWarned: boolean | undefined;
 }
 
 function getStore() {
@@ -18,30 +31,136 @@ function getStore() {
   return globalThis.__internflowOtpStore;
 }
 
-export function saveOtp(email: string, code: string) {
-  const store = getStore();
-  store.set(email.toLowerCase(), {
-    code,
-    email: email.toLowerCase(),
-    expiresAt: Date.now() + OTP_TTL_MS
-  });
+function shouldUseRedis() {
+  return OTP_STORE_BACKEND === "redis" || OTP_STORE_BACKEND === "auto";
 }
 
-export function verifyOtp(email: string, code: string) {
-  const store = getStore();
-  const key = email.toLowerCase();
-  const record = store.get(key);
+function getOtpSecret() {
+  return (
+    process.env.AUTH_SESSION_SECRET ??
+    process.env.NEXTAUTH_SECRET ??
+    "internflow-dev-otp-secret"
+  );
+}
 
+function digestOtp(email: string, code: string) {
+  return createHash("sha256")
+    .update(`${email.toLowerCase()}::${code.trim()}::${getOtpSecret()}`)
+    .digest("hex");
+}
+
+function compareDigest(expected: string, supplied: string) {
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(supplied, "hex");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+function redisKey(email: string) {
+  return `${OTP_REDIS_KEY_PREFIX}${email.toLowerCase()}`;
+}
+
+function getRedisClient() {
+  if (!shouldUseRedis()) return null;
+  if (!globalThis.__internflowOtpRedisClient) {
+    globalThis.__internflowOtpRedisClient = createRedisClient("auth-otp-store");
+  }
+  return globalThis.__internflowOtpRedisClient;
+}
+
+function warnRedisFallback(error: unknown) {
+  if (globalThis.__internflowOtpRedisWarned) return;
+  globalThis.__internflowOtpRedisWarned = true;
+  console.warn("[otp-store] Redis unavailable, falling back to in-memory OTP store.", error);
+}
+
+async function saveOtpToRedis(email: string, digest: string, expiresAt: number) {
+  const client = getRedisClient();
+  if (!client) return false;
+  try {
+    await client.set(
+      redisKey(email),
+      JSON.stringify({ digest, expiresAt }),
+      "EX",
+      OTP_TTL_SECONDS,
+    );
+    return true;
+  } catch (error) {
+    warnRedisFallback(error);
+    return false;
+  }
+}
+
+async function readOtpFromRedis(email: string) {
+  const client = getRedisClient();
+  if (!client) return null;
+  try {
+    const raw = await client.get(redisKey(email));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as OtpRecord;
+    if (!parsed?.digest || !parsed?.expiresAt) return null;
+    return parsed;
+  } catch (error) {
+    warnRedisFallback(error);
+    return null;
+  }
+}
+
+async function deleteOtpFromRedis(email: string) {
+  const client = getRedisClient();
+  if (!client) return;
+  try {
+    await client.del(redisKey(email));
+  } catch {
+    // no-op
+  }
+}
+
+export async function saveOtp(email: string, code: string) {
+  const normalizedEmail = email.toLowerCase();
+  const digest = digestOtp(normalizedEmail, code);
+  const expiresAt = Date.now() + OTP_TTL_MS;
+
+  const redisSaved = await saveOtpToRedis(normalizedEmail, digest, expiresAt);
+  if (redisSaved) {
+    getStore().delete(normalizedEmail);
+    return { backend: "redis" as const };
+  }
+
+  getStore().set(normalizedEmail, { digest, expiresAt });
+  return { backend: "memory" as const };
+}
+
+export async function verifyOtp(email: string, code: string) {
+  const normalizedEmail = email.toLowerCase();
+  const candidateDigest = digestOtp(normalizedEmail, code);
+  const now = Date.now();
+
+  const redisRecord = await readOtpFromRedis(normalizedEmail);
+  if (redisRecord) {
+    if (now > redisRecord.expiresAt) {
+      await deleteOtpFromRedis(normalizedEmail);
+      return { ok: false as const, reason: "expired" };
+    }
+    if (!compareDigest(redisRecord.digest, candidateDigest)) {
+      return { ok: false as const, reason: "invalid" };
+    }
+    await deleteOtpFromRedis(normalizedEmail);
+    return { ok: true as const };
+  }
+
+  const store = getStore();
+  const record = store.get(normalizedEmail);
   if (!record) return { ok: false as const, reason: "not_found" };
-  if (Date.now() > record.expiresAt) {
-    store.delete(key);
+  if (now > record.expiresAt) {
+    store.delete(normalizedEmail);
     return { ok: false as const, reason: "expired" };
   }
 
-  if (record.code !== code.trim()) {
+  if (!compareDigest(record.digest, candidateDigest)) {
     return { ok: false as const, reason: "invalid" };
   }
 
-  store.delete(key);
+  store.delete(normalizedEmail);
   return { ok: true as const };
 }

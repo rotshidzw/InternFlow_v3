@@ -1,12 +1,17 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
-
-const ALLOWED_ROLES = ["PROVIDER_ADMIN", "COORDINATOR", "SUPERVISOR"] as const;
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 export async function POST(req: Request, { params }: { params: { orgSlug: string } }) {
-  const actor = await requireTenantApiActor(params.orgSlug, [...ALLOWED_ROLES]);
-  if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.APP_REVIEW,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const contentType = req.headers.get("content-type") ?? "";
   let learnerId = "";
@@ -27,7 +32,11 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
   }
 
   const learnerMembership = await prisma.membership.findFirst({
-    where: { userId: learnerId, organizationId: actor.membership.organizationId, role: "STUDENT" },
+    where: {
+      userId: learnerId,
+      organizationId: actor.actor.membership.organizationId,
+      role: "STUDENT",
+    },
   });
   if (!learnerMembership) return NextResponse.json({ error: "Learner not in organization" }, { status: 404 });
 
@@ -39,8 +48,8 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
   const message = await prisma.chatMessage.create({
     data: {
       threadId: thread.id,
-      senderId: actor.user.id,
-      role: actor.membership.role,
+      senderId: actor.actor.user.id,
+      role: actor.actor.membership.role,
       body: body.trim(),
     },
   });
@@ -55,8 +64,8 @@ export async function POST(req: Request, { params }: { params: { orgSlug: string
     }),
     prisma.auditEvent.create({
       data: {
-        tenantId: actor.membership.organizationId,
-        userId: actor.user.id,
+        tenantId: actor.actor.membership.organizationId,
+        userId: actor.actor.user.id,
         action: "TENANT_MESSAGE_SENT",
         entityType: "ChatThread",
         entityId: thread.id,

@@ -1,9 +1,11 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
-import { requireTenantApiActor } from "@/lib/tenant-api-auth";
-
-const ALLOWED_ROLES = ["PROVIDER_ADMIN", "COORDINATOR"] as const;
+import {
+  TENANT_ROLE_GROUPS,
+  resolveTenantApiActor,
+  tenantApiAuthErrorResponse,
+} from "@/lib/tenant-api-auth";
 
 function tokenString() {
   return `if_inv_${randomBytes(8).toString("hex")}${Date.now().toString(36)}`;
@@ -13,10 +15,11 @@ export async function POST(
   req: Request,
   { params }: { params: { orgSlug: string } },
 ) {
-  const actor = await requireTenantApiActor(params.orgSlug, [...ALLOWED_ROLES]);
-  if (!actor) {
-    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
-  }
+  const actor = await resolveTenantApiActor({
+    orgSlug: params.orgSlug,
+    allowedRoles: TENANT_ROLE_GROUPS.STAFF_MANAGE,
+  });
+  if (!actor.ok) return tenantApiAuthErrorResponse(actor);
 
   const form = await req.formData();
   const maxUsesRaw = Number(form.get("maxUses") ?? 1);
@@ -28,7 +31,7 @@ export async function POST(
 
   if (programmeId) {
     const programme = await prisma.program.findFirst({
-      where: { id: programmeId, organizationId: actor.membership.organizationId },
+      where: { id: programmeId, organizationId: actor.actor.membership.organizationId },
     });
     if (!programme) {
       return NextResponse.json({ ok: false, error: "Programme not found in tenant" }, { status: 400 });
@@ -40,22 +43,23 @@ export async function POST(
   const invite = await prisma.inviteToken.create({
     data: {
       token: tokenString(),
-      tenantId: actor.membership.organizationId,
+      tenantId: actor.actor.membership.organizationId,
       programmeId,
       role: "LEARNER",
       expiresAt,
       maxUses,
-      createdByUserId: actor.user.id,
+      createdByUserId: actor.actor.user.id,
     },
   });
 
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const requestUrl = new URL(req.url);
+  const appUrl = process.env.APP_URL ?? `${requestUrl.protocol}//${requestUrl.host}`;
   const inviteLink = `${appUrl}/auth/setup?mode=join&token=${invite.token}`;
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: actor.membership.organizationId,
-      userId: actor.user.id,
+      tenantId: actor.actor.membership.organizationId,
+      userId: actor.actor.user.id,
       action: "INVITE_CREATED",
       entityType: "InviteToken",
       entityId: invite.id,

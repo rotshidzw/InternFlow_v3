@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const code = generateOtp();
   const email = parsed.data.email.toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
-  saveOtp(email, code);
+  await saveOtp(email, code);
 
   const mailResult = await withTimeout(
     sendOtpEmail(email, code),

@@ -1,10 +1,21 @@
 import { prisma } from "@internflow/db/src";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 export default async function LogbooksPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
-  const memberIds = await prisma.membership.findMany({ where: { organizationId: access.membership.organizationId }, select: { userId: true } });
-  const logs = await prisma.logbookEntry.findMany({ where: { userId: { in: memberIds.map((m) => m.userId) } }, include: { user: true, approvals: { orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, take: 80 });
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(access.membership.organizationId);
+  const logs = boundEntryIds.length
+    ? await prisma.logbookEntry.findMany({
+        where: { id: { in: boundEntryIds } },
+        include: {
+          user: true,
+          approvals: { orderBy: { createdAt: "desc" }, take: 1 },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 80,
+      })
+    : [];
 
   return (
     <div className="space-y-4">

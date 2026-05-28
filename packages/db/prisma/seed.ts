@@ -361,13 +361,27 @@ async function main() {
       }
     });
 
-    await prisma.logbookEntry.create({
+    const seededEntry = await prisma.logbookEntry.create({
       data: {
         userId: student.id,
         weekStart: new Date(),
         summary: "Worked on team tasks, API debugging, and compliance submissions",
         evidenceKey: `seed/logbook/${student.id}.pdf`
       }
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        tenantId: membership.organizationId,
+        userId: student.id,
+        action: "LOGBOOK_SUBMITTED",
+        entityType: "LogbookEntry",
+        entityId: seededEntry.id,
+        metadata: {
+          source: "seed",
+          weekStart: seededEntry.weekStart.toISOString().slice(0, 10),
+        },
+      },
     });
 
     const thread = await prisma.chatThread.create({ data: { userId: student.id, title: `WhatsApp Sim ${student.email}` } });
@@ -502,6 +516,19 @@ async function main() {
           summary: "Completed weekly workplace learning objectives",
           evidenceKey: `seed/logbook/${tenant.slug}/${learner.id}.pdf`
         }
+      });
+      await prisma.auditEvent.create({
+        data: {
+          tenantId: tenant.id,
+          userId: learner.id,
+          action: "LOGBOOK_SUBMITTED",
+          entityType: "LogbookEntry",
+          entityId: entry.id,
+          metadata: {
+            source: "seed",
+            weekStart: entry.weekStart.toISOString().slice(0, 10),
+          },
+        },
       });
       await prisma.logbookApproval.create({ data: { entryId: entry.id, reviewerId: tenantSupervisor.id, status: "APPROVED", comment: "Good progress" } });
     }

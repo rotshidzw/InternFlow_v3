@@ -2,6 +2,7 @@ import { prisma } from "@internflow/db/src";
 import { AppShell } from "@/components/app-shell";
 import { getOrgAccess } from "@/lib/org-access";
 import { redirect } from "next/navigation";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 function growthSummary(summaries: string[]) {
   const keywords = ["team", "debug", "api", "client", "compliance", "support"];
@@ -16,9 +17,16 @@ export default async function StudentOrgPage({ params }: { params: { orgSlug: st
   const access = await getOrgAccess(params.orgSlug);
   if ("error" in access) redirect(access.error === "unauthenticated" ? "/auth" : "/workspaces");
   if (access.membership.role !== "STUDENT") redirect(`/org/${params.orgSlug}/app/dashboard`);
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(access.membership.organizationId);
 
   const applications = await prisma.application.findMany({ where: { userId: access.user.id, opportunity: { organizationId: access.membership.organizationId } }, include: { opportunity: true, checklist: { include: { items: true } } }, orderBy: { createdAt: "desc" } });
-  const logbooks = await prisma.logbookEntry.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 8 });
+  const logbooks = boundEntryIds.length
+    ? await prisma.logbookEntry.findMany({
+        where: { userId: access.user.id, id: { in: boundEntryIds } },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      })
+    : [];
   const docs = await prisma.document.findMany({ where: { userId: access.user.id }, take: 8, orderBy: { createdAt: "desc" } });
   const notifications = await prisma.notification.findMany({ where: { userId: access.user.id }, orderBy: { createdAt: "desc" }, take: 5 });
   const checklist = applications[0]?.checklist;

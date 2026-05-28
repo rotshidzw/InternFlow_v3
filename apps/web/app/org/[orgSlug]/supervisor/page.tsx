@@ -2,6 +2,7 @@ import { prisma } from "@internflow/db/src";
 import { AppShell } from "@/components/app-shell";
 import { getOrgAccess } from "@/lib/org-access";
 import { redirect } from "next/navigation";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 export default async function SupervisorPage({ params }: { params: { orgSlug: string } }) {
   const access = await getOrgAccess(params.orgSlug);
@@ -14,18 +15,15 @@ export default async function SupervisorPage({ params }: { params: { orgSlug: st
     redirect(`/org/${params.orgSlug}/app`);
   }
 
-  const logbooks = await prisma.logbookEntry.findMany({
-    where: {
-      user: {
-        memberships: {
-          some: { organizationId: access.membership.organizationId },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    include: { user: true },
-  });
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(access.membership.organizationId);
+  const logbooks = boundEntryIds.length
+    ? await prisma.logbookEntry.findMany({
+        where: { id: { in: boundEntryIds } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: { user: true },
+      })
+    : [];
 
   return (
     <AppShell orgSlug={params.orgSlug} role={access.membership.role} orgName={access.membership.organization.name}>

@@ -1,6 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
+import { resolveTenantBoundLogbookEntry } from "@/lib/logbook-tenant-binding";
 
 const APPROVAL_STATUSES = new Set(["PENDING", "APPROVED", "REJECTED"]);
 const REVIEWER_ROLES = [
@@ -40,28 +41,22 @@ export async function POST(req: Request) {
 
   const entry = await prisma.logbookEntry.findUnique({
     where: { id: entryId },
-    select: {
-      id: true,
-      user: {
-        select: {
-          memberships: {
-            select: { organizationId: true },
-          },
-        },
-      },
-    },
+    select: { id: true },
   });
 
   if (!entry) return NextResponse.json({ ok: false, error: "Logbook entry not found" }, { status: 404 });
 
-  const memberOrgIds = new Set(reviewerMemberships.map((membership) => membership.organizationId));
-  const sharedMembership = entry.user.memberships.find((membership) => memberOrgIds.has(membership.organizationId));
-  if (!sharedMembership) {
+  const reviewerOrgIds = reviewerMemberships.map((membership) => membership.organizationId);
+  const boundTenant = await resolveTenantBoundLogbookEntry({
+    entryId: entry.id,
+    organizationIds: reviewerOrgIds,
+  });
+  if (!boundTenant) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
   const reviewerOrg = reviewerMemberships.find(
-    (membership) => membership.organizationId === sharedMembership.organizationId,
+    (membership) => membership.organizationId === boundTenant.organizationId,
   );
 
   await prisma.logbookApproval.create({
@@ -70,7 +65,7 @@ export async function POST(req: Request) {
 
   await prisma.auditEvent.create({
     data: {
-      tenantId: sharedMembership.organizationId,
+      tenantId: boundTenant.organizationId,
       userId: actor.id,
       action: "LOGBOOK_REVIEW_SUBMITTED",
       entityType: "LogbookEntry",

@@ -1,17 +1,26 @@
 import { prisma } from "@internflow/db/src";
 import Link from "next/link";
 import { requireTenantAccess } from "@/lib/tenant-portal";
+import { listTenantBoundLogbookEntryIds } from "@/lib/logbook-tenant-binding";
 
 export default async function LearnerPage({ params }: { params: { orgSlug: string; learnerId: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
   const user = await prisma.user.findUnique({ where: { id: params.learnerId }, include: { studentProfile: true } });
   if (!user) return <div>Learner not found.</div>;
+  const boundEntryIds = await listTenantBoundLogbookEntryIds(access.membership.organizationId);
 
   const [applications, enrollments, docs, logs] = await Promise.all([
     prisma.application.findMany({ where: { userId: user.id, opportunity: { organizationId: access.membership.organizationId } }, include: { opportunity: true } }),
     prisma.enrollment.findMany({ where: { userId: user.id, organizationId: access.membership.organizationId }, include: { program: true } }),
     prisma.document.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 50, include: { versions: true } }),
-    prisma.logbookEntry.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 12, include: { approvals: true } })
+    boundEntryIds.length
+      ? prisma.logbookEntry.findMany({
+          where: { userId: user.id, id: { in: boundEntryIds } },
+          orderBy: { createdAt: "desc" },
+          take: 12,
+          include: { approvals: true },
+        })
+      : Promise.resolve([])
   ]);
 
 
