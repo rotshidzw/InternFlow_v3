@@ -12,10 +12,12 @@ Use this as the final deployment checklist for production readiness.
 
 ## B) Environment and secrets
 - [ ] `.env.production` created from `.env.production.example`.
-- [ ] `DATABASE_URL`, `NEXTAUTH_SECRET`, `REDIS_URL` set.
+- [ ] `DATABASE_URL`, `NEXTAUTH_SECRET`, `AUTH_SESSION_SECRET`, `REDIS_URL` set.
+- [ ] `OTP_STORE_BACKEND=redis`, `OTP_ENFORCE_DURABLE=true`, and `OTP_ALLOW_MEMORY_FALLBACK=false` configured.
 - [ ] OBS credentials configured (`OBS_ACCESS_KEY`/`OBS_SECRET_KEY`).
 - [ ] OCR credentials configured when OCR is enabled.
 - [ ] SMTP credentials configured and tested.
+- [ ] `npm run check:prod-env` passes with no blocking errors.
 
 ## C) Data readiness
 - [ ] Existing local data exported and imported into RDS (if needed).
@@ -45,6 +47,7 @@ Use this as the final deployment checklist for production readiness.
 ## E) Operability
 - [ ] Application logs visible and searchable.
 - [ ] Background worker process running continuously.
+- [ ] Redis is reachable from both web and worker runtimes.
 - [ ] Health checks and restart policy configured.
 - [ ] Backup plan documented (RDS snapshot + DB dump).
 - [ ] Rollback plan prepared.

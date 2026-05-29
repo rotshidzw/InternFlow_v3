@@ -103,7 +103,8 @@ Rules:
 4. `npm run db:generate`
 5. `npm run db:push`
 6. `npm run db:seed`
-7. `npm run dev`
+7. `npm run check:local-env`
+8. `npm run dev`
 
 > Local env resolution: backend APIs read env from `process.env`, then fallback to `.env.local` / `.env` in repo root and `apps/web/.env.local` / `apps/web/.env`. For OpenRouter in local development, set `ENABLE_AI_ENRICHMENT=true` and `OPENROUTER_API_KEY` in one of those files, then restart `npm run dev`.
 
@@ -113,14 +114,14 @@ Rules:
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
 
-### Seeded MVP UAT smoke
+### Seeded MVP UAT
 After seeding and starting the app, run:
 
 ```bash
 npm run verify:mvp:seeded -- --base-url=http://localhost:3000
 ```
 
-This verifies core public/auth checks, role-protected API behavior, tenant-bound logbook flow, and key student/coordinator/HQ paths against seeded demo users.
+This verifies core public/auth checks, role-protected API behavior, tenant-bound logbook flow, certificate/follow-up/stipend flows, close-out export generation checks, and key student/coordinator/HQ paths against seeded demo users.
 
 ---
 
@@ -167,6 +168,11 @@ Use `.env.production.example` as your template.
 - Core app/auth
   - `APP_URL`
   - `NEXTAUTH_SECRET`
+  - `AUTH_SESSION_SECRET`
+  - `OTP_STORE_BACKEND`
+  - `OTP_ENFORCE_DURABLE`
+  - `OTP_ALLOW_MEMORY_FALLBACK`
+  - `OTP_TTL_SECONDS`
 - Queue
   - `REDIS_URL`
 - OBS storage
@@ -188,6 +194,8 @@ Use `.env.production.example` as your template.
   - `SMTP_USER`
   - `SMTP_PASS`
   - `MAIL_FROM`
+- Optional messaging webhook
+  - `CONTACT_WHATSAPP_WEBHOOK_URL` (if omitted, WhatsApp notifications stay webhook-ready but disabled)
 
 ### Credential source pointers
 - IAM AK/SK: Huawei Cloud Console → IAM → Users → Security Credentials.
@@ -196,6 +204,11 @@ Use `.env.production.example` as your template.
 - RDS endpoint: RDS instance overview.
 
 Detailed credential retrieval guide: `docs/HUAWEI_INTEGRATION_GUIDE.md`.
+
+### OTP production expectation
+- Staging/production should use `OTP_STORE_BACKEND=redis`.
+- Recommended durable mode: `OTP_ENFORCE_DURABLE=true` and `OTP_ALLOW_MEMORY_FALLBACK=false`.
+- If Redis is unavailable in durable mode, OTP request/verify APIs intentionally return `503` to avoid silent in-memory drift across instances.
 
 ---
 
@@ -279,6 +292,7 @@ Key routes:
 - Some modules still require deeper automation for full enterprise scale.
 - OCR confidence/rule logic should be continuously calibrated by programme type.
 - WhatsApp-style chat exists in-app; direct WhatsApp integration remains future roadmap.
+- Legacy logbook records with ambiguous historical tenant ownership are intentionally not auto-bound; resolve via controlled data backfill before production cutover.
 
 ---
 

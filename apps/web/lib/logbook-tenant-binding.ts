@@ -231,16 +231,44 @@ export async function listTenantBoundLogbookEntryIds(
           some: {
             organizationId,
             status: { in: ["PENDING", "ACTIVE", "COMPLETED"] },
+            organization: { status: "APPROVED" },
           },
         },
       },
     },
-    select: { id: true, userId: true, weekStart: true },
+    select: {
+      id: true,
+      userId: true,
+      weekStart: true,
+      user: {
+        select: {
+          enrollments: {
+            where: {
+              status: { in: ["PENDING", "ACTIVE", "COMPLETED"] },
+              organization: { status: "APPROVED" },
+            },
+            select: { organizationId: true },
+          },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take,
   });
 
+  const safeEntryIds: string[] = [];
+  let ambiguousCount = 0;
+
   for (const entry of legacyEntries) {
+    const candidateOrgIds = Array.from(
+      new Set(entry.user.enrollments.map((enrollment) => enrollment.organizationId)),
+    );
+    if (candidateOrgIds.length !== 1 || candidateOrgIds[0] !== organizationId) {
+      ambiguousCount += 1;
+      continue;
+    }
+
+    safeEntryIds.push(entry.id);
     await backfillLegacyBinding({
       entryId: entry.id,
       organizationId,
@@ -249,5 +277,11 @@ export async function listTenantBoundLogbookEntryIds(
     }).catch(() => null);
   }
 
-  return legacyEntries.map((entry) => entry.id);
+  if (ambiguousCount > 0) {
+    console.warn(
+      `[logbook-tenant-binding] Skipped ${ambiguousCount} legacy entries for org ${organizationId} due to ambiguous tenant ownership.`,
+    );
+  }
+
+  return safeEntryIds;
 }

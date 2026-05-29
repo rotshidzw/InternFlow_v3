@@ -26,50 +26,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
-    "/auth/login/page": [
+    "/solutions/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/auth/login/page.js"
+      "static/chunks/app/solutions/page.js"
     ],
-    "/student-sign-up/page": [
+    "/how-it-works/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/student-sign-up/page.js"
+      "static/chunks/app/how-it-works/page.js"
     ],
-    "/register-organization/page": [
+    "/pricing/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/register-organization/page.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
-    ],
-    "/app/student/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/app/student/page.js"
-    ],
-    "/org/[orgSlug]/app/logbooks/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/logbooks/page.js"
-    ],
-    "/org/[orgSlug]/app/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/layout.js"
-    ],
-    "/hq/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/hq/dashboard/page.js"
-    ],
-    "/hq/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/hq/layout.js"
+      "static/chunks/app/pricing/page.js"
     ]
   }
 }

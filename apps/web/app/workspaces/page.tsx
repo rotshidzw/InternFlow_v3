@@ -38,8 +38,8 @@ export default async function WorkspacesPage() {
     <div className="mx-auto mt-10 max-w-6xl space-y-4">
       <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
         <div className="if-panel rounded-3xl p-8">
-          <h1 className="text-3xl font-semibold">Select a workspace</h1>
-          <p className="mt-2 text-brand-textSoft">
+          <h1 className="if-page-title">Select a workspace</h1>
+          <p className="if-page-subtitle mt-2">
             Choose the organisation workspace you want to enter.
           </p>
         </div>
@@ -55,9 +55,9 @@ export default async function WorkspacesPage() {
         <div className="grid gap-3 md:grid-cols-2">
           {user.memberships.map((membership) => (
             <div key={membership.id} className="if-panel-muted rounded-2xl p-4">
-              <h2 className="text-lg font-semibold">{membership.organization.name}</h2>
-              <p className="text-sm text-brand-muted">Role: {membership.role.replace("_", " ")}</p>
-              <p className="text-sm text-brand-muted">Status: {membership.organization.status}</p>
+              <h2 className="if-panel-title">{membership.organization.name}</h2>
+              <p className="if-caption-text">Role: {membership.role.replace("_", " ")}</p>
+              <p className="if-caption-text">Status: {membership.organization.status}</p>
               {membership.organization.status === "REJECTED" && (
                 <p className="if-status-error mt-2 rounded-md border px-2 py-1 text-xs">
                   Reason: {membership.organization.rejectionReason ?? "Needs re-submission"}

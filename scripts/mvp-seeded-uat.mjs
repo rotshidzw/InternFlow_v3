@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
+import path from "node:path";
+import { createHmac } from "node:crypto";
+
 const argBaseUrl = process.argv.find((arg) => arg.startsWith("--base-url="));
 const baseUrl = (argBaseUrl ? argBaseUrl.split("=")[1] : "http://localhost:3000").replace(/\/+$/, "");
 
@@ -15,9 +19,69 @@ function recordCheck(name, ok, detail) {
   if (!ok) failures.push({ name, detail });
 }
 
+function monthKey(value) {
+  return value.toISOString().slice(0, 7);
+}
+
+function parseEnvFile(raw) {
+  return Object.fromEntries(
+    raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#") && line.includes("="))
+      .map((line) => {
+        const idx = line.indexOf("=");
+        return [line.slice(0, idx).trim(), line.slice(idx + 1).trim()];
+      }),
+  );
+}
+
+function loadAuthSessionSecret() {
+  if (process.env.AUTH_SESSION_SECRET) return process.env.AUTH_SESSION_SECRET;
+  if (process.env.NEXTAUTH_SECRET) return process.env.NEXTAUTH_SECRET;
+
+  const root = process.cwd();
+  for (const fileName of [".env.local", ".env.production", ".env"]) {
+    const fullPath = path.join(root, fileName);
+    if (!fs.existsSync(fullPath)) continue;
+    const parsed = parseEnvFile(fs.readFileSync(fullPath, "utf8"));
+    if (parsed.AUTH_SESSION_SECRET) return parsed.AUTH_SESSION_SECRET;
+    if (parsed.NEXTAUTH_SECRET) return parsed.NEXTAUTH_SECRET;
+  }
+  return null;
+}
+
+function signSessionToken(email, secret) {
+  const now = Date.now();
+  const payload = {
+    v: 1,
+    email: email.toLowerCase(),
+    iat: now,
+    exp: now + 7 * 24 * 60 * 60 * 1000,
+  };
+
+  const body = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const signature = createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${signature}`;
+}
+
+function extractAllMatches(input, regex) {
+  const values = [];
+  let match = regex.exec(input);
+  while (match) {
+    values.push(match[1]);
+    match = regex.exec(input);
+  }
+  return values;
+}
+
 class Session {
   constructor() {
     this.cookies = new Map();
+  }
+
+  setCookie(key, value) {
+    this.cookies.set(key, value);
   }
 
   cookieHeader() {
@@ -44,12 +108,12 @@ class Session {
     }
   }
 
-  async request(path, init = {}) {
+  async request(pathname, init = {}) {
     const headers = new Headers(init.headers ?? {});
     const cookie = this.cookieHeader();
     if (cookie) headers.set("cookie", cookie);
 
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${baseUrl}${pathname}`, {
       ...init,
       headers,
       redirect: "manual",
@@ -67,15 +131,15 @@ async function asJsonSafe(res) {
   }
 }
 
-async function expectStatus(path, expectedStatuses, init = {}, label = path) {
-  const res = await fetch(`${baseUrl}${path}`, { ...init, redirect: "manual" });
+async function expectStatus(pathname, expectedStatuses, init = {}, label = pathname) {
+  const res = await fetch(`${baseUrl}${pathname}`, { ...init, redirect: "manual" });
   const ok = expectedStatuses.includes(res.status);
   recordCheck(label, ok, `status=${res.status}`);
   return res;
 }
 
-async function expectSessionStatus(session, path, expectedStatuses, init = {}, label = path) {
-  const res = await session.request(path, init);
+async function expectSessionStatus(session, pathname, expectedStatuses, init = {}, label = pathname) {
+  const res = await session.request(pathname, init);
   const ok = expectedStatuses.includes(res.status);
   recordCheck(label, ok, `status=${res.status}`);
   return res;
@@ -91,11 +155,307 @@ async function loginDemo(email) {
   return { session, res, payload: await asJsonSafe(res) };
 }
 
+function createSignedSession(email, secret) {
+  const session = new Session();
+  session.setCookie("if_user", email.toLowerCase());
+  session.setCookie("if_session", signSessionToken(email, secret));
+  return session;
+}
+
+async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
+  await expectSessionStatus(studentSession, "/app/student", [200], {}, "student dashboard");
+  await expectSessionStatus(
+    studentSession,
+    "/api/org/raftech/notifications",
+    [403],
+    { method: "POST", body: new URLSearchParams() },
+    "student blocked from coordinator notifications API",
+  );
+  await expectSessionStatus(
+    studentSession,
+    "/api/org/raftech/exports/foundation",
+    [403],
+    {},
+    "student blocked from export foundation API",
+  );
+
+  const marker = `UAT logbook marker ${Date.now()} seeded`;
+  const logbookRes = await studentSession.request("/api/logbook", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      orgSlug: "raftech",
+      weekStart: new Date().toISOString().slice(0, 10),
+      summary: marker,
+    }),
+  });
+  const logbookPayload = await asJsonSafe(logbookRes);
+  const logbookEntryId = logbookPayload?.entryId;
+  recordCheck(
+    "student logbook submit",
+    logbookRes.status === 200 && logbookPayload?.ok === true && Boolean(logbookEntryId),
+    `status=${logbookRes.status}`,
+  );
+
+  const logbooksPage = await coordinatorSession.request("/org/raftech/app/logbooks");
+  const logbooksHtml = await logbooksPage.text();
+  recordCheck(
+    "coordinator logbook page includes submitted entry",
+    logbooksPage.status === 200 && logbooksHtml.includes(marker),
+    `status=${logbooksPage.status}`,
+  );
+
+  if (logbookEntryId) {
+    await expectSessionStatus(
+      coordinatorSession,
+      `/api/org/raftech/logbooks/${logbookEntryId}/approval`,
+      [302, 303, 307, 308],
+      {
+        method: "POST",
+        body: new URLSearchParams({ status: "APPROVED", comment: "UAT approval" }),
+      },
+      "coordinator can approve tenant-bound logbook",
+    );
+
+    await expectSessionStatus(
+      coordinatorSession,
+      `/api/org/demo-training-provider/logbooks/${logbookEntryId}/approval`,
+      [403, 404],
+      {
+        method: "POST",
+        body: new URLSearchParams({ status: "APPROVED", comment: "Cross-tenant attempt" }),
+      },
+      "cross-tenant logbook approval blocked",
+    );
+  }
+
+  const stipendPage = await coordinatorSession.request("/org/raftech/app/stipends");
+  const stipendHtml = await stipendPage.text();
+  recordCheck("stipends page loads for coordinator", stipendPage.status === 200, `status=${stipendPage.status}`);
+
+  const stipendEnrollmentMatch = stipendHtml.match(/action="\/api\/enrollments\/([^/"]+)\/stipend"/i);
+  const stipendEnrollmentId = stipendEnrollmentMatch?.[1] ?? null;
+  recordCheck(
+    "stipend enrollment target discovered",
+    Boolean(stipendEnrollmentId),
+    stipendEnrollmentId ? `enrollmentId=${stipendEnrollmentId}` : "missing enrollment action",
+  );
+
+  const currentMonth = monthKey(new Date());
+  if (stipendEnrollmentId) {
+    await expectSessionStatus(
+      coordinatorSession,
+      `/api/enrollments/${stipendEnrollmentId}/stipend`,
+      [302, 303, 307, 308],
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          month: currentMonth,
+          eligible: "true",
+          paymentStatus: "PAID",
+          stipendAmount: "1200",
+          exceptionReason: "",
+        }),
+      },
+      "stipend payment state update",
+    );
+
+    const stipendCsv = await coordinatorSession.request("/api/org/raftech/exports/stipend.csv");
+    const stipendCsvBody = await stipendCsv.text();
+    recordCheck(
+      "stipend export reflects updated month",
+      stipendCsv.status === 200 && stipendCsvBody.includes(currentMonth),
+      `status=${stipendCsv.status}`,
+    );
+
+    await expectSessionStatus(
+      coordinatorSession,
+      `/api/enrollments/${stipendEnrollmentId}/status`,
+      [200, 302, 303, 307, 308],
+      { method: "POST", body: new URLSearchParams({ status: "COMPLETED" }) },
+      "enrollment transitioned to COMPLETED",
+    );
+
+    const followUpsRes = await coordinatorSession.request("/api/org/raftech/follow-ups");
+    const followUpsPayload = await asJsonSafe(followUpsRes);
+    const followUpRecords = Array.isArray(followUpsPayload?.records)
+      ? followUpsPayload.records
+      : [];
+    recordCheck(
+      "follow-up records available",
+      followUpsRes.status === 200 && followUpRecords.length > 0,
+      `status=${followUpsRes.status}; records=${followUpRecords.length}`,
+    );
+
+    const followUpTarget =
+      followUpRecords.find((record) => record.enrollmentId === stipendEnrollmentId) ??
+      followUpRecords[0] ??
+      null;
+    recordCheck(
+      "follow-up target selected",
+      Boolean(followUpTarget?.id),
+      followUpTarget?.id ? `recordId=${followUpTarget.id}` : "no follow-up target",
+    );
+
+    if (followUpTarget?.id) {
+      await expectSessionStatus(
+        coordinatorSession,
+        "/api/org/raftech/follow-ups",
+        [302, 303, 307, 308],
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            recordId: followUpTarget.id,
+            status: "COMPLETED",
+            outcome: "EMPLOYED",
+            outcomeNotes: "Seeded UAT completion",
+          }),
+        },
+        "follow-up completion update",
+      );
+
+      const followUpsVerifyRes = await coordinatorSession.request("/api/org/raftech/follow-ups");
+      const followUpsVerifyPayload = await asJsonSafe(followUpsVerifyRes);
+      const updatedRecord = Array.isArray(followUpsVerifyPayload?.records)
+        ? followUpsVerifyPayload.records.find((record) => record.id === followUpTarget.id)
+        : null;
+      recordCheck(
+        "follow-up completion persisted",
+        followUpsVerifyRes.status === 200 &&
+          updatedRecord?.status === "COMPLETED" &&
+          updatedRecord?.outcome === "EMPLOYED",
+        `status=${followUpsVerifyRes.status}`,
+      );
+
+      if (followUpTarget.programId) {
+        await expectSessionStatus(
+          coordinatorSession,
+          "/api/org/raftech/certificates/policy",
+          [302, 303, 307, 308],
+          {
+            method: "POST",
+            body: new URLSearchParams({
+              programId: String(followUpTarget.programId),
+              releaseRule: "AFTER_3_MONTHS",
+            }),
+          },
+          "certificate delayed-release policy update",
+        );
+      }
+
+      const certIssueRes = await coordinatorSession.request(
+        "/api/org/raftech/certificates/issue?response=json",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            enrollmentId: stipendEnrollmentId,
+            managerName: "MVP UAT Manager",
+            signature: "MVP UAT Manager",
+            tenantName: "Raftech",
+          }),
+        },
+      );
+      const certIssuePayload = await asJsonSafe(certIssueRes);
+      const certDocumentId = certIssuePayload?.documentId ?? null;
+      recordCheck(
+        "certificate issue API",
+        certIssueRes.status === 200 && certIssuePayload?.ok === true && Boolean(certIssuePayload?.certificateId),
+        `status=${certIssueRes.status}`,
+      );
+
+      if (certDocumentId) {
+        const certDownload = await coordinatorSession.request(
+          `/api/org/raftech/certificates/${certDocumentId}/download`,
+        );
+        recordCheck(
+          "certificate download by coordinator",
+          certDownload.status === 200 &&
+            (certDownload.headers.get("content-type") ?? "").includes("application/pdf"),
+          `status=${certDownload.status}`,
+        );
+      }
+    }
+  }
+
+  const foundationRes = await coordinatorSession.request("/api/org/raftech/exports/foundation");
+  const foundationPayload = await asJsonSafe(foundationRes);
+  const programmeIds = Array.isArray(foundationPayload?.programmes)
+    ? foundationPayload.programmes.map((programme) => programme.id)
+    : [];
+  recordCheck(
+    "export foundation summary",
+    foundationRes.status === 200 &&
+      foundationPayload?.ok === true &&
+      Number(foundationPayload?.summary?.programmes ?? 0) > 0,
+    `status=${foundationRes.status}`,
+  );
+
+  const exportsPage = await coordinatorSession.request("/org/raftech/app/reports/exports");
+  const exportsHtml = await exportsPage.text();
+  recordCheck("exports page loads", exportsPage.status === 200, `status=${exportsPage.status}`);
+
+  const optionValues = extractAllMatches(exportsHtml, /<option[^>]*value="([^"]+)"/gi);
+  const templateId =
+    optionValues.find((value) => value && !programmeIds.includes(value)) ?? null;
+  const programmeId = programmeIds[0] ?? null;
+
+  recordCheck(
+    "closeout generation inputs discovered",
+    Boolean(programmeId && templateId),
+    `programmeId=${programmeId ?? "n/a"}; templateId=${templateId ?? "n/a"}`,
+  );
+
+  if (programmeId && templateId) {
+    const createCloseoutRes = await coordinatorSession.request("/api/org/raftech/exports/closeout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ programmeId, exportTemplateId: templateId }),
+    });
+    const closeoutPayload = await asJsonSafe(createCloseoutRes);
+    const queuedJobId = closeoutPayload?.jobId ?? null;
+    recordCheck(
+      "closeout export generation request",
+      createCloseoutRes.status === 200 && closeoutPayload?.ok === true && Boolean(queuedJobId),
+      `status=${createCloseoutRes.status}`,
+    );
+
+    if (queuedJobId) {
+      const closeoutStatusRes = await coordinatorSession.request(
+        `/api/org/raftech/exports/closeout?jobId=${queuedJobId}`,
+      );
+      const closeoutStatusPayload = await asJsonSafe(closeoutStatusRes);
+      const jobStatus = closeoutStatusPayload?.job?.status;
+      recordCheck(
+        "closeout export job status available",
+        closeoutStatusRes.status === 200 &&
+          ["QUEUED", "RUNNING", "DONE", "FAILED"].includes(String(jobStatus)),
+        `status=${closeoutStatusRes.status}; jobStatus=${jobStatus ?? "n/a"}`,
+      );
+    }
+
+    await expectSessionStatus(
+      studentSession,
+      "/api/org/raftech/exports/closeout",
+      [403],
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ programmeId, exportTemplateId: templateId }),
+      },
+      "student blocked from closeout export generation",
+    );
+  }
+
+  await expectSessionStatus(hqSession, "/hq/dashboard", [200], {}, "hq dashboard");
+}
+
 async function main() {
   // eslint-disable-next-line no-console
   console.log(`Running seeded MVP UAT against ${baseUrl}`);
 
   await expectStatus("/", [200], {}, "public home");
+  await expectStatus("/auth", [200, 302, 303, 307, 308], {}, "auth entry");
   await expectStatus("/auth/login", [200], {}, "auth login");
   await expectStatus("/student-sign-up", [200], {}, "student signup page");
   await expectStatus("/register-organization", [200], {}, "organization register page");
@@ -141,43 +501,13 @@ async function main() {
   );
 
   const demoProbe = await loginDemo("student@demo.com");
-  if (demoProbe.res.status === 404) {
-    warnings.push("Demo login disabled; role-based seeded checks were skipped.");
-    recordCheck("demo login availability", true, "disabled (expected for hardened prod-like mode)");
-  } else {
-    recordCheck(
-      "demo login availability",
-      demoProbe.res.status === 200 && demoProbe.payload?.ok === true,
-      `status=${demoProbe.res.status}`,
-    );
+  let studentSession = null;
+  let coordinatorSession = null;
+  let hqSession = null;
 
-    const studentSession = demoProbe.session;
-    await expectSessionStatus(studentSession, "/app/student", [200], {}, "student dashboard");
-    await expectSessionStatus(
-      studentSession,
-      "/api/org/raftech/notifications",
-      [403],
-      { method: "POST", body: new URLSearchParams() },
-      "student blocked from coordinator notifications API",
-    );
-
-    const marker = `UAT logbook marker ${Date.now()} seeded`;
-    const logbookRes = await studentSession.request("/api/logbook", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgSlug: "raftech",
-        weekStart: new Date().toISOString().slice(0, 10),
-        summary: marker,
-      }),
-    });
-    const logbookPayload = await asJsonSafe(logbookRes);
-    const logbookEntryId = logbookPayload?.entryId;
-    recordCheck(
-      "student logbook submit",
-      logbookRes.status === 200 && logbookPayload?.ok === true && Boolean(logbookEntryId),
-      `status=${logbookRes.status}`,
-    );
+  if (demoProbe.res.status === 200 && demoProbe.payload?.ok === true) {
+    recordCheck("demo login availability", true, "enabled");
+    studentSession = demoProbe.session;
 
     const coordinatorLogin = await loginDemo("coordinator@demo.com");
     recordCheck(
@@ -185,39 +515,7 @@ async function main() {
       coordinatorLogin.res.status === 200 && coordinatorLogin.payload?.ok === true,
       `status=${coordinatorLogin.res.status}`,
     );
-    const coordinatorSession = coordinatorLogin.session;
-
-    const logbooksPage = await coordinatorSession.request("/org/raftech/app/logbooks");
-    const logbooksHtml = await logbooksPage.text();
-    recordCheck(
-      "coordinator logbook page includes submitted entry",
-      logbooksPage.status === 200 && logbooksHtml.includes(marker),
-      `status=${logbooksPage.status}`,
-    );
-
-    if (logbookEntryId) {
-      await expectSessionStatus(
-        coordinatorSession,
-        `/api/org/raftech/logbooks/${logbookEntryId}/approval`,
-        [302, 303, 307, 308],
-        {
-          method: "POST",
-          body: new URLSearchParams({ status: "APPROVED", comment: "UAT approval" }),
-        },
-        "coordinator can approve tenant-bound logbook",
-      );
-
-      await expectSessionStatus(
-        coordinatorSession,
-        `/api/org/demo-training-provider/logbooks/${logbookEntryId}/approval`,
-        [403, 404],
-        {
-          method: "POST",
-          body: new URLSearchParams({ status: "APPROVED", comment: "Cross-tenant attempt" }),
-        },
-        "cross-tenant logbook approval blocked",
-      );
-    }
+    coordinatorSession = coordinatorLogin.session;
 
     const hqLogin = await loginDemo("admin@internflow.com");
     recordCheck(
@@ -225,11 +523,34 @@ async function main() {
       hqLogin.res.status === 200 && hqLogin.payload?.ok === true,
       `status=${hqLogin.res.status}`,
     );
-    await expectSessionStatus(hqLogin.session, "/hq/dashboard", [200], {}, "hq dashboard");
+    hqSession = hqLogin.session;
+  } else {
+    const secret = loadAuthSessionSecret();
+    if (!secret) {
+      recordCheck(
+        "seeded auth bootstrap fallback",
+        false,
+        "Demo login disabled and AUTH_SESSION_SECRET/NEXTAUTH_SECRET unavailable for signed-session fallback.",
+      );
+    } else {
+      warnings.push(
+        "Demo login disabled; using signed-session seeded fallback for role workflow checks.",
+      );
+      recordCheck("seeded auth bootstrap fallback", true, "signed session cookies");
+      studentSession = createSignedSession("student@demo.com", secret);
+      coordinatorSession = createSignedSession("coordinator@demo.com", secret);
+      hqSession = createSignedSession("admin@internflow.com", secret);
+    }
+  }
+
+  if (studentSession && coordinatorSession && hqSession) {
+    await runRoleChecks(studentSession, coordinatorSession, hqSession);
+  } else {
+    warnings.push("Role-based deep checks were skipped because session bootstrap failed.");
   }
 
   // eslint-disable-next-line no-console
-  console.log(`\nSummary: ${checks.filter((c) => c.ok).length}/${checks.length} checks passed.`);
+  console.log(`\nSummary: ${checks.filter((check) => check.ok).length}/${checks.length} checks passed.`);
   if (warnings.length > 0) {
     // eslint-disable-next-line no-console
     console.log("Warnings:");

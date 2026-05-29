@@ -102,13 +102,13 @@ export default function HomePage() {
         <FadeInSection>
           <section id="product" className="grid gap-7 lg:grid-cols-[1fr_1fr] lg:items-center">
             <div className="space-y-6">
-              <p className="text-xs uppercase tracking-[0.25em] text-brand-accentStrong">
+              <p className="if-marketing-eyebrow">
                 Enterprise Workflow Platform
               </p>
-              <h1 className="text-4xl font-semibold leading-tight text-brand-text md:text-5xl">
+              <h1 className="if-hero-title max-w-4xl">
                 InternFlow is the operating system for programme delivery, evidence, and audit readiness.
               </h1>
-              <p className="max-w-2xl text-base leading-relaxed text-brand-textSoft">
+              <p className="if-hero-copy max-w-2xl">
                 Built for providers, coordinators, and operations teams managing real internship and
                 learnership delivery. InternFlow connects lifecycle control, compliance evidence,
                 and operational visibility in one enterprise-grade platform.
@@ -130,11 +130,11 @@ export default function HomePage() {
                   Contact Us
                 </Link>
               </div>
-              <div className="grid gap-2 text-sm text-brand-muted sm:grid-cols-2">
-                <p className="if-panel-muted px-3 py-2">Multi-organisation operations model</p>
-                <p className="if-panel-muted px-3 py-2">Role-scoped workflow governance</p>
-                <p className="if-panel-muted px-3 py-2">Evidence-first programme controls</p>
-                <p className="if-panel-muted px-3 py-2">Audit-ready reporting posture</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <p className="if-panel-muted if-caption-text px-3 py-2">Multi-organisation operations model</p>
+                <p className="if-panel-muted if-caption-text px-3 py-2">Role-scoped workflow governance</p>
+                <p className="if-panel-muted if-caption-text px-3 py-2">Evidence-first programme controls</p>
+                <p className="if-panel-muted if-caption-text px-3 py-2">Audit-ready reporting posture</p>
               </div>
             </div>
 
@@ -154,25 +154,25 @@ export default function HomePage() {
                 description="Real delivery visibility across lifecycle, compliance, and finance signals."
                 imageClassName="h-[18rem]"
               >
-                <div className="mt-3 grid gap-2 text-sm text-white/90 sm:grid-cols-2">
-                  <p className="rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2">
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <p className="if-panel-copy rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2 text-white/90">
                     Applications and placement progression
                   </p>
-                  <p className="rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2">
+                  <p className="if-panel-copy rounded-lg border border-white/20 bg-[#0b1024]/55 px-3 py-2 text-white/90">
                     Document and evidence integrity
                   </p>
                 </div>
               </BrandImagePanel>
               <div className="grid gap-3 sm:grid-cols-2">
                 <AnimatedCard>
-                  <p className="text-xs uppercase tracking-[0.16em] text-brand-muted">Operational focus</p>
-                  <p className="mt-2 text-sm text-brand-textSoft">
+                  <p className="if-meta-text">Operational focus</p>
+                  <p className="if-body-text mt-2">
                     Minimize manual handovers and control gaps across delivery teams.
                   </p>
                 </AnimatedCard>
                 <AnimatedCard>
-                  <p className="text-xs uppercase tracking-[0.16em] text-brand-muted">Audit posture</p>
-                  <p className="mt-2 text-sm text-brand-textSoft">
+                  <p className="if-meta-text">Audit posture</p>
+                  <p className="if-body-text mt-2">
                     Maintain evidence lineage from learner activity through close-out reporting.
                   </p>
                 </AnimatedCard>
@@ -192,8 +192,8 @@ export default function HomePage() {
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {platformPillars.map((pillar) => (
                   <AnimatedCard key={pillar.title}>
-                    <h3 className="text-lg font-semibold text-brand-text">{pillar.title}</h3>
-                    <p className="mt-2 text-sm text-brand-textSoft">{pillar.description}</p>
+                    <h3 className="if-panel-title">{pillar.title}</h3>
+                    <p className="if-body-text mt-2">{pillar.description}</p>
                   </AnimatedCard>
                 ))}
               </div>
@@ -219,9 +219,9 @@ export default function HomePage() {
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {workflowSteps.map((step, index) => (
                 <AnimatedCard key={step.title}>
-                  <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Step {index + 1}</p>
-                  <h3 className="mt-2 text-lg font-semibold text-brand-text">{step.title}</h3>
-                  <p className="mt-2 text-sm text-brand-textSoft">{step.detail}</p>
+                  <p className="if-marketing-eyebrow text-brand-accentStrong">Step {index + 1}</p>
+                  <h3 className="if-panel-title mt-2">{step.title}</h3>
+                  <p className="if-body-text mt-2">{step.detail}</p>
                 </AnimatedCard>
               ))}
             </div>
@@ -239,7 +239,7 @@ export default function HomePage() {
               <AnimatedCard>
                 <div className="grid gap-2 md:grid-cols-2">
                   {capabilityRows.map((row) => (
-                    <div key={row} className="if-panel-muted rounded-xl px-3 py-2 text-sm text-brand-textSoft">
+                    <div key={row} className="if-panel-muted if-body-text rounded-xl px-3 py-2">
                       {row}
                     </div>
                   ))}
@@ -267,8 +267,8 @@ export default function HomePage() {
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {roleValue.map((roleItem) => (
                   <AnimatedCard key={roleItem.role}>
-                    <h3 className="text-lg font-semibold text-brand-text">{roleItem.role}</h3>
-                    <p className="mt-2 text-sm text-brand-textSoft">{roleItem.value}</p>
+                    <h3 className="if-panel-title">{roleItem.role}</h3>
+                    <p className="if-body-text mt-2">{roleItem.value}</p>
                   </AnimatedCard>
                 ))}
               </div>
@@ -293,18 +293,18 @@ export default function HomePage() {
               imageClassName="h-full min-h-[20rem]"
             />
             <AnimatedCard>
-              <h3 className="text-lg font-semibold text-brand-text">Evidence domains managed in-platform</h3>
-              <ul className="mt-3 space-y-2 text-sm text-brand-textSoft">
+              <h3 className="if-panel-title">Evidence domains managed in-platform</h3>
+              <ul className="if-body-text mt-3 space-y-2">
                 <li>Document verification states and requirement alignment</li>
                 <li>Attendance registers with sign-off and review actions</li>
                 <li>Payment evidence, stipend state updates, and monthly records</li>
                 <li>Certificate release logic with policy-controlled timing</li>
                 <li>Post-training follow-up records and outcome status trails</li>
               </ul>
-              <h4 className="mt-5 text-sm font-semibold uppercase tracking-[0.16em] text-brand-accentStrong">
+              <h4 className="if-meta-text mt-5 text-brand-accentStrong">
                 Control principles
               </h4>
-              <div className="mt-2 space-y-2 text-sm text-brand-textSoft">
+              <div className="mt-2 space-y-2">
                 <p className="if-panel-muted px-3 py-2">Role-based access and operational separation of duties</p>
                 <p className="if-panel-muted px-3 py-2">Tenant-scoped records and constrained workspace visibility</p>
                 <p className="if-panel-muted px-3 py-2">Stateful lifecycle progression with explicit status transitions</p>
@@ -323,7 +323,7 @@ export default function HomePage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {enterpriseBenefits.map((benefit) => (
                 <AnimatedCard key={benefit}>
-                  <p className="text-sm text-brand-textSoft">{benefit}</p>
+                  <p className="if-body-text">{benefit}</p>
                 </AnimatedCard>
               ))}
             </div>
@@ -405,5 +405,3 @@ export default function HomePage() {
     </SiteShell>
   );
 }
-
-

@@ -32,12 +32,20 @@ export function BrandImagePanel({
         {(eyebrow || title || description || children) && (
           <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
             {eyebrow ? (
-              <p className="text-[11px] uppercase tracking-[0.2em] text-brand-accentStrong/95">
+              <p className="if-marketing-eyebrow text-brand-accentStrong/95">
                 {eyebrow}
               </p>
             ) : null}
-            {title ? <h3 className="mt-1 text-lg font-semibold text-white">{title}</h3> : null}
-            {description ? <p className="mt-1 text-sm text-white/85">{description}</p> : null}
+            {title ? (
+              <h3 className="if-panel-title mt-1 text-white [text-shadow:0_1px_0_rgba(8,11,26,0.48)]">
+                {title}
+              </h3>
+            ) : null}
+            {description ? (
+              <p className="if-panel-copy mt-1 text-white/85 [text-shadow:0_1px_0_rgba(8,11,26,0.36)]">
+                {description}
+              </p>
+            ) : null}
             {children}
           </div>
         )}

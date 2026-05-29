@@ -75,7 +75,7 @@ export default async function HQDashboardPage() {
   return (
     <div className="if-auth-page gap-5">
       <section className="if-auth-hero">
-        <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">InternFlow HQ</p>
+        <p className="if-marketing-eyebrow text-brand-accentStrong">InternFlow HQ</p>
         <h1 className="if-auth-title mt-2">Platform command center</h1>
         <p className="if-auth-subtitle max-w-3xl">
           Track tenant health, compliance throughput, support demand, and platform activity in one oversight workspace.
@@ -102,8 +102,8 @@ export default async function HQDashboardPage() {
 
       <div className="if-panel rounded-2xl p-4">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-brand-text">Recent activity</h2>
-          <p className="text-xs text-brand-muted">Last {recent.length} platform actions</p>
+          <h2 className="if-panel-title">Recent activity</h2>
+          <p className="if-caption-text">Last {recent.length} platform actions</p>
         </div>
         <div className="mt-3 space-y-2 text-sm">
           {recent.map((a) => (
@@ -112,7 +112,7 @@ export default async function HQDashboardPage() {
                 <span className={activityTone(a.action)}>{activityLabel(a.action)}</span>
                 <span className="text-xs text-brand-muted">{a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC</span>
               </div>
-              <p className="mt-2 text-brand-textSoft">{a.actor?.email ?? "System"}</p>
+              <p className="if-body-text mt-2">{a.actor?.email ?? "System"}</p>
             </div>
           ))}
         </div>

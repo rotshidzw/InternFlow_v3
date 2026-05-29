@@ -2,7 +2,7 @@ import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendOtpEmail } from "@/lib/mailer";
-import { saveOtp } from "@/lib/otp-store";
+import { OtpStoreUnavailableError, saveOtp } from "@/lib/otp-store";
 
 const studentSignupSchema = z.object({
   fullName: z.string().trim().min(2, "Full name is required").max(160),
@@ -86,7 +86,28 @@ export async function POST(req: Request) {
   });
 
   const code = generateOtp();
-  await saveOtp(email, code);
+  try {
+    await saveOtp(email, code);
+  } catch (error) {
+    if (error instanceof OtpStoreUnavailableError) {
+      await prisma.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "STUDENT_SIGNUP_OTP_STORE_UNAVAILABLE",
+          metadata: { email, error: error.message },
+        },
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Authentication service is temporarily unavailable. Please retry shortly.",
+        },
+        { status: 503 },
+      );
+    }
+    throw error;
+  }
   const mailResult = await withTimeout(
     sendOtpEmail(email, code),
     12_000,

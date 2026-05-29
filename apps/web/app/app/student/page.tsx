@@ -252,13 +252,13 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           <div className="if-panel-muted space-y-4 p-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <p className="if-marketing-eyebrow text-brand-accentStrong">
                   Student Dashboard
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+                <h1 className="if-page-title mt-2">
                   Welcome, {user.name ?? "Student"}
                 </h1>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="if-page-subtitle mt-2">
                   {["assigned", "active", "completed"].includes(lifecycle.placementStatus) && programmeName
                     ? `Programme: ${programmeName}`
                     : "Placement not assigned yet. Complete profile, documents, and application steps to move forward."}
@@ -324,41 +324,41 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article className="if-panel-muted rounded-xl p-4">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+          <p className="if-caption-text inline-flex items-center gap-2">
             <FileText className="h-4 w-4 text-sky-600" />
             Required docs
           </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">
+          <p className="if-kpi-value mt-2">
             {requiredDone}/{docPlan.required.length}
           </p>
-          <p className="text-xs text-slate-500">{requiredProgress}% complete</p>
+          <p className="if-caption-text">{requiredProgress}% complete</p>
         </article>
         <article className="if-panel-muted rounded-xl p-4">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+          <p className="if-caption-text inline-flex items-center gap-2">
             <Clock3 className="h-4 w-4 text-amber-600" />
             Profile completion
           </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{profileCompletion}%</p>
+          <p className="if-kpi-value mt-2">{profileCompletion}%</p>
         </article>
         <article className="if-panel-muted rounded-xl p-4">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+          <p className="if-caption-text inline-flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-violet-600" />
             Discussions
           </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{threadCount}</p>
+          <p className="if-kpi-value mt-2">{threadCount}</p>
         </article>
         <article className="if-panel-muted rounded-xl p-4">
-          <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+          <p className="if-caption-text inline-flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             Payments & Certificate
           </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{payslips}</p>
-          <p className="text-xs text-slate-500">Payslips on file</p>
-          <p className="mt-1 text-xs text-slate-600">{certificateStatusText}</p>
+          <p className="if-kpi-value mt-2">{payslips}</p>
+          <p className="if-caption-text">Payslips on file</p>
+          <p className="if-caption-text mt-1">{certificateStatusText}</p>
         </article>
         <article className="if-panel-muted rounded-xl p-4">
-          <p className="text-sm text-slate-600">Application</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">
+          <p className="if-caption-text">Application</p>
+          <p className="if-panel-title mt-2 text-base">
             {applicationStatusLabel(lifecycle.applicationStatus)}
           </p>
           {documentsReady && shouldShowApplyNow && (
@@ -369,7 +369,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <section className="if-panel rounded-2xl p-5 xl:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">Lifecycle status</h2>
+          <h2 className="if-panel-title">Lifecycle status</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
             <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
@@ -398,10 +398,10 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
           )}
           <div className="mt-3 grid gap-2 lg:grid-cols-2">
             <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
-              <p className="font-medium text-slate-900">Certificate</p>
+              <p className="if-card-title">Certificate</p>
               <p>{certificateStatusText}</p>
               {studentCertificateRecord && (
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="if-caption-text mt-1">
                   Certificate number: {studentCertificateRecord.certificateNumber} - Issue date:{" "}
                   {studentCertificateRecord.issueDate}
                 </p>
@@ -416,10 +416,10 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               )}
             </div>
             <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
-              <p className="font-medium text-slate-900">Post-training follow-up</p>
+              <p className="if-card-title">Post-training follow-up</p>
               <p>{followUpStatusText}</p>
               {studentFollowUps.length > 0 && (
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="if-caption-text mt-1">
                   Completed: {completedFollowUpCount}/{studentFollowUps.length} - Overdue:{" "}
                   {overdueFollowUpCount}
                 </p>
@@ -430,7 +430,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
         <section className="if-panel rounded-2xl p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Required document checklist</h2>
+            <h2 className="if-panel-title">Required document checklist</h2>
             <Link
               href="/app/student/documents"
               className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
@@ -457,7 +457,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </section>
 
         <section className="if-panel rounded-2xl p-5">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <h2 className="if-panel-title inline-flex items-center gap-2">
             <Bell className="h-5 w-5 text-amber-500" />
             Recent updates
           </h2>
@@ -490,7 +490,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
 
       <section className="if-panel rounded-2xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">Discussions & support</h2>
+          <h2 className="if-panel-title">Discussions & support</h2>
           <Link
             href="/app/whatsapp-sim"
             className="text-xs font-semibold text-brand-accentStrong hover:text-brand-text"
@@ -498,7 +498,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             Open support
           </Link>
         </div>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="if-body-text mt-2">
           Use support for questions, status clarification, and help requests. Uploads happen in the Documents page.
         </p>
         <div className="mt-3 grid gap-2">

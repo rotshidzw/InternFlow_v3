@@ -2,7 +2,7 @@ import { otpRequestSchema } from "@internflow/shared/src/schemas";
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { sendOtpEmail } from "@/lib/mailer";
-import { saveOtp } from "@/lib/otp-store";
+import { OtpStoreUnavailableError, saveOtp } from "@/lib/otp-store";
 
 function generateOtp() {
   return `${Math.floor(100000 + Math.random() * 900000)}`;
@@ -27,7 +27,28 @@ export async function POST(req: Request) {
   const code = generateOtp();
   const email = parsed.data.email.toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
-  await saveOtp(email, code);
+  try {
+    await saveOtp(email, code);
+  } catch (error) {
+    if (error instanceof OtpStoreUnavailableError) {
+      await prisma.auditLog.create({
+        data: {
+          userId: user?.id,
+          action: "LOGIN_OTP_STORE_UNAVAILABLE",
+          metadata: { email, error: error.message },
+        },
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "OTP delivery is temporarily unavailable. Please retry in a few moments.",
+        },
+        { status: 503 },
+      );
+    }
+    throw error;
+  }
 
   const mailResult = await withTimeout(
     sendOtpEmail(email, code),

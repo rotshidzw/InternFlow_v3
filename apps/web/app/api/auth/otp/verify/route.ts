@@ -1,7 +1,7 @@
 import { prisma } from "@internflow/db/src";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyOtp } from "@/lib/otp-store";
+import { OtpStoreUnavailableError, verifyOtp } from "@/lib/otp-store";
 import { z } from "zod";
 import { setAuthenticatedSessionCookies } from "@/lib/auth-session";
 
@@ -21,7 +21,28 @@ export async function POST(req: Request) {
   }
 
   const email = parsed.data.email.toLowerCase();
-  const check = await verifyOtp(email, parsed.data.code);
+  let check: Awaited<ReturnType<typeof verifyOtp>>;
+  try {
+    check = await verifyOtp(email, parsed.data.code);
+  } catch (error) {
+    if (error instanceof OtpStoreUnavailableError) {
+      await prisma.auditLog.create({
+        data: {
+          action: "LOGIN_OTP_VERIFY_STORE_UNAVAILABLE",
+          metadata: { email, error: error.message },
+        },
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "OTP verification is temporarily unavailable. Please retry in a few moments.",
+        },
+        { status: 503 },
+      );
+    }
+    throw error;
+  }
   if (!check.ok) {
     return NextResponse.json(
       { ok: false, error: check.reason },

@@ -234,9 +234,9 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           </div>
           <div className="relative space-y-5">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.18em] text-brand-accentStrong">Tenant Command Center</p>
-              <h1 className="text-3xl font-semibold text-brand-text">Programme Operations Home</h1>
-              <p className="max-w-2xl text-sm text-brand-textSoft">
+              <p className="if-marketing-eyebrow text-brand-accentStrong">Tenant Command Center</p>
+              <h1 className="if-page-title">Programme Operations Home</h1>
+              <p className="if-page-subtitle max-w-2xl">
                 Coordinate recruitment, onboarding, attendance, compliance, stipends, certificates,
                 and follow-up from a single operational view built for daily execution.
               </p>
@@ -244,20 +244,20 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
 
             <div className="grid gap-2 sm:grid-cols-2">
               <Link href={`/org/${params.orgSlug}/app/learner-chat`} className="if-panel-muted rounded-xl px-3 py-2 text-sm transition hover:border-brand-accent/40 hover:bg-brand-surface">
-                <p className="text-xs uppercase tracking-[0.12em] text-brand-muted">Conversations</p>
-                <p className="mt-1 font-medium text-brand-text">Chat with learners</p>
+                <p className="if-meta-text">Conversations</p>
+                <p className="if-body-text mt-1 font-medium text-brand-text">Chat with learners</p>
               </Link>
               <Link href={`/org/${params.orgSlug}/app/progress`} className="if-panel-muted rounded-xl px-3 py-2 text-sm transition hover:border-brand-accent/40 hover:bg-brand-surface">
-                <p className="text-xs uppercase tracking-[0.12em] text-brand-muted">Progress</p>
-                <p className="mt-1 font-medium text-brand-text">Track programme flow</p>
+                <p className="if-meta-text">Progress</p>
+                <p className="if-body-text mt-1 font-medium text-brand-text">Track programme flow</p>
               </Link>
               <Link href={`/org/${params.orgSlug}/app/registers`} className="if-panel-muted rounded-xl px-3 py-2 text-sm transition hover:border-brand-accent/40 hover:bg-brand-surface">
-                <p className="text-xs uppercase tracking-[0.12em] text-brand-muted">Registers</p>
-                <p className="mt-1 font-medium text-brand-text">Attendance and sign-off</p>
+                <p className="if-meta-text">Registers</p>
+                <p className="if-body-text mt-1 font-medium text-brand-text">Attendance and sign-off</p>
               </Link>
               <Link href={`/org/${params.orgSlug}/app/certificates`} className="if-panel-muted rounded-xl px-3 py-2 text-sm transition hover:border-brand-accent/40 hover:bg-brand-surface">
-                <p className="text-xs uppercase tracking-[0.12em] text-brand-muted">Certificates</p>
-                <p className="mt-1 font-medium text-brand-text">Release and follow-up</p>
+                <p className="if-meta-text">Certificates</p>
+                <p className="if-body-text mt-1 font-medium text-brand-text">Release and follow-up</p>
               </Link>
             </div>
 
@@ -291,33 +291,33 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           href={`/org/${params.orgSlug}/app/programs`}
           className="if-panel group rounded-2xl border border-brand-border/70 p-4 transition hover:-translate-y-0.5 hover:border-brand-accent/40"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">Programmes</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-text">{programs}</p>
-          <p className="mt-1 text-xs text-brand-textSoft">Configured delivery tracks</p>
+          <p className="if-kpi-label">Programmes</p>
+          <p className="if-kpi-value mt-2">{programs}</p>
+          <p className="if-caption-text mt-1">Configured delivery tracks</p>
         </Link>
         <Link
           href={`/org/${params.orgSlug}/app/opportunities`}
           className="if-panel group rounded-2xl border border-brand-border/70 p-4 transition hover:-translate-y-0.5 hover:border-brand-accent/40"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">Opportunities</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-text">{opportunities}</p>
-          <p className="mt-1 text-xs text-brand-textSoft">Open application channels</p>
+          <p className="if-kpi-label">Opportunities</p>
+          <p className="if-kpi-value mt-2">{opportunities}</p>
+          <p className="if-caption-text mt-1">Open application channels</p>
         </Link>
         <Link
           href={`/org/${params.orgSlug}/app/enrollments`}
           className="if-panel group rounded-2xl border border-brand-border/70 p-4 transition hover:-translate-y-0.5 hover:border-brand-accent/40"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">Active learners</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-text">{activeEnrollments}</p>
-          <p className="mt-1 text-xs text-brand-textSoft">{completedEnrollments} completed cohorts</p>
+          <p className="if-kpi-label">Active learners</p>
+          <p className="if-kpi-value mt-2">{activeEnrollments}</p>
+          <p className="if-caption-text mt-1">{completedEnrollments} completed cohorts</p>
         </Link>
         <Link
           href={`/org/${params.orgSlug}/app/approvals`}
           className="if-panel group rounded-2xl border border-brand-border/70 p-4 transition hover:-translate-y-0.5 hover:border-brand-accent/40"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-brand-muted">Pending approvals</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-text">{approvalsPending}</p>
-          <p className="mt-1 text-xs text-brand-textSoft">Supervisor and coordinator actions</p>
+          <p className="if-kpi-label">Pending approvals</p>
+          <p className="if-kpi-value mt-2">{approvalsPending}</p>
+          <p className="if-caption-text mt-1">Supervisor and coordinator actions</p>
         </Link>
       </section>
 
@@ -325,8 +325,8 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
         <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Recruitment Signal</p>
-              <h2 className="mt-1 text-lg font-semibold text-brand-text">Applications trend (14 days)</h2>
+              <p className="if-marketing-eyebrow text-brand-accentStrong">Recruitment Signal</p>
+              <h2 className="if-panel-title mt-1">Applications trend (14 days)</h2>
             </div>
             <Link href={`/org/${params.orgSlug}/app/applicants`} className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
               Open pipeline
@@ -335,19 +335,19 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
 
           <div className="mt-4 grid gap-2 sm:grid-cols-4">
             <div className="if-panel-muted rounded-lg px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-brand-muted">Total (14d)</p>
+              <p className="if-kpi-label">Total (14d)</p>
               <p className="mt-1 text-xl font-semibold text-brand-text">{totalApps14d}</p>
             </div>
             <div className="if-panel-muted rounded-lg px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-brand-muted">Today</p>
+              <p className="if-kpi-label">Today</p>
               <p className="mt-1 text-xl font-semibold text-brand-text">{todayApps}</p>
             </div>
             <div className="if-panel-muted rounded-lg px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-brand-muted">Peak day</p>
+              <p className="if-kpi-label">Peak day</p>
               <p className="mt-1 text-xl font-semibold text-brand-text">{maxTrend}</p>
             </div>
             <div className="if-panel-muted rounded-lg px-3 py-2">
-              <p className="text-[11px] uppercase tracking-[0.1em] text-brand-muted">7d momentum</p>
+              <p className="if-kpi-label">7d momentum</p>
               <p className={`mt-1 text-xl font-semibold ${trendDelta >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
                 {trendDelta >= 0 ? "+" : "-"}
                 {Math.abs(trendDelta)}
@@ -407,7 +407,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
 
         <div className="grid gap-4">
           <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Compliance Pulse</p>
+            <p className="if-marketing-eyebrow text-brand-accentStrong">Compliance Pulse</p>
             <div className="mt-3 flex items-center gap-4">
               <svg viewBox="0 0 100 100" className="h-24 w-24">
                 <circle cx="50" cy="50" r={complianceRadius} stroke="rgba(126,143,189,0.28)" strokeWidth="10" fill="none" />
@@ -435,7 +435,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           </div>
 
           <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Stipend Delivery</p>
+            <p className="if-marketing-eyebrow text-brand-accentStrong">Stipend Delivery</p>
             <div className="mt-3 flex items-center gap-4">
               <svg viewBox="0 0 100 100" className="h-24 w-24">
                 <circle cx="50" cy="50" r={complianceRadius} stroke="rgba(126,143,189,0.28)" strokeWidth="10" fill="none" />
@@ -463,7 +463,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           </div>
 
           <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
-            <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Operational Readiness</p>
+            <p className="if-marketing-eyebrow text-brand-accentStrong">Operational Readiness</p>
             <p className="mt-2 text-4xl font-semibold text-brand-text">{readinessScore}%</p>
             <p className="text-xs text-brand-textSoft">Composite readiness based on compliance, onboarding, attendance, and payout controls.</p>
             <p className="mt-1 text-xs text-brand-muted">Audit gaps currently flagged: {auditGaps}</p>
@@ -480,8 +480,8 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
       <section className="if-panel rounded-3xl border border-brand-border/70 p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-brand-accentStrong">Operational Flow</p>
-            <h2 className="mt-1 text-lg font-semibold text-brand-text">Recruitment to completion lifecycle</h2>
+            <p className="if-marketing-eyebrow text-brand-accentStrong">Operational Flow</p>
+            <h2 className="if-panel-title mt-1">Recruitment to completion lifecycle</h2>
           </div>
           <p className="text-xs text-brand-muted">
             Shortlisting {shortlistingRate}% - Acceptance {acceptanceRate}% - Onboarding {avgOnboardingProgress}% avg
@@ -507,7 +507,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
       <section className="grid gap-4 xl:grid-cols-3">
         <div className="if-panel rounded-3xl border border-brand-border/70 p-5 xl:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-brand-text">Latest applicants</h2>
+            <h2 className="if-panel-title">Latest applicants</h2>
             <Link href={`/org/${params.orgSlug}/app/applicants`} className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
               View all
             </Link>
@@ -531,7 +531,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
         </div>
 
         <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
-          <h2 className="text-lg font-semibold text-brand-text">Onboarding status</h2>
+          <h2 className="if-panel-title">Onboarding status</h2>
           <div className="mt-3 space-y-2 text-sm">
             <div className="if-panel-muted flex items-center justify-between rounded-lg px-3 py-2">
               <span className="text-brand-textSoft">Accepted applicants</span>
@@ -562,7 +562,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
       <section className="grid gap-4 xl:grid-cols-2">
         <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-brand-text">Recent learner activity</h2>
+            <h2 className="if-panel-title">Recent learner activity</h2>
             <Link href={`/org/${params.orgSlug}/app/logbooks`} className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
               Logbooks
             </Link>
@@ -584,7 +584,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
 
         <div className="if-panel rounded-3xl border border-brand-border/70 p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-brand-text">Recent system events</h2>
+            <h2 className="if-panel-title">Recent system events</h2>
             <Link href={`/org/${params.orgSlug}/app/reports`} className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
               Reports and exports
             </Link>
