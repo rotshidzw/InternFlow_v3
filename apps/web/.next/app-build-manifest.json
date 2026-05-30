@@ -25,51 +25,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
-    ],
-    "/auth/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/auth/login/page.js"
-    ],
-    "/app/student/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/app/student/page.js"
-    ],
-    "/auth/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/auth/page.js"
-    ],
-    "/org/[orgSlug]/app/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/page.js"
-    ],
-    "/org/[orgSlug]/app/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/layout.js"
-    ],
-    "/org/[orgSlug]/app/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/dashboard/page.js"
-    ],
-    "/org/[orgSlug]/app/programs/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/programs/page.js"
-    ],
-    "/org/[orgSlug]/app/opportunities/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/opportunities/page.js"
-    ],
-    "/org/[orgSlug]/app/enrollments/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/org/[orgSlug]/app/enrollments/page.js"
     ]
   }
 }

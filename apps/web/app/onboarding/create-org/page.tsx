@@ -26,7 +26,7 @@ export default function CreateOrgPage() {
           router.push("/onboarding/verify-org");
         })}
       >
-        <input {...register("name")} placeholder="Raftech" className="w-full rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3" required />
+        <input {...register("name")} placeholder="FutureSkills Institute" className="w-full rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3" required />
         <select {...register("type")} className="w-full rounded-xl border border-white/20 bg-slate-950/40 px-3 py-3">
           <option value="COMPANY">Company</option>
           <option value="TRAINING_PROVIDER">Training Provider</option>

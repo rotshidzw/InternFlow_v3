@@ -1,14 +1,4 @@
 {
-  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
   "/page": "app/page.js",
-  "/api/auth/logout/route": "app/api/auth/logout/route.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/auth/page": "app/auth/page.js",
-  "/api/auth/demo-login/route": "app/api/auth/demo-login/route.js",
-  "/app/student/page": "app/app/student/page.js",
-  "/org/[orgSlug]/app/page": "app/org/[orgSlug]/app/page.js",
-  "/org/[orgSlug]/app/enrollments/page": "app/org/[orgSlug]/app/enrollments/page.js",
-  "/org/[orgSlug]/app/dashboard/page": "app/org/[orgSlug]/app/dashboard/page.js",
-  "/org/[orgSlug]/app/programs/page": "app/org/[orgSlug]/app/programs/page.js",
-  "/org/[orgSlug]/app/opportunities/page": "app/org/[orgSlug]/app/opportunities/page.js"
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js"
 }

@@ -82,7 +82,7 @@ async function main() {
   ]);
 
   const tenantDefs = [
-    { name: "Raftech", slug: "raftech", status: OrganizationStatus.APPROVED, type: OrganizationType.COMPANY },
+    { name: "FutureSkills Institute", slug: "futureskills-institute", status: OrganizationStatus.APPROVED, type: OrganizationType.COMPANY },
     { name: "Demo Training Provider", slug: "demo-training-provider", status: OrganizationStatus.APPROVED, type: OrganizationType.TRAINING_PROVIDER },
     { name: "FutureSkills NGO", slug: "futureskills-ngo", status: OrganizationStatus.PENDING_REVIEW, type: OrganizationType.NGO },
     { name: "SkillUp University", slug: "skillup-university", status: OrganizationStatus.REJECTED, type: OrganizationType.UNIVERSITY },

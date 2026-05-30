@@ -166,14 +166,14 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
   await expectSessionStatus(studentSession, "/app/student", [200], {}, "student dashboard");
   await expectSessionStatus(
     studentSession,
-    "/api/org/raftech/notifications",
+    "/api/org/futureskills-institute/notifications",
     [403],
     { method: "POST", body: new URLSearchParams() },
     "student blocked from coordinator notifications API",
   );
   await expectSessionStatus(
     studentSession,
-    "/api/org/raftech/exports/foundation",
+    "/api/org/futureskills-institute/exports/foundation",
     [403],
     {},
     "student blocked from export foundation API",
@@ -184,7 +184,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      orgSlug: "raftech",
+      orgSlug: "futureskills-institute",
       weekStart: new Date().toISOString().slice(0, 10),
       summary: marker,
     }),
@@ -197,7 +197,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     `status=${logbookRes.status}`,
   );
 
-  const logbooksPage = await coordinatorSession.request("/org/raftech/app/logbooks");
+  const logbooksPage = await coordinatorSession.request("/org/futureskills-institute/app/logbooks");
   const logbooksHtml = await logbooksPage.text();
   recordCheck(
     "coordinator logbook page includes submitted entry",
@@ -208,7 +208,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
   if (logbookEntryId) {
     await expectSessionStatus(
       coordinatorSession,
-      `/api/org/raftech/logbooks/${logbookEntryId}/approval`,
+      `/api/org/futureskills-institute/logbooks/${logbookEntryId}/approval`,
       [302, 303, 307, 308],
       {
         method: "POST",
@@ -229,7 +229,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     );
   }
 
-  const stipendPage = await coordinatorSession.request("/org/raftech/app/stipends");
+  const stipendPage = await coordinatorSession.request("/org/futureskills-institute/app/stipends");
   const stipendHtml = await stipendPage.text();
   recordCheck("stipends page loads for coordinator", stipendPage.status === 200, `status=${stipendPage.status}`);
 
@@ -260,7 +260,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
       "stipend payment state update",
     );
 
-    const stipendCsv = await coordinatorSession.request("/api/org/raftech/exports/stipend.csv");
+    const stipendCsv = await coordinatorSession.request("/api/org/futureskills-institute/exports/stipend.csv");
     const stipendCsvBody = await stipendCsv.text();
     recordCheck(
       "stipend export reflects updated month",
@@ -276,7 +276,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
       "enrollment transitioned to COMPLETED",
     );
 
-    const followUpsRes = await coordinatorSession.request("/api/org/raftech/follow-ups");
+    const followUpsRes = await coordinatorSession.request("/api/org/futureskills-institute/follow-ups");
     const followUpsPayload = await asJsonSafe(followUpsRes);
     const followUpRecords = Array.isArray(followUpsPayload?.records)
       ? followUpsPayload.records
@@ -300,7 +300,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     if (followUpTarget?.id) {
       await expectSessionStatus(
         coordinatorSession,
-        "/api/org/raftech/follow-ups",
+        "/api/org/futureskills-institute/follow-ups",
         [302, 303, 307, 308],
         {
           method: "POST",
@@ -314,7 +314,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
         "follow-up completion update",
       );
 
-      const followUpsVerifyRes = await coordinatorSession.request("/api/org/raftech/follow-ups");
+      const followUpsVerifyRes = await coordinatorSession.request("/api/org/futureskills-institute/follow-ups");
       const followUpsVerifyPayload = await asJsonSafe(followUpsVerifyRes);
       const updatedRecord = Array.isArray(followUpsVerifyPayload?.records)
         ? followUpsVerifyPayload.records.find((record) => record.id === followUpTarget.id)
@@ -330,7 +330,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
       if (followUpTarget.programId) {
         await expectSessionStatus(
           coordinatorSession,
-          "/api/org/raftech/certificates/policy",
+          "/api/org/futureskills-institute/certificates/policy",
           [302, 303, 307, 308],
           {
             method: "POST",
@@ -344,7 +344,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
       }
 
       const certIssueRes = await coordinatorSession.request(
-        "/api/org/raftech/certificates/issue?response=json",
+        "/api/org/futureskills-institute/certificates/issue?response=json",
         {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -352,7 +352,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
             enrollmentId: stipendEnrollmentId,
             managerName: "MVP UAT Manager",
             signature: "MVP UAT Manager",
-            tenantName: "Raftech",
+            tenantName: "FutureSkills Institute",
           }),
         },
       );
@@ -366,7 +366,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
 
       if (certDocumentId) {
         const certDownload = await coordinatorSession.request(
-          `/api/org/raftech/certificates/${certDocumentId}/download`,
+          `/api/org/futureskills-institute/certificates/${certDocumentId}/download`,
         );
         recordCheck(
           "certificate download by coordinator",
@@ -378,7 +378,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     }
   }
 
-  const foundationRes = await coordinatorSession.request("/api/org/raftech/exports/foundation");
+  const foundationRes = await coordinatorSession.request("/api/org/futureskills-institute/exports/foundation");
   const foundationPayload = await asJsonSafe(foundationRes);
   const programmeIds = Array.isArray(foundationPayload?.programmes)
     ? foundationPayload.programmes.map((programme) => programme.id)
@@ -391,7 +391,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
     `status=${foundationRes.status}`,
   );
 
-  const exportsPage = await coordinatorSession.request("/org/raftech/app/reports/exports");
+  const exportsPage = await coordinatorSession.request("/org/futureskills-institute/app/reports/exports");
   const exportsHtml = await exportsPage.text();
   recordCheck("exports page loads", exportsPage.status === 200, `status=${exportsPage.status}`);
 
@@ -407,7 +407,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
   );
 
   if (programmeId && templateId) {
-    const createCloseoutRes = await coordinatorSession.request("/api/org/raftech/exports/closeout", {
+    const createCloseoutRes = await coordinatorSession.request("/api/org/futureskills-institute/exports/closeout", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ programmeId, exportTemplateId: templateId }),
@@ -422,7 +422,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
 
     if (queuedJobId) {
       const closeoutStatusRes = await coordinatorSession.request(
-        `/api/org/raftech/exports/closeout?jobId=${queuedJobId}`,
+        `/api/org/futureskills-institute/exports/closeout?jobId=${queuedJobId}`,
       );
       const closeoutStatusPayload = await asJsonSafe(closeoutStatusRes);
       const jobStatus = closeoutStatusPayload?.job?.status;
@@ -436,7 +436,7 @@ async function runRoleChecks(studentSession, coordinatorSession, hqSession) {
 
     await expectSessionStatus(
       studentSession,
-      "/api/org/raftech/exports/closeout",
+      "/api/org/futureskills-institute/exports/closeout",
       [403],
       {
         method: "POST",
@@ -463,7 +463,7 @@ async function main() {
 
   await expectStatus("/app/student", [302, 303, 307, 308], {}, "protected student redirect");
   await expectStatus("/hq/dashboard", [302, 303, 307, 308], {}, "protected HQ redirect");
-  await expectStatus("/api/org/raftech/exports/closeout", [401], {}, "unauth export blocked");
+  await expectStatus("/api/org/futureskills-institute/exports/closeout", [401], {}, "unauth export blocked");
 
   const signupEmail = `mvp-uat-${Date.now()}@example.com`;
   const signupRes = await fetch(`${baseUrl}/api/auth/student-signup`, {

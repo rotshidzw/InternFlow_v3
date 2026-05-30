@@ -38,8 +38,8 @@
       "portal": "Provider / tenant dashboard",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/dashboard",
-      "url": "http://localhost:3000/org/raftech/app/dashboard",
+      "route": "/org/futureskills-institute/app/dashboard",
+      "url": "http://localhost:3000/org/futureskills-institute/app/dashboard",
       "capturedAt": "2026-05-30T13:26:49.961Z"
     },
     {
@@ -47,8 +47,8 @@
       "portal": "Coordinator dashboard / operational home",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/coordinator",
-      "url": "http://localhost:3000/org/raftech/coordinator",
+      "route": "/org/futureskills-institute/coordinator",
+      "url": "http://localhost:3000/org/futureskills-institute/coordinator",
       "capturedAt": "2026-05-30T13:26:53.474Z"
     },
     {
@@ -56,8 +56,8 @@
       "portal": "Learners management page",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/learners",
-      "url": "http://localhost:3000/org/raftech/app/learners",
+      "route": "/org/futureskills-institute/app/learners",
+      "url": "http://localhost:3000/org/futureskills-institute/app/learners",
       "capturedAt": "2026-05-30T13:26:56.238Z"
     },
     {
@@ -65,8 +65,8 @@
       "portal": "Applicants management page",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/applicants",
-      "url": "http://localhost:3000/org/raftech/app/applicants",
+      "route": "/org/futureskills-institute/app/applicants",
+      "url": "http://localhost:3000/org/futureskills-institute/app/applicants",
       "capturedAt": "2026-05-30T13:26:59.148Z"
     },
     {
@@ -74,8 +74,8 @@
       "portal": "Documents / evidence management page",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/documents",
-      "url": "http://localhost:3000/org/raftech/app/documents",
+      "route": "/org/futureskills-institute/app/documents",
+      "url": "http://localhost:3000/org/futureskills-institute/app/documents",
       "capturedAt": "2026-05-30T13:27:03.546Z"
     },
     {
@@ -83,8 +83,8 @@
       "portal": "Registers / attendance area",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/registers",
-      "url": "http://localhost:3000/org/raftech/app/registers",
+      "route": "/org/futureskills-institute/app/registers",
+      "url": "http://localhost:3000/org/futureskills-institute/app/registers",
       "capturedAt": "2026-05-30T13:27:06.287Z"
     },
     {
@@ -92,8 +92,8 @@
       "portal": "Logbooks area",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/logbooks",
-      "url": "http://localhost:3000/org/raftech/app/logbooks",
+      "route": "/org/futureskills-institute/app/logbooks",
+      "url": "http://localhost:3000/org/futureskills-institute/app/logbooks",
       "capturedAt": "2026-05-30T13:27:08.931Z"
     },
     {
@@ -101,8 +101,8 @@
       "portal": "Stipends / finance-related area",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/stipends",
-      "url": "http://localhost:3000/org/raftech/app/stipends",
+      "route": "/org/futureskills-institute/app/stipends",
+      "url": "http://localhost:3000/org/futureskills-institute/app/stipends",
       "capturedAt": "2026-05-30T13:27:12.769Z"
     },
     {
@@ -110,8 +110,8 @@
       "portal": "Certificates / follow-up area",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/certificates",
-      "url": "http://localhost:3000/org/raftech/app/certificates",
+      "route": "/org/futureskills-institute/app/certificates",
+      "url": "http://localhost:3000/org/futureskills-institute/app/certificates",
       "capturedAt": "2026-05-30T13:27:15.604Z"
     },
     {
@@ -119,8 +119,8 @@
       "portal": "Follow-up outcomes area",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/follow-ups",
-      "url": "http://localhost:3000/org/raftech/app/follow-ups",
+      "route": "/org/futureskills-institute/app/follow-ups",
+      "url": "http://localhost:3000/org/futureskills-institute/app/follow-ups",
       "capturedAt": "2026-05-30T13:27:18.245Z"
     },
     {
@@ -128,8 +128,8 @@
       "portal": "Messaging / communication view",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/app/learner-chat",
-      "url": "http://localhost:3000/org/raftech/app/learner-chat",
+      "route": "/org/futureskills-institute/app/learner-chat",
+      "url": "http://localhost:3000/org/futureskills-institute/app/learner-chat",
       "capturedAt": "2026-05-30T13:27:21.124Z"
     },
     {
@@ -137,8 +137,8 @@
       "portal": "Provider admin workspace",
       "role": "coordinator",
       "email": "coordinator@demo.com",
-      "route": "/org/raftech/provider-admin",
-      "url": "http://localhost:3000/org/raftech/provider-admin",
+      "route": "/org/futureskills-institute/provider-admin",
+      "url": "http://localhost:3000/org/futureskills-institute/provider-admin",
       "capturedAt": "2026-05-30T13:27:25.369Z"
     },
     {
