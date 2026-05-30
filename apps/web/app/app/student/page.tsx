@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { Bell, CheckCircle2, Clock3, FileText, MessageSquare, UserCircle2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  CheckSquare,
+  Clock3,
+  FileText,
+  MessageSquare,
+  UserCircle2,
+} from "lucide-react";
 import { prisma } from "@internflow/db/src";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
@@ -176,6 +185,12 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
     ? Math.round((requiredDone / docPlan.required.length) * 100)
     : 0;
   const recentDocumentUpdates = documents.slice(0, 4);
+  const attentionDocuments = documents.filter((document) =>
+    ["REJECTED", "SCAN_FAILED"].includes(document.status),
+  ).length;
+  const processingDocuments = documents.filter((document) =>
+    ["SUBMITTED", "SCAN_PENDING", "SCAN_OK"].includes(document.status),
+  ).length;
 
   const showApplied = searchParams?.applied === "1";
   const showAlreadyApplied = searchParams?.notice === "already-applied";
@@ -220,6 +235,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
   const completedFollowUpCount = studentFollowUps.filter(
     (record) => record.status === "COMPLETED",
   ).length;
+  const unreadNotifications = notifications.filter((item) => !item.readAt).length;
   const certificateDownloadHref =
     contextOrganizationSlug &&
     studentCertificateRecord?.documentId &&
@@ -244,6 +260,34 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         : nextDueFollowUp
           ? `Next follow-up: ${nextDueFollowUp.dueMonth}-month due ${isoDate(nextDueFollowUp.dueDate)}.`
           : "All scheduled follow-ups are completed.";
+  const attentionItems = [
+    shouldShowApplyNow,
+    attentionDocuments > 0,
+    overdueFollowUpCount > 0,
+    lifecycle.placementStatus === "unassigned" && lifecycle.applicationStatus === "accepted",
+  ].filter(Boolean).length;
+  const healthySignals = [
+    lifecycle.profileStatus === "complete",
+    lifecycle.documentStatus === "verified",
+    lifecycle.applicationStatus === "under_review" ||
+      lifecycle.applicationStatus === "accepted" ||
+      lifecycle.applicationStatus === "submitted",
+    overdueFollowUpCount === 0,
+  ].filter(Boolean).length;
+  const nextActionText = shouldShowApplyNow
+    ? documentsReady
+      ? "Submit your application"
+      : "Upload all required documents"
+    : lifecycle.applicationStatus === "under_review"
+      ? "Wait for coordinator review"
+      : lifecycle.applicationStatus === "accepted" &&
+          lifecycle.placementStatus === "unassigned"
+        ? "Await placement assignment"
+        : lifecycle.placementStatus === "active"
+          ? "Continue programme activities"
+          : lifecycle.programmeStatus === "completed"
+            ? "Track certificate and follow-up"
+            : "Review your latest status";
 
   return (
     <div className="if-auth-page min-h-[calc(100vh-7rem)] p-4 md:p-6">
@@ -289,22 +333,22 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             {(showApplied || showAlreadyApplied || showDraftSaved || showActiveEnrollmentError) && (
               <div className="grid gap-2">
                 {showApplied && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  <div className="if-status if-status-success rounded-xl px-4 py-3 text-sm">
                     Application submitted successfully.
                   </div>
                 )}
                 {showDraftSaved && (
-                  <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                  <div className="if-status if-status-pending rounded-xl px-4 py-3 text-sm">
                     Application draft saved. Submit when ready.
                   </div>
                 )}
                 {showAlreadyApplied && (
-                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                  <div className="if-status if-status-pending rounded-xl px-4 py-3 text-sm">
                     You already submitted this application.
                   </div>
                 )}
                 {showActiveEnrollmentError && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <div className="if-status if-status-warning rounded-xl px-4 py-3 text-sm">
                     You already have an active enrollment in another organization.
                   </div>
                 )}
@@ -322,7 +366,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <article className="if-panel-muted rounded-xl p-4">
           <p className="if-caption-text inline-flex items-center gap-2">
             <FileText className="h-4 w-4 text-sky-600" />
@@ -367,19 +411,85 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </article>
       </section>
 
+      <section className="grid gap-3 xl:grid-cols-3">
+        <article className="if-panel rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="if-panel-title inline-flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              Attention now
+            </h2>
+            <span className="if-status if-status-warning">{attentionItems} items</span>
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Documents needing action: {attentionDocuments}
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Documents processing: {processingDocuments}
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Overdue follow-ups: {overdueFollowUpCount}
+            </p>
+          </div>
+        </article>
+
+        <article className="if-panel rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="if-panel-title inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              Healthy signals
+            </h2>
+            <span className="if-status if-status-success">{healthySignals}/4</span>
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Required docs ready: {lifecycle.documentStatus === "verified" ? "Yes" : "Not yet"}
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Unread updates: {unreadNotifications}
+            </p>
+          </div>
+        </article>
+
+        <article className="if-panel rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="if-panel-title inline-flex items-center gap-2">
+              <CheckSquare className="h-4 w-4 text-violet-300" />
+              Next best action
+            </h2>
+            <span className="if-status if-status-draft">Guided</span>
+          </div>
+          <p className="if-body-text mt-3">{nextActionText}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/app/student/documents" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Documents
+            </Link>
+            <Link href="/opportunities" className="if-btn if-btn-primary px-3 py-1.5 text-xs">
+              Apply now
+            </Link>
+            <Link href="/app/whatsapp-sim" className="if-btn if-btn-secondary px-3 py-1.5 text-xs">
+              Ask support
+            </Link>
+          </div>
+        </article>
+      </section>
+
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <section className="if-panel rounded-2xl p-5 xl:col-span-2">
           <h2 className="if-panel-title">Lifecycle status</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">Account: {lifecycle.accountStatus}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Profile: {lifecycle.profileStatus === "complete" ? "Complete" : "Incomplete"}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Documents: {lifecycle.documentStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Application: {applicationStatusLabel(lifecycle.applicationStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Placement: {placementStatusLabel(lifecycle.placementStatus)}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Programme: {lifecycle.programmeStatus.replace("_", " ")}</p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">Account: {lifecycle.accountStatus}</p>
           </div>
           {shouldShowApplyNow && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            <div className="if-panel-muted mt-3 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-sm text-brand-textSoft">
               <span>{documentsReady ? "Documents ready - submit your application to continue." : "Complete required documents, then submit your application."}</span>
               <Link href="/opportunities" className="if-btn if-btn-primary px-3 py-1.5 text-xs">
                 Submit application
@@ -387,17 +497,17 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             </div>
           )}
           {lifecycle.applicationStatus === "under_review" && (
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <p className="if-status if-status-warning mt-3 w-fit">
               Application under review. You can still update documents if requested.
             </p>
           )}
           {lifecycle.applicationStatus === "accepted" && (
-            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            <p className="if-status if-status-success mt-3 w-fit">
               Application accepted. Placement remains separate and appears only once assigned.
             </p>
           )}
           <div className="mt-3 grid gap-2 lg:grid-cols-2">
-            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">
               <p className="if-card-title">Certificate</p>
               <p>{certificateStatusText}</p>
               {studentCertificateRecord && (
@@ -415,7 +525,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
                 </a>
               )}
             </div>
-            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-700">
+            <div className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-textSoft">
               <p className="if-card-title">Post-training follow-up</p>
               <p>{followUpStatusText}</p>
               {studentFollowUps.length > 0 && (
@@ -446,8 +556,8 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
                   key={type}
                   className="flex items-center justify-between if-panel-muted rounded-lg px-3 py-2 text-sm"
                 >
-                  <span className="font-medium text-slate-700">{getDocumentDisplayName(type)}</span>
-                  <span className="text-xs text-slate-600">
+                  <span className="font-medium text-brand-textSoft">{getDocumentDisplayName(type)}</span>
+                  <span className="text-xs text-brand-muted">
                     {current ? docStatusLabel(current.status) : "Not uploaded"}
                   </span>
                 </div>
@@ -465,21 +575,21 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
             {recentDocumentUpdates.map((doc) => (
               <p
                 key={doc.id}
-                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
+                className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft"
               >
                 {getDocumentDisplayName(doc.type)} - {docStatusLabel(doc.status)}
                 {doc.rejectionReason ? ` - ${doc.rejectionReason}` : ""}
               </p>
             ))}
             {recentDocumentUpdates.length === 0 && (
-              <p className="if-panel-muted rounded-lg px-3 py-2 text-slate-600">
+              <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-muted">
                 No document updates yet.
               </p>
             )}
             {notifications.map((n) => (
               <p
                 key={n.id}
-                className="if-panel-muted rounded-lg px-3 py-2 text-slate-700"
+                className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft"
               >
                 {n.title}: {n.body}
               </p>
@@ -503,7 +613,7 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
         </p>
         <div className="mt-3 grid gap-2">
           {recentThreads.length === 0 && (
-            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-slate-600">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-sm text-brand-muted">
               No discussion history yet.
             </p>
           )}
@@ -512,10 +622,10 @@ export default async function StudentPortalPage({ searchParams }: StudentPortalP
               key={thread.id}
               className="if-panel-muted rounded-lg px-3 py-2"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
                 {thread.title}
               </p>
-              <p className="mt-1 text-sm text-slate-700">
+              <p className="mt-1 text-sm text-brand-textSoft">
                 {thread.messages[0]?.body ?? "No messages in this thread yet."}
               </p>
             </div>

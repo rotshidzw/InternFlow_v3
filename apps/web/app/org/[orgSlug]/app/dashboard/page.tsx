@@ -223,6 +223,35 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
       tone: "border-violet-500/30 bg-violet-500/10 text-violet-100",
     },
   ];
+  const activeAttentionBlocks = attentionBlocks.filter((block) => block.value > 0);
+  const healthySignals = [
+    compliancePct >= 85,
+    stipendCoverage >= 80 || activeEnrollments === 0,
+    attendanceCoverage >= 80 || activeEnrollments === 0,
+    onboardingCompletionRate >= 70 || appByStatus.ACCEPTED === 0,
+  ].filter(Boolean).length;
+  const nextActions = [
+    {
+      href: `/org/${params.orgSlug}/app/documents`,
+      label: "Clear document verification queue",
+      when: needsAttentionDocs > 0,
+    },
+    {
+      href: `/org/${params.orgSlug}/app/registers`,
+      label: "Submit monthly attendance evidence",
+      when: missingAttendance > 0 || registersThisMonth === 0,
+    },
+    {
+      href: `/org/${params.orgSlug}/app/stipends`,
+      label: "Resolve unpaid active stipends",
+      when: paymentsDue > 0,
+    },
+    {
+      href: `/org/${params.orgSlug}/app/certificates`,
+      label: "Issue pending completion certificates",
+      when: certificateBacklog > 0,
+    },
+  ].filter((item) => item.when);
 
   return (
     <div className="space-y-6">
@@ -284,6 +313,87 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
           description="Recruitment, compliance, finance, and learner delivery remain connected through one shared operating model."
           imageClassName="h-full min-h-[21rem]"
         />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <article className="if-panel rounded-2xl border border-brand-border/70 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="if-panel-title">Attention now</h2>
+            <span className="if-status if-status-warning">{auditGaps} flagged</span>
+          </div>
+          <p className="if-panel-copy mt-1">
+            Current workload that can slow delivery, compliance, or payout execution.
+          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            {activeAttentionBlocks.length === 0 ? (
+              <p className="if-empty-state text-sm">No priority exceptions. Operations are stable.</p>
+            ) : (
+              activeAttentionBlocks.map((block) => (
+                <Link
+                  key={block.label}
+                  href={block.href as Route}
+                  className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft transition hover:border-brand-accent/45 hover:bg-brand-surface"
+                >
+                  <p className="if-card-title text-sm">{block.label}</p>
+                  <p className="if-caption-text mt-1">
+                    {block.value} | {block.note}
+                  </p>
+                </Link>
+              ))
+            )}
+          </div>
+        </article>
+
+        <article className="if-panel rounded-2xl border border-brand-border/70 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="if-panel-title">Healthy systems</h2>
+            <span className="if-status if-status-success">{healthySignals}/4</span>
+          </div>
+          <p className="if-panel-copy mt-1">
+            Core delivery controls with strongest current performance.
+          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Compliance pulse: {compliancePct}%
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Stipend coverage: {stipendCoverage}%
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Attendance coverage: {attendanceCoverage}%
+            </p>
+            <p className="if-panel-muted rounded-lg px-3 py-2 text-brand-textSoft">
+              Onboarding completion: {onboardingCompletionRate}%
+            </p>
+          </div>
+        </article>
+
+        <article className="if-panel rounded-2xl border border-brand-border/70 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="if-panel-title">Next best actions</h2>
+            <span className="if-status if-status-draft">Operational guide</span>
+          </div>
+          <p className="if-panel-copy mt-1">
+            Recommended next steps based on today’s queue and readiness signals.
+          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            {nextActions.length === 0 ? (
+              <p className="if-empty-state text-sm">
+                No urgent follow-up actions. Continue monitoring flow and recent events.
+              </p>
+            ) : (
+              nextActions.map((action) => (
+                <Link
+                  key={action.label}
+                  href={action.href as Route}
+                  className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft transition hover:border-brand-accent/45 hover:bg-brand-surface"
+                >
+                  {action.label}
+                </Link>
+              ))
+            )}
+          </div>
+        </article>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -525,7 +635,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
               </div>
             ))}
             {recentApps.length === 0 ? (
-              <p className="text-sm text-brand-muted">No recent applicants found.</p>
+              <p className="if-empty-state text-sm">No recent applicants found.</p>
             ) : null}
           </div>
         </div>
@@ -577,7 +687,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
               </div>
             ))}
             {recentLogs.length === 0 ? (
-              <p className="text-sm text-brand-muted">No recent learner log activity.</p>
+              <p className="if-empty-state text-sm">No recent learner log activity.</p>
             ) : null}
           </div>
         </div>
@@ -602,7 +712,7 @@ export default async function TenantDashboardPage({ params }: { params: { orgSlu
               </div>
             ))}
             {recentAudits.length === 0 ? (
-              <p className="text-sm text-brand-muted">No recent audit events.</p>
+              <p className="if-empty-state text-sm">No recent audit events.</p>
             ) : null}
           </div>
         </div>

@@ -39,6 +39,13 @@ function latestCertificateByEnrollment(records: CertificateRecord[]) {
   return map;
 }
 
+function certificateStatusClass(status: string) {
+  if (status === "RELEASED") return "if-status if-status-success";
+  if (status === "ISSUED") return "if-status if-status-pending";
+  if (status === "REVOKED") return "if-status if-status-error";
+  return "if-status if-status-draft";
+}
+
 export default async function CertificatesPage({ params }: { params: { orgSlug: string } }) {
   const access = await requireTenantAccess(params.orgSlug);
   const canManage = isTenantRoleAllowed(
@@ -52,7 +59,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
 
   if (!canInspect && !canManage) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="if-panel rounded-2xl p-4 text-sm text-brand-textSoft">
         Your role does not have certificate operations access.
       </div>
     );
@@ -83,6 +90,9 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
     ]);
 
   const now = new Date();
+  const in30Days = new Date(now);
+  in30Days.setDate(in30Days.getDate() + 30);
+
   const completedEnrollments = enrollments.filter(
     (enrollment) => enrollment.status === "COMPLETED",
   );
@@ -114,40 +124,65 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
   ).length;
   const defaultPolicy = policyRecords.find((record) => record.programId === null);
   const managerDefault = access.user.name ?? "Programme Manager";
+  const releasingSoon = queueWaitingRelease.filter((record) => {
+    const releaseDate = new Date(record.releaseAt);
+    return releaseDate > now && releaseDate <= in30Days;
+  }).length;
+
+  const blockedByFollowUps = queuePendingIssue.filter((enrollment) => {
+    const followUps = followUpsByEnrollment.get(enrollment.id) ?? [];
+    return followUps.some(
+      (record) => record.status === "DUE" && new Date(record.dueDate) <= now,
+    );
+  }).length;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h1 className="text-2xl font-semibold">Certificate Operations</h1>
-        <p className="text-sm text-slate-600">
-          Manage issuance, delayed release windows, and learner certificate readiness from
-          persisted operational records.
+    <div className="if-auth-page gap-4">
+      <section className="if-auth-hero">
+        <p className="if-marketing-eyebrow text-brand-accentStrong">Certificate Operations</p>
+        <h1 className="if-auth-title mt-2">Issuance and release control</h1>
+        <p className="if-auth-subtitle">
+          Manage issuance, delayed release windows, and follow-up linked outcomes from one
+          operational queue.
         </p>
-      </div>
+      </section>
 
-      <div className="grid gap-2 sm:grid-cols-5">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Completed learners: <span className="font-semibold">{completedEnrollments.length}</span>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Pending issue: <span className="font-semibold">{queuePendingIssue.length}</span>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Waiting release: <span className="font-semibold">{queueWaitingRelease.length}</span>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Released: <span className="font-semibold">{queueReleased.length}</span>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-          Follow-ups due: <span className="font-semibold">{dueFollowUps}</span>
-        </div>
-      </div>
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-7">
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Completed learners</p>
+          <p className="if-auth-metric-value">{completedEnrollments.length}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Pending issue</p>
+          <p className="if-auth-metric-value">{queuePendingIssue.length}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Blocked by follow-up</p>
+          <p className="if-auth-metric-value">{blockedByFollowUps}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Waiting release</p>
+          <p className="if-auth-metric-value">{queueWaitingRelease.length}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Releasing in 30d</p>
+          <p className="if-auth-metric-value">{releasingSoon}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Released</p>
+          <p className="if-auth-metric-value">{queueReleased.length}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Outcome gaps</p>
+          <p className="if-auth-metric-value">{missingOutcome}</p>
+        </article>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <section className="if-panel rounded-2xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Release policy</h2>
-          <p className="text-xs text-slate-500">
-            Missing outcomes on completed follow-ups: {missingOutcome}
+          <h2 className="if-panel-title">Release policy</h2>
+          <p className="if-caption-text">
+            Follow-ups due now: {dueFollowUps} | Missing outcomes: {missingOutcome}
           </p>
         </div>
         {canManage ? (
@@ -155,14 +190,14 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
             <form
               action={`/api/org/${params.orgSlug}/certificates/policy`}
               method="post"
-              className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-3"
+              className="if-panel-muted grid gap-2 rounded-xl p-3 md:grid-cols-3"
             >
               <input type="hidden" name="programId" value="" />
-              <p className="text-sm font-medium text-slate-900">Default policy</p>
+              <p className="if-card-title">Default policy</p>
               <select
                 name="releaseRule"
                 defaultValue={defaultPolicy?.releaseRule ?? "IMMEDIATE"}
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
+                className="rounded px-2 py-1 text-sm"
               >
                 {CERTIFICATE_RELEASE_RULES.map((rule) => (
                   <option key={rule} value={rule}>
@@ -170,7 +205,7 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                   </option>
                 ))}
               </select>
-              <button className="rounded border border-emerald-300 px-2 py-1 text-sm text-emerald-700">
+              <button className="if-btn if-btn-primary px-2 py-1 text-sm">
                 Save default policy
               </button>
             </form>
@@ -188,14 +223,14 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                   key={programme.id}
                   action={`/api/org/${params.orgSlug}/certificates/policy`}
                   method="post"
-                  className="grid gap-2 rounded-lg border border-slate-200 p-3 md:grid-cols-4"
+                  className="if-panel-muted grid gap-2 rounded-xl p-3 md:grid-cols-4"
                 >
                   <input type="hidden" name="programId" value={programme.id} />
-                  <p className="text-sm text-slate-900">{programme.name}</p>
+                  <p className="if-body-text">{programme.name}</p>
                   <select
                     name="releaseRule"
                     defaultValue={effectiveRule}
-                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    className="rounded px-2 py-1 text-sm"
                   >
                     {CERTIFICATE_RELEASE_RULES.map((rule) => (
                       <option key={rule} value={rule}>
@@ -203,10 +238,10 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-500">
+                  <p className="if-caption-text">
                     {override ? "Programme override set" : "Using default policy"}
                   </p>
-                  <button className="rounded border border-slate-300 px-2 py-1 text-sm text-slate-700">
+                  <button className="if-btn if-btn-secondary px-2 py-1 text-sm">
                     Save
                   </button>
                 </form>
@@ -214,20 +249,20 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
             })}
           </div>
         ) : (
-          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <p className="if-status if-status-warning mt-3">
             Your role can inspect policy outcomes but cannot change release rules.
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold">Pending issue queue</h2>
-        <p className="mt-1 text-sm text-slate-600">
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Pending issue queue</h2>
+        <p className="if-panel-copy mt-1">
           Learners completed the programme but still need certificate issuance.
         </p>
         <div className="mt-3 space-y-3 text-sm">
           {queuePendingIssue.length === 0 ? (
-            <p className="text-slate-500">No learners waiting for issuance.</p>
+            <p className="if-empty-state text-sm">No learners waiting for issuance.</p>
           ) : (
             queuePendingIssue.map((enrollment) => {
               const learnerName = enrollment.user.name ?? enrollment.user.email;
@@ -242,39 +277,47 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
               const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&enrollmentId=${enrollment.id}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(enrollment.program.name)}&manager=${encodeURIComponent(managerDefault)}&signature=${encodeURIComponent(managerDefault)}`;
 
               return (
-                <div key={enrollment.id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-900">
-                    {learnerName} | {enrollment.program.name}
-                  </p>
-                  <p className="text-slate-600">
-                    Completed status recorded | Release policy: {releaseRuleLabel(releaseRule)} |
-                    Follow-up records: {followUps.length} (due now: {due})
-                  </p>
+                <article key={enrollment.id} className="if-panel-muted rounded-xl p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="if-card-title">
+                      {learnerName} | {enrollment.program.name}
+                    </p>
+                    <div className="flex gap-2 text-xs">
+                      <span className="if-status if-status-pending">
+                        {releaseRuleLabel(releaseRule)}
+                      </span>
+                      {due > 0 ? (
+                        <span className="if-status if-status-warning">Follow-ups due: {due}</span>
+                      ) : (
+                        <span className="if-status if-status-success">Follow-ups clear</span>
+                      )}
+                    </div>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <a
                       href={previewHref}
-                      className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                      className="if-btn if-btn-secondary px-2 py-1 text-xs"
                     >
                       View certificate
                     </a>
                   </div>
-                  {canManage && (
+                  {canManage ? (
                     <form
                       action={`/api/org/${params.orgSlug}/certificates/issue`}
                       method="post"
                       encType="multipart/form-data"
-                      className="mt-2 grid gap-2 md:grid-cols-4"
+                      className="mt-3 grid gap-2 md:grid-cols-4"
                     >
                       <input type="hidden" name="enrollmentId" value={enrollment.id} />
                       <input
                         name="managerName"
                         defaultValue={managerDefault}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded px-2 py-1 text-xs"
                       />
                       <input
                         name="signature"
                         defaultValue={managerDefault}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded px-2 py-1 text-xs"
                       />
                       <input
                         type="hidden"
@@ -285,67 +328,69 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                         type="file"
                         name="signatureImage"
                         accept="image/*"
-                        className="rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="rounded px-2 py-1 text-xs"
                       />
-                      <button className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700">
+                      <button className="if-btn if-btn-primary px-2 py-1 text-xs">
                         Issue certificate
                       </button>
                     </form>
-                  )}
-                </div>
+                  ) : null}
+                </article>
               );
             })
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="font-semibold">Delayed release queue</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Issued certificates waiting for their release date.
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Delayed release queue</h2>
+        <p className="if-panel-copy mt-1">
+          Issued certificates waiting for policy release windows.
         </p>
         <div className="mt-3 space-y-2 text-sm">
           {queueWaitingRelease.length === 0 ? (
-            <p className="text-slate-500">No certificates are waiting for delayed release.</p>
+            <p className="if-empty-state text-sm">
+              No certificates are waiting for delayed release.
+            </p>
           ) : (
             queueWaitingRelease.map((record) => {
               const enrollment = enrollmentById.get(record.enrollmentId);
               const learnerName = enrollment?.user.name ?? enrollment?.user.email ?? record.userId;
               const programmeName = enrollment?.program.name ?? record.programId;
               return (
-                <div key={record.id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-900">
-                    {learnerName} | {programmeName}
-                  </p>
-                  <p className="text-slate-600">
+                <article key={record.id} className="if-panel-muted rounded-xl p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="if-card-title">
+                      {learnerName} | {programmeName}
+                    </p>
+                    <span className={certificateStatusClass(record.status)}>{record.status}</span>
+                  </div>
+                  <p className="if-caption-text mt-1">
                     Certificate #{record.certificateNumber} | Issue: {record.issueDate} | Release:{" "}
-                    {isoDate(record.releaseAt)} | Rule: {releaseRuleLabel(record.releaseRule)}
+                    {isoDate(record.releaseAt)}
                   </p>
-                  <p className="text-slate-600">
-                    Current status: ISSUED
-                  </p>
-                  {canInspect && record.documentId && (
+                  {canInspect && record.documentId ? (
                     <a
                       href={`/api/org/${params.orgSlug}/certificates/${record.documentId}/download`}
-                      className="mt-2 inline-block rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                      className="if-btn if-btn-secondary mt-2 px-2 py-1 text-xs"
                     >
                       Download issued copy
                     </a>
-                  )}
-                </div>
+                  ) : null}
+                </article>
               );
             })
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <section className="if-panel rounded-2xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Released certificates</h2>
-          {canInspect && (
+          <h2 className="if-panel-title">Released certificates</h2>
+          {canInspect ? (
             <div className="flex flex-wrap gap-2 text-xs">
               <a
-                className="rounded border border-slate-300 px-2 py-1 text-slate-700"
+                className="if-btn if-btn-secondary px-2 py-1 text-xs"
                 href={`/api/org/${params.orgSlug}/certificates/issue`}
               >
                 Export issued certificates (ZIP)
@@ -353,18 +398,18 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
               {programmes.map((programme) => (
                 <a
                   key={programme.id}
-                  className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-700"
+                  className="if-btn if-btn-primary px-2 py-1 text-xs"
                   href={`/api/org/${params.orgSlug}/certificates/issue?programId=${programme.id}`}
                 >
                   {programme.name} ZIP
                 </a>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
         <div className="mt-3 space-y-2 text-sm">
           {queueReleased.length === 0 ? (
-            <p className="text-slate-500">No released certificates yet.</p>
+            <p className="if-empty-state text-sm">No released certificates yet.</p>
           ) : (
             queueReleased.map((record) => {
               const enrollment = enrollmentById.get(record.enrollmentId);
@@ -372,30 +417,33 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
               const programmeName = enrollment?.program.name ?? record.programId;
               const previewHref = `/org/${params.orgSlug}/app/certificates/preview?tenant=${encodeURIComponent(access.membership.organization.name)}&enrollmentId=${record.enrollmentId}&learner=${encodeURIComponent(learnerName)}&programme=${encodeURIComponent(programmeName)}&manager=${encodeURIComponent(managerDefault)}&signature=${encodeURIComponent(managerDefault)}`;
               return (
-                <div key={record.id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="font-medium text-slate-900">
-                    {learnerName} | {programmeName}
-                  </p>
-                  <p className="text-slate-600">
+                <article key={record.id} className="if-panel-muted rounded-xl p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="if-card-title">
+                      {learnerName} | {programmeName}
+                    </p>
+                    <span className={certificateStatusClass(record.status)}>{record.status}</span>
+                  </div>
+                  <p className="if-caption-text mt-1">
                     Certificate #{record.certificateNumber} | Issued {record.issueDate} | Released{" "}
                     {isoDate(record.releasedAt)}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <a
                       href={previewHref}
-                      className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
+                      className="if-btn if-btn-secondary px-2 py-1 text-xs"
                     >
                       View certificate
                     </a>
-                    {record.documentId && (
+                    {record.documentId ? (
                       <a
                         href={`/api/org/${params.orgSlug}/certificates/${record.documentId}/download`}
-                        className="rounded border border-blue-300 px-2 py-1 text-xs text-blue-700"
+                        className="if-btn if-btn-secondary px-2 py-1 text-xs"
                       >
                         Download
                       </a>
-                    )}
-                    {canManage && (
+                    ) : null}
+                    {canManage ? (
                       <form
                         action={`/api/org/${params.orgSlug}/certificates/issue`}
                         method="post"
@@ -410,31 +458,31 @@ export default async function CertificatesPage({ params }: { params: { orgSlug: 
                           name="tenantName"
                           value={access.membership.organization.name}
                         />
-                        <button className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700">
+                        <button className="if-btn if-btn-primary px-2 py-1 text-xs">
                           Reissue
                         </button>
                       </form>
-                    )}
+                    ) : null}
                   </div>
-                </div>
+                </article>
               );
             })
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-        <p className="text-slate-700">
+      <section className="if-panel-muted rounded-2xl p-4 text-sm">
+        <p className="if-body-text">
           Need follow-up/outcome operations? Use{" "}
           <a
             href={`/org/${params.orgSlug}/app/follow-ups`}
-            className="font-medium text-blue-700"
+            className="font-medium text-brand-accentStrong hover:text-brand-text"
           >
             Follow-Ups
           </a>{" "}
           to capture 3/6/12-month outcomes and evidence.
         </p>
-      </div>
+      </section>
     </div>
   );
 }

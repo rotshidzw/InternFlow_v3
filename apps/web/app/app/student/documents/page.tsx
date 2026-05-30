@@ -13,23 +13,53 @@ type PageProps = {
   searchParams?: Record<string, string | string[] | undefined>;
 };
 
-function toLifecycleStatus(status: string) {
+type LifecycleStatusTone = {
+  label: string;
+  badgeClass: string;
+};
+
+function toLifecycleStatus(status: string): LifecycleStatusTone {
   switch (status) {
     case "SUBMITTED":
-      return { label: "Uploaded", tone: "bg-slate-100 text-slate-700" };
+      return {
+        label: "Uploaded",
+        badgeClass: "if-status if-status-draft",
+      };
     case "SCAN_PENDING":
-      return { label: "OCR/scan started", tone: "bg-amber-100 text-amber-800" };
+      return {
+        label: "OCR scan in progress",
+        badgeClass: "if-status if-status-warning",
+      };
     case "SCAN_OK":
-      return { label: "Parsed · verification pending", tone: "bg-sky-100 text-sky-800" };
+      return {
+        label: "Parsed - verification pending",
+        badgeClass: "if-status if-status-pending",
+      };
     case "APPROVED":
-      return { label: "Verified", tone: "bg-emerald-100 text-emerald-800" };
+      return {
+        label: "Verified",
+        badgeClass: "if-status if-status-success",
+      };
     case "REJECTED":
-      return { label: "Rejected", tone: "bg-rose-100 text-rose-800" };
+      return {
+        label: "Rejected",
+        badgeClass: "if-status if-status-error",
+      };
     case "SCAN_FAILED":
-      return { label: "Action needed", tone: "bg-orange-100 text-orange-800" };
+      return {
+        label: "Action needed",
+        badgeClass: "if-status if-status-warning",
+      };
     default:
-      return { label: status, tone: "bg-slate-100 text-slate-700" };
+      return {
+        label: status,
+        badgeClass: "if-status if-status-draft",
+      };
   }
+}
+
+function formatTimestamp(value: Date) {
+  return value.toISOString().replace("T", " ").slice(0, 16);
 }
 
 function DocumentCard({
@@ -54,54 +84,36 @@ function DocumentCard({
   const isCv = type === "CV";
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article className="if-panel-muted rounded-xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">
-          {getDocumentDisplayName(type)}
-        </h3>
-        <span
-          className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-            required
-              ? "border border-rose-200 bg-rose-50 text-rose-700"
-              : "border border-slate-200 bg-slate-50 text-slate-600"
-          }`}
-        >
+        <h3 className="if-card-title">{getDocumentDisplayName(type)}</h3>
+        <span className={required ? "if-status if-status-warning" : "if-status if-status-draft"}>
           {required ? "Required" : "Optional"}
         </span>
       </div>
 
-      <div className="mt-3 text-sm text-slate-700">
-        {!document && (
-          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-            Not uploaded yet.
-          </p>
-        )}
-        {document && (
-          <div className="space-y-2">
-            <p
-              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${status?.tone}`}
-            >
-              {status?.label}
-            </p>
-            <p className="text-xs text-slate-600">
-              Last updated {document.createdAt.toISOString().slice(0, 16).replace("T", " ")}
-            </p>
-            {document.rejectionReason && (
-              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                {document.rejectionReason}
+      <div className="mt-3 space-y-2 text-sm">
+        {!document ? (
+          <p className="if-empty-state text-xs">Not uploaded yet.</p>
+        ) : (
+          <>
+            <p className={status?.badgeClass}>{status?.label}</p>
+            <p className="if-caption-text">Last updated {formatTimestamp(document.createdAt)}</p>
+            {document.rejectionReason ? (
+              <p className="if-status if-status-error">{document.rejectionReason}</p>
+            ) : null}
+            {isCv && document.status === "SCAN_OK" ? (
+              <p className="if-caption-text">
+                CV parsed successfully. Name, email, skills, and experience summary are available
+                for team review.
               </p>
-            )}
-            {isCv && document.status === "SCAN_OK" && (
-              <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-                CV parsed successfully. Name, email, skills, and experience summary can now be reviewed by the team.
+            ) : null}
+            {isCv && document.status === "SCAN_PENDING" ? (
+              <p className="if-caption-text">
+                CV parsing is running now. Review updates will appear on this card.
               </p>
-            )}
-            {isCv && document.status === "SCAN_PENDING" && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                We are reading your CV now. We will show parsing and review updates here.
-              </p>
-            )}
-          </div>
+            ) : null}
+          </>
         )}
       </div>
 
@@ -118,9 +130,9 @@ function DocumentCard({
           type="file"
           name="file"
           required
-          className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700"
+          className="h-10 rounded px-2 text-xs"
         />
-        <button className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700">
+        <button className="if-btn if-btn-primary h-10 px-3 text-xs">
           {document ? "Re-upload" : "Upload"}
         </button>
       </form>
@@ -152,54 +164,110 @@ export default async function StudentDocumentsPage({ searchParams }: PageProps) 
   }
 
   const requiredComplete = plan.required.filter((type) => latestByType.has(type)).length;
-  const recentUpdates = documents.slice(0, 4);
+  const optionalUploaded = plan.optional.filter((type) => latestByType.has(type)).length;
+  const processingCount = documents.filter((doc) =>
+    ["SUBMITTED", "SCAN_PENDING", "SCAN_OK"].includes(doc.status),
+  ).length;
+  const needsAttentionCount = documents.filter((doc) =>
+    ["REJECTED", "SCAN_FAILED"].includes(doc.status),
+  ).length;
+  const recentUpdates = documents.slice(0, 6);
+  const attentionQueue = documents
+    .filter((doc) => ["REJECTED", "SCAN_FAILED", "SCAN_PENDING"].includes(doc.status))
+    .slice(0, 6);
   const uploadedType = typeof searchParams?.uploaded === "string" ? searchParams.uploaded : null;
 
   return (
-    <div className="space-y-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] md:p-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="if-auth-page min-h-[calc(100vh-7rem)] p-4 md:p-6">
+      <section className="if-auth-hero">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Student Documents
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+            <p className="if-marketing-eyebrow text-brand-accentStrong">Student Documents</p>
+            <h1 className="if-auth-title mt-2">
               Documents for {programmeName ?? "your programme"}
             </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              {requiredComplete} of {plan.required.length} required documents uploaded.
+            <p className="if-auth-subtitle">
+              Upload required evidence, track verification, and resolve flagged documents before
+              application and placement decisions.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <form action="/api/auth/logout" method="post">
-              <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                Log out
-              </button>
+              <button className="if-btn if-btn-secondary if-btn-nav text-xs">Log out</button>
             </form>
-            <Link
-              href="/app/student"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
+            <Link href="/app/student" className="if-btn if-btn-secondary if-btn-nav text-xs">
               Back to dashboard
             </Link>
-            <Link
-              href="/app/whatsapp-sim"
-              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100"
-            >
+            <Link href="/app/whatsapp-sim" className="if-btn if-btn-primary if-btn-nav text-xs">
               Open support
             </Link>
           </div>
         </div>
-        {uploadedType && (
-          <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-            Your {getDocumentDisplayName(uploadedType)} was uploaded successfully. Processing and verification updates will appear below.
+
+        {uploadedType ? (
+          <p className="if-status if-status-success mt-3">
+            Your {getDocumentDisplayName(uploadedType)} was uploaded successfully.
           </p>
-        )}
+        ) : null}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900">Required documents</h2>
-        <div className="grid gap-3 lg:grid-cols-2">
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Required complete</p>
+          <p className="if-auth-metric-value">
+            {requiredComplete}/{plan.required.length}
+          </p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Optional uploaded</p>
+          <p className="if-auth-metric-value">
+            {optionalUploaded}/{plan.optional.length}
+          </p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Processing</p>
+          <p className="if-auth-metric-value">{processingCount}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Needs attention</p>
+          <p className="if-auth-metric-value">{needsAttentionCount}</p>
+        </article>
+        <article className="if-auth-metric">
+          <p className="if-auth-metric-label">Total uploads</p>
+          <p className="if-auth-metric-value">{documents.length}</p>
+        </article>
+      </section>
+
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Attention queue</h2>
+        <p className="if-panel-copy mt-1">
+          Prioritize rejected or failed documents first, then monitor OCR items still in progress.
+        </p>
+        <div className="mt-3 space-y-2 text-sm">
+          {attentionQueue.length === 0 ? (
+            <p className="if-empty-state text-sm">No attention items right now.</p>
+          ) : (
+            attentionQueue.map((doc) => (
+              <article key={doc.id} className="if-panel-muted rounded-xl p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="if-card-title">{getDocumentDisplayName(doc.type)}</p>
+                  <span className={toLifecycleStatus(doc.status).badgeClass}>
+                    {toLifecycleStatus(doc.status).label}
+                  </span>
+                </div>
+                <p className="if-caption-text mt-1">Updated {formatTimestamp(doc.createdAt)}</p>
+                {doc.rejectionReason ? (
+                  <p className="if-status if-status-error mt-1">{doc.rejectionReason}</p>
+                ) : null}
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Required documents</h2>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
           {plan.required.map((type) => (
             <DocumentCard
               key={type}
@@ -212,9 +280,9 @@ export default async function StudentDocumentsPage({ searchParams }: PageProps) 
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900">Optional documents</h2>
-        <div className="grid gap-3 lg:grid-cols-2">
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Optional documents</h2>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
           {plan.optional.map((type) => (
             <DocumentCard
               key={type}
@@ -227,25 +295,19 @@ export default async function StudentDocumentsPage({ searchParams }: PageProps) 
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Recent document updates
-        </h2>
-        <div className="mt-3 space-y-2">
-          {recentUpdates.length === 0 && (
-            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              No document updates yet.
-            </p>
+      <section className="if-panel rounded-2xl p-4">
+        <h2 className="if-panel-title">Recent document updates</h2>
+        <div className="mt-3 space-y-2 text-sm">
+          {recentUpdates.length === 0 ? (
+            <p className="if-empty-state text-sm">No document updates yet.</p>
+          ) : (
+            recentUpdates.map((doc) => (
+              <p key={doc.id} className="if-panel-muted rounded-lg px-3 py-2">
+                {getDocumentDisplayName(doc.type)} | {toLifecycleStatus(doc.status).label}
+                {doc.rejectionReason ? ` | ${doc.rejectionReason}` : ""}
+              </p>
+            ))
           )}
-          {recentUpdates.map((doc) => (
-            <p
-              key={doc.id}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-            >
-              {getDocumentDisplayName(doc.type)} · {toLifecycleStatus(doc.status).label}
-              {doc.rejectionReason ? ` · ${doc.rejectionReason}` : ""}
-            </p>
-          ))}
         </div>
       </section>
     </div>

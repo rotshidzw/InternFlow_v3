@@ -37,15 +37,47 @@ export default async function HQDashboardPage() {
   await requirePlatformAccess(["PLATFORM_ADMIN", "PLATFORM_SALES", "PLATFORM_SUPPORT", "PLATFORM_OPS", "PLATFORM_FINANCE"]);
 
   const now = Date.now();
+  const nowDate = new Date(now);
+  const in48h = new Date(now + 48 * 60 * 60 * 1000);
   const since7 = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const since14 = new Date(now - 14 * 24 * 60 * 60 * 1000);
   const since30 = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const staleSince = new Date(now - 72 * 60 * 60 * 1000);
 
-  const [tenantCount, pendingApprovals, openTickets, meetingsToday, users7d, docs7d, activeMetrics14, usageMetrics30, recent, docsRaw] = await Promise.all([
+  const [
+    tenantCount,
+    pendingApprovals,
+    staleApprovals,
+    openTickets,
+    urgentTickets,
+    meetingsToday,
+    upcomingMeetings48h,
+    users7d,
+    docs7d,
+    activeMetrics14,
+    usageMetrics30,
+    recent,
+    docsRaw,
+  ] = await Promise.all([
     prisma.organization.count(),
     prisma.organizationVerification.count({ where: { status: "PENDING" } }),
+    prisma.organizationVerification.count({
+      where: { status: "PENDING", createdAt: { lte: staleSince } },
+    }),
     prisma.ticket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } }),
+    prisma.ticket.count({
+      where: {
+        status: { in: ["OPEN", "IN_PROGRESS"] },
+        priority: { in: ["HIGH", "URGENT"] },
+      },
+    }),
     prisma.meeting.count({ where: { startAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)), lte: new Date(new Date().setHours(23, 59, 59, 999)) } } }),
+    prisma.meeting.count({
+      where: {
+        status: "SCHEDULED",
+        startAt: { gte: nowDate, lte: in48h },
+      },
+    }),
     prisma.usageMetricsDaily.aggregate({ _sum: { activeUsers: true }, where: { date: { gte: since7 } } }),
     prisma.usageMetricsDaily.aggregate({ _sum: { docsUploaded: true }, where: { date: { gte: since7 } } }),
     prisma.usageMetricsDaily.findMany({ where: { date: { gte: since14 } }, orderBy: { date: "asc" }, take: 14 }),
@@ -71,6 +103,22 @@ export default async function HQDashboardPage() {
     const fromUsage = docsByUsageTable.get(key) ?? 0;
     return { label: d.toISOString().slice(5, 10), value: fromDocs ?? fromUsage };
   });
+  const attentionNow = pendingApprovals + urgentTickets + staleApprovals;
+  const healthySignals = [
+    tenantCount > 0,
+    staleApprovals === 0,
+    urgentTickets === 0,
+    upcomingMeetings48h > 0,
+  ].filter(Boolean).length;
+  const escalationEvents = recent.filter(
+    (event) =>
+      event.action.includes("ESCALATE") ||
+      event.action.includes("REJECT") ||
+      event.action.includes("PENDING"),
+  );
+  const throughputEvents = recent.filter(
+    (event) => event.action.includes("APPROVE") || event.action.includes("RESOLVE"),
+  );
 
   return (
     <div className="if-auth-page gap-5">
@@ -98,25 +146,130 @@ export default async function HQDashboardPage() {
         ))}
       </div>
 
+      <section className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="if-panel rounded-2xl p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="if-panel-title">Operations board</h2>
+            <span className="if-status if-status-warning">Attention now: {attentionNow}</span>
+          </div>
+          <p className="if-panel-copy mt-1">
+            Prioritize compliance approvals and urgent support queues before platform growth tasks.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <a href="/hq/approvals" className="if-panel-muted rounded-xl px-3 py-2 text-sm">
+              <p className="if-kpi-label">Pending approvals</p>
+              <p className="mt-1 text-xl font-semibold text-brand-text">{pendingApprovals}</p>
+            </a>
+            <a href="/hq/approvals" className="if-panel-muted rounded-xl px-3 py-2 text-sm">
+              <p className="if-kpi-label">Stale pending (72h+)</p>
+              <p className="mt-1 text-xl font-semibold text-brand-text">{staleApprovals}</p>
+            </a>
+            <a href="/hq/support" className="if-panel-muted rounded-xl px-3 py-2 text-sm">
+              <p className="if-kpi-label">Urgent tickets</p>
+              <p className="mt-1 text-xl font-semibold text-brand-text">{urgentTickets}</p>
+            </a>
+            <a href="/hq/meetings" className="if-panel-muted rounded-xl px-3 py-2 text-sm">
+              <p className="if-kpi-label">Meetings next 48h</p>
+              <p className="mt-1 text-xl font-semibold text-brand-text">{upcomingMeetings48h}</p>
+            </a>
+          </div>
+        </div>
+
+        <div className="if-panel rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="if-panel-title">Next actions</h2>
+            <span className="if-status if-status-success">Healthy signals: {healthySignals}/4</span>
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            <a href="/hq/approvals" className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft">
+              Review organization verifications
+            </a>
+            <a href="/hq/support" className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft">
+              Clear urgent support queue
+            </a>
+            <a href="/hq/tenants" className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft">
+              Check tenant activation momentum
+            </a>
+            <a href="/hq/settings" className="if-panel-muted block rounded-lg px-3 py-2 text-brand-textSoft">
+              Validate platform configuration baselines
+            </a>
+          </div>
+        </div>
+      </section>
+
       <HQDashboardCharts activeSeries={activeSeries} docsSeries={docsSeries} />
 
-      <div className="if-panel rounded-2xl p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="if-panel-title">Recent activity</h2>
-          <p className="if-caption-text">Last {recent.length} platform actions</p>
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="if-panel rounded-2xl p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="if-panel-title">Escalations and risk events</h2>
+            <p className="if-caption-text">{escalationEvents.length} recent</p>
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            {escalationEvents.length === 0 ? (
+              <p className="if-empty-state text-sm">No escalations in the latest platform activity window.</p>
+            ) : (
+              escalationEvents.map((event) => (
+                <div key={event.id} className="if-panel-muted rounded-xl border border-brand-border/55 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className={activityTone(event.action)}>{activityLabel(event.action)}</span>
+                    <span className="text-xs text-brand-muted">
+                      {event.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC
+                    </span>
+                  </div>
+                  <p className="if-body-text mt-2">{event.actor?.email ?? "System"}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-        <div className="mt-3 space-y-2 text-sm">
-          {recent.map((a) => (
-            <div key={a.id} className="if-panel-muted rounded-xl border border-brand-border/55 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={activityTone(a.action)}>{activityLabel(a.action)}</span>
-                <span className="text-xs text-brand-muted">{a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC</span>
+
+        <div className="if-panel rounded-2xl p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="if-panel-title">Recent activity</h2>
+            <p className="if-caption-text">Last {recent.length} platform actions</p>
+          </div>
+          <div className="mt-3 space-y-2 text-sm">
+            {recent.map((a) => (
+              <div key={a.id} className="if-panel-muted rounded-xl border border-brand-border/55 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className={activityTone(a.action)}>{activityLabel(a.action)}</span>
+                  <span className="text-xs text-brand-muted">
+                    {a.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC
+                  </span>
+                </div>
+                <p className="if-body-text mt-2">{a.actor?.email ?? "System"}</p>
               </div>
-              <p className="if-body-text mt-2">{a.actor?.email ?? "System"}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+
+        <div className="if-panel rounded-2xl p-4 xl:col-span-2">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="if-panel-title">Throughput highlights</h2>
+            <p className="if-caption-text">{throughputEvents.length} positive events</p>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {throughputEvents.length === 0 ? (
+              <p className="if-empty-state text-sm md:col-span-2">
+                No approval/resolve highlights captured in this activity window.
+              </p>
+            ) : (
+              throughputEvents.map((event) => (
+                <div key={event.id} className="if-panel-muted rounded-xl border border-brand-border/55 p-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className={activityTone(event.action)}>{activityLabel(event.action)}</span>
+                    <span className="text-xs text-brand-muted">
+                      {event.createdAt.toISOString().replace("T", " ").slice(0, 16)} UTC
+                    </span>
+                  </div>
+                  <p className="if-body-text mt-2">{event.actor?.email ?? "System"}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

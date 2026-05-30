@@ -1,0 +1,173 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "generatedAt": "2026-05-30T13:27:35.885Z",
+  "screenshots": [
+    {
+      "file": "homepage-landing.png",
+      "portal": "Public homepage / landing page",
+      "role": "public",
+      "email": null,
+      "route": "/",
+      "url": "http://localhost:3000/",
+      "capturedAt": "2026-05-30T13:26:40.662Z"
+    },
+    {
+      "file": "student-dashboard.png",
+      "portal": "Student portal/dashboard",
+      "role": "student",
+      "email": "student@demo.com",
+      "route": "/app/student",
+      "url": "http://localhost:3000/app/student",
+      "capturedAt": "2026-05-30T13:26:43.288Z"
+    },
+    {
+      "file": "student-support-discussions.png",
+      "portal": "Student support/discussions page",
+      "role": "student",
+      "email": "student@demo.com",
+      "route": "/app/whatsapp-sim",
+      "url": "http://localhost:3000/app/whatsapp-sim",
+      "capturedAt": "2026-05-30T13:26:45.665Z"
+    },
+    {
+      "file": "provider-tenant-dashboard.png",
+      "portal": "Provider / tenant dashboard",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/dashboard",
+      "url": "http://localhost:3000/org/raftech/app/dashboard",
+      "capturedAt": "2026-05-30T13:26:49.961Z"
+    },
+    {
+      "file": "coordinator-dashboard.png",
+      "portal": "Coordinator dashboard / operational home",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/coordinator",
+      "url": "http://localhost:3000/org/raftech/coordinator",
+      "capturedAt": "2026-05-30T13:26:53.474Z"
+    },
+    {
+      "file": "learners-management.png",
+      "portal": "Learners management page",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/learners",
+      "url": "http://localhost:3000/org/raftech/app/learners",
+      "capturedAt": "2026-05-30T13:26:56.238Z"
+    },
+    {
+      "file": "applicants-management.png",
+      "portal": "Applicants management page",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/applicants",
+      "url": "http://localhost:3000/org/raftech/app/applicants",
+      "capturedAt": "2026-05-30T13:26:59.148Z"
+    },
+    {
+      "file": "documents-evidence.png",
+      "portal": "Documents / evidence management page",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/documents",
+      "url": "http://localhost:3000/org/raftech/app/documents",
+      "capturedAt": "2026-05-30T13:27:03.546Z"
+    },
+    {
+      "file": "registers-attendance.png",
+      "portal": "Registers / attendance area",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/registers",
+      "url": "http://localhost:3000/org/raftech/app/registers",
+      "capturedAt": "2026-05-30T13:27:06.287Z"
+    },
+    {
+      "file": "logbooks-operations.png",
+      "portal": "Logbooks area",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/logbooks",
+      "url": "http://localhost:3000/org/raftech/app/logbooks",
+      "capturedAt": "2026-05-30T13:27:08.931Z"
+    },
+    {
+      "file": "stipend-finance.png",
+      "portal": "Stipends / finance-related area",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/stipends",
+      "url": "http://localhost:3000/org/raftech/app/stipends",
+      "capturedAt": "2026-05-30T13:27:12.769Z"
+    },
+    {
+      "file": "certificates-followup.png",
+      "portal": "Certificates / follow-up area",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/certificates",
+      "url": "http://localhost:3000/org/raftech/app/certificates",
+      "capturedAt": "2026-05-30T13:27:15.604Z"
+    },
+    {
+      "file": "followup-outcomes.png",
+      "portal": "Follow-up outcomes area",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/follow-ups",
+      "url": "http://localhost:3000/org/raftech/app/follow-ups",
+      "capturedAt": "2026-05-30T13:27:18.245Z"
+    },
+    {
+      "file": "messages-inbox.png",
+      "portal": "Messaging / communication view",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/app/learner-chat",
+      "url": "http://localhost:3000/org/raftech/app/learner-chat",
+      "capturedAt": "2026-05-30T13:27:21.124Z"
+    },
+    {
+      "file": "provider-admin-workspace.png",
+      "portal": "Provider admin workspace",
+      "role": "coordinator",
+      "email": "coordinator@demo.com",
+      "route": "/org/raftech/provider-admin",
+      "url": "http://localhost:3000/org/raftech/provider-admin",
+      "capturedAt": "2026-05-30T13:27:25.369Z"
+    },
+    {
+      "file": "hq-dashboard.png",
+      "portal": "HQ / internal dashboard",
+      "role": "hq",
+      "email": "admin@internflow.com",
+      "route": "/hq/dashboard",
+      "url": "http://localhost:3000/hq/dashboard",
+      "capturedAt": "2026-05-30T13:27:27.651Z"
+    },
+    {
+      "file": "hq-approvals.png",
+      "portal": "HQ / approvals page",
+      "role": "hq",
+      "email": "admin@internflow.com",
+      "route": "/hq/approvals",
+      "url": "http://localhost:3000/hq/approvals",
+      "capturedAt": "2026-05-30T13:27:30.639Z"
+    },
+    {
+      "file": "hq-support-inbox.png",
+      "portal": "HQ support / inbox",
+      "role": "hq",
+      "email": "admin@internflow.com",
+      "route": "/hq/support",
+      "url": "http://localhost:3000/hq/support",
+      "capturedAt": "2026-05-30T13:27:34.926Z"
+    }
+  ],
+  "failures": []
+}
